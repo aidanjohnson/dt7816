@@ -9,7 +9,7 @@ See the [manufacturer guide](https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/
   * ftp://ftp.mccdaq.com/downloads/DTSoftware/DT78XX_ARM/DT78XX-setup-3.2.bz2.run
   * http://www.fftw.org/fftw-3.3.4.tar.gz
 
-2. Download the three directories in [INSTALL](/INSTALL). Save these (a shell script, a Python executable program, and a directory containing the NetBeans IDE project templates) in `~/Downloads`.
+2. Download the three directories in [`INSTALL`](/INSTALL). Save these (a shell script, a Python executable program, and a directory containing the NetBeans IDE project templates) in `~/Downloads`.
   * `build_dev.sh`
   * `build_examples.py`
   * `nbproject`
