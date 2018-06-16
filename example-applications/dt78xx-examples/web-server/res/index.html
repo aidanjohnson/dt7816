@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script type="text/javascript" 
+		src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js">
+</script>
+<script type="text/javascript">
+$(document).ready(function() 
+{
+	$.get("board-name.txt", function(data)
+	{
+		document.title = data;
+	},"text");
+});
+</script>
+</head>
+<frameset rows="70,*">
+<frame src="top.html" name="topFrame" scrolling="no" noresize="noresize" 
+id="topFrame" title="topFrame" frameborder="1" />
+<frameset cols="170,*">
+<frame src="menu.html" name="leftFrame" scrolling="no" noresize="noresize" 
+title="leftFrame" frameborder="0" />
+<frame src="digital.html" name="mainFrame" id="mainFrame" 
+title="mainFrame" frameborder="0" />
+</frameset>
+<noframes>
+<body>Your browser does not support frames.</body>
+</noframes>
+</frameset>
+</html>

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Data Translation</title>
+<link rel="stylesheet" type="text/css" href="stylesheet.css" />
+<style type="text/css">
+/*<![CDATA[*/
+body { font-size: 14px; font-weight: bold; color: #0E4298; }
+/*]]>*/
+</style>
+<script type="text/javascript" 
+		src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js">
+</script>
+<script type="text/javascript">
+$(document).ready(function() 
+{
+	$.get("board-name.txt", function(data, status)
+	{
+		$('h1').text(data);
+	});
+});
+</script>
+</head>
+<body>
+<div id="dtlogo">
+<a href="http://www.datatranslation.com" target="_blank">
+<img src="dtlogo.png"  
+alt="Click for Data Translation website" border="0" /></a>
+</div>
+<div id="boardname">
+	<h1 class="body"></h1>	
+</div>
+</body>
+</html>
+
+

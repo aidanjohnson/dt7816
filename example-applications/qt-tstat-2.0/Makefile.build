@@ -1,0 +1,45 @@
+-include ../../Rules.make
+
+ENV_SETUP ?= ../../linux-devkit/environment-setup
+DESTDIR ?= 
+MATRIX_APP_DIR ?= /usr/share/matrix-gui-2.0/apps/
+
+all: release
+
+.PHONY: qmake
+qmake : ThermostatDemo.pro
+	@. ${ENV_SETUP}; \
+	qmake2 CONFIG+=release ThermostatDemo.pro
+
+qmake_debug : ThermostatDemo.pro
+	@. ${ENV_SETUP}; \
+	qmake2 CONFIG+=debug ThermostatDemo.pro
+
+debug : qmake_debug
+	@. ${ENV_SETUP}; \
+	make
+
+release : qmake
+	@. ${ENV_SETUP}; \
+	make
+
+clean : qmake
+	@. ${ENV_SETUP}; \
+	make distclean
+
+install_common:
+	@if [ ! -d $(DESTDIR) ] ; then \
+		echo "The extracted target filesystem directory doesn't exist."; \
+		echo "Please run setup.sh in the SDK's root directory and then try again."; \
+		exit 1; \
+	fi
+	@install -d ${DESTDIR}/usr/bin 
+	@install -m 0755 ThermostatDemo ${DESTDIR}/usr/bin/ThermostatDemo
+	@install -d ${DESTDIR}${MATRIX_APP_DIR}/qt_tstat
+	@cp -rf matrix-files/*  ${DESTDIR}${MATRIX_APP_DIR}/qt_tstat
+
+install: release install_common
+	@echo "tstat release version installed."
+
+install_debug: debug install_common
+	@echo "tstat debug version installed."

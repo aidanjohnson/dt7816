@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="stylesheet.css" />
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js">
+</script>
+<script>
+$(document).ready(function()
+{
+	//Does a GET on URL "digin.io" to get the current DIN value
+	function din_read()
+	{
+		$.get("digin.io", function(data, status){
+				$("#dig_in").val(data);
+			});	
+	}
+	//Does a GET on URL "digout.io" to get the current DOUT value
+	function dout_read()
+	{
+		$.get("digout.io", function(data, status){
+				$("#dig_out").val(data);
+			});	
+	}
+	//Handles clicks to read either DIN or DOUT
+    $("#get_din").click(function(){din_read();});
+    $("#get_dout").click(function(){dout_read();});
+	
+	//Handler for click on DOUT write button. Reads the value from the text
+	//box and POSTs it CGI encoded to the URL "digout.io"
+	$("#set_dout").click(function()
+	{
+		$.post("digout.io", {dout: $("#dig_out").val()},
+		function(data, status)
+		{
+			$("#dig_out").val(data);
+		});	
+	});
+	//on form load read both DIN and DOUT and show in text boxes
+	din_read();
+	dout_read();
+});
+</script>
+</head>
+<body id="pagebody">
+	<div id="contentarea">
+	<h1>Digital Input</h1>
+	<p>
+	There are 8 general purpose digital input lines in the I/O connector.
+	These pins may also be used for other purposes depending on the capabilities
+	of the board, such as, external clock inputs, external trigger 
+	inputs, counter/timer inputs or phase/measure counter inputs. The inputs 
+	are +5V tolerant and 22k Ohm pull-ups are provided.
+	</p>
+	<input id="dig_in" type="text" size="10" readonly>
+	<button class="greenbutton" id="get_din">Read</button><br />
+	
+	<h1>Digital Output</h1>
+	<p>
+	There are 8 general purpose digital output lines in the I/O 
+	connector. These pins, may also be used as counter/timer outputs. The 
+	outputs are driven by LVTTL buffers and are capable of providing up to 
+	±24mA of drive current at standard LVTTL levels.	
+	</p>
+	<input id="dig_out" type="text" size="10">
+	<button class="redbutton" id="set_dout">Write</button>
+	<button class="greenbutton" id="get_dout">Read</button><br />
+	</div>
+</body>
+</html>

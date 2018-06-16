@@ -1,0 +1,107 @@
+DT78XX ARM DAQ Release Notes
+
+This software release has the source code to build the following components for
+the DT7816 and DT7837 ARM DAQ boards
+1) Linux kernel
+2) Device drivers for the boards
+3) Example applications
+
+The latest source code and documentation can be downloaded from
+http://www.datatranslation.com/Products/ARM-DAQ/DT7816 and/or
+http://www.datatranslation.com/Products/ARM-DAQ/DT7837
+
+===============================================================================
+Version 3.2 11/16/2015
+
+1) Fix in volts2raw() API to prevent raw value from exceeding plus/minus full
+   scale.
+2) Fixed DT7837 calibration example
+3) Minor verbiage changes in DT7816 calibration program for connector pins.
+3) The following lists the details of important files/modules in this release.
+   Note that these remain unchanged from release 3.0
+
+    Description                 File Name      version    Srcversion
+   -----------------------      -----------    ---------  ----------------------
+a) DT78xx USB gadget driver     g_dt78xx.ko      1.1     63ED285C51BAC4588FEB7CA
+b) DT78xx base driver           dt78xx.ko        2.0     9625EB79B1F2D8C34F876B5
+c) DT7816 board driver          dt7816.ko        2.2     1CEEC625FC099E89F91D4A7
+d) DT7837 board driver          dt7837.ko        2.7     70B9BCEB6DA5A9E9F239A14
+e) Linux kernel                 zImage         3.12.10-dt112614+   
+
+===============================================================================
+Version 3.1 10/22/2015
+
+1) Fix in DT7816 volts2raw() API which affects all examples built for this board
+   including the calibration example.
+2) Added comment to IOCTL definition file dt78xx_ioctl.h. Must use either 
+   -std=c++0x or -std=gnu++0x as compiler flag if this file is included from C++
+   source files  
+3) The following lists the details of important files/modules in this release.
+   Note that these remain unchanged from release 3.0
+
+    Description                 File Name      version    Srcversion
+   -----------------------      -----------    ---------  ----------------------
+a) DT78xx USB gadget driver     g_dt78xx.ko      1.1     63ED285C51BAC4588FEB7CA
+b) DT78xx base driver           dt78xx.ko        2.0     9625EB79B1F2D8C34F876B5
+c) DT7816 board driver          dt7816.ko        2.2     1CEEC625FC099E89F91D4A7
+d) DT7837 board driver          dt7837.ko        2.7     70B9BCEB6DA5A9E9F239A14
+e) Linux kernel                 zImage         3.12.10-dt112614+   
+
+===============================================================================
+Version 3.0 10/8/2015
+
+This release has the source code for both DT7816 and the DT7837 boards.
+1) Bug fixes in the drivers for both boards; DT7837 now supports 2's complement
+   encoding for both AD and DA data.
+2) Identical IOCTLs supported by both drivers.
+3) Common example application source code for both boards  
+4) **IMPORTANT**  The FPGA in each board must be updated using the latest SD card
+   image for the specific board. Please refer to the URLs listed at the top of
+   this document. 
+
+5) The following lists the details of important files/modules in this release.
+
+    Description                 File Name      version    Srcversion
+   -----------------------      -----------    ---------  ----------------------
+a) DT78xx USB gadget driver     g_dt78xx.ko      1.1     63ED285C51BAC4588FEB7CA
+b) DT78xx base driver           dt78xx.ko        2.0     9625EB79B1F2D8C34F876B5
+c) DT7816 board driver          dt7816.ko        2.2     1CEEC625FC099E89F91D4A7
+d) DT7837 board driver          dt7837.ko        2.7     70B9BCEB6DA5A9E9F239A14
+d) Linux kernel                 zImage         3.12.10-dt112614+   
+
+===============================================================================
+Version 2.0 8/24/2015
+
+ Bug fixes and enhancements in kernel drivers and examples  
+
+1) The following lists the details of important files/modules in this release.
+
+    Description                 File Name      version    Srcversion
+   -----------------------      -----------    ---------  ----------------------
+a) DT78xx USB gadget driver     g_dt78xx.ko      1.0     BC796CCB694136AF41FD86F
+b) DT78xx base driver           dt78xx.ko        2.0     9625EB79B1F2D8C34F876B5
+c) DT7816 board driver          dt7816.ko        2.0     B63DC61D2FD116622CFD37F
+d) Linux kernel                 zImage         3.12.10-dt112614+   
+e) DT7816 FPGA program          DT7816_rev6.bin  6.0   
+
+2) The FPGA in the board must be updated  
+
+===============================================================================
+Version 1.0 7/31/2015
+
+Initial release. 
+
+1) The following lists the details of important files/modules in this release.
+
+    Description                 File Name      version    Srcversion
+   -----------------------      -----------    ---------  ----------------------
+a) DT78xx USB gadget driver     g_dt78xx.ko      1.0     BC796CCB694136AF41FD86F
+b) DT78xx base driver           dt78xx.ko        1.7     681A8A61604DB8D2754323B
+c) DT7816 board driver          dt7816.ko        1.0     D5F6267C8BDE0255C18FB91
+d) Linux kernel                 zImage         3.12.10-dt112614+   
+e) DT7816 FPGA program          DT7816_rev4.bin  4.0   
+
+2) The sig-analyzer example will not work  
+===============================================================================
+
+

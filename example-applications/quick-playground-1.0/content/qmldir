@@ -1,0 +1,6 @@
+DemoItem 0.0 demoitem.qml
+Button 0.0 button.qml
+SidePanel 0.0 sidepanel.qml
+TextEditor 0.0 texteditor.qml
+CodeButton 0.0 codebutton.qml
+ErrorDialog 0.0 errordialog.qml

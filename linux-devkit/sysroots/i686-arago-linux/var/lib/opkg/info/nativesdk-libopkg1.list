@@ -1,0 +1,5 @@
+/var/
+/var/lib/opkg/
+/opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/lib/libopkg.so.1
+/var/lib/
+/opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/lib/libopkg.so.1.0.0

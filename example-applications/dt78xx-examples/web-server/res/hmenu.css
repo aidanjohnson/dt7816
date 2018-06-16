@@ -1,0 +1,37 @@
+/**
+ HTML usage
+	<div class="hmenu">Horizontal Menu
+	<ul>
+		<li><a href="">One</a></li>	
+		<li><a href="">Two</a></li>	
+		<li><a href="">Three</a></li>	
+	</ul>
+	</div>
+ */
+.hmenu  {
+    color: white;
+    border-bottom: 0px solid black;
+    padding: 3px 0px 4px 0px;
+    padding-left: 5px;
+    background-color: #0E4298;
+    font-size: 12px;
+    font-weight: bold;
+    line-height:1;
+	float:left;
+    }
+.hmenu ul {list-style-type: none; margin: 0; padding: 0;overflow: hidden;
+font-size: 12px;border-width:2px;  border-style:ridge;}
+.hmenu li {float: left;}
+.hmenu li a {
+    display: block;
+    width: 100px;
+    font-weight : normal;
+    /*color: white;
+    background-color: #0E4298;*/
+    text-align: center;
+    padding: 4px;
+    text-decoration: none;
+    text-transform: none;
+}
+
+.hmenu li a:hover, a:active {background-color: #1c64d1; color: #ffff7f;}

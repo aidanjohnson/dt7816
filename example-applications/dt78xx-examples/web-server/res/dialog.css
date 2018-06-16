@@ -1,0 +1,131 @@
+#dialog-overlay {
+
+	/* set it to fill the whole screen */
+	width:100%; 
+	height:100%;
+	
+	/* transparency for different browsers */
+	opacity: 0.5; 
+	background:#000; 
+
+	/* make sure it appear behind the dialog box but above everything else */
+	position:absolute; 
+	top:0; left:0; 
+	z-index:3000; 
+
+	/* hide it by default */
+	display:none;
+}
+
+
+#dialog-box {
+	background:#eee;
+	width:50%; 
+	/* make sure it has the highest z-index */
+	position:absolute; 
+	z-index:5000; 
+	/* hide it by default */
+	display:none;
+	border-radius: 10px;
+}
+
+#dialog-box .dialog-content {
+	/* style the content */
+	text-align:left; 
+	padding:5px; 
+	margin:5px;
+	color:#666; 
+	font-family:arial;
+	font-size:11px; 
+
+	/* hide it by default */
+	display:none;
+}
+
+#dialog-box input[type=submit] 
+{
+	margin:10px auto 0 auto;
+	text-align:center;
+	background-color:red; 
+	padding: 2px 2px 2px 2px;
+	margin-top : 5px;
+	margin-right : 5px;
+	margin-bottom : 5px;
+	border:0 none;
+	cursor:pointer;
+	border-radius: 5px; 
+	float:left;
+	width:70px;
+	color: #fff;
+}
+
+a.button {
+	/* styles for button */
+	margin:10px auto 0 auto;
+	text-align:center;
+	background-color:gray;
+	display: block;
+	width:70px;
+	padding: 2px 2px 2px 2px;
+	margin-top : 5px;
+	margin-right : 5px;
+	margin-bottom : 5px;
+	color: #fff;
+	text-decoration: none;
+	font-weight: bold;
+	line-height: 1;
+	text-shadow: 0 -1px 1px rgba(0,0,0,0.25);
+	border-bottom: 1px solid rgba(0,0,0,0.25);
+	/*position: relative;*/
+	cursor: pointer;
+	float:right;
+	border-radius: 5px;
+}
+
+a.button:hover {color:black;}
+
+input[type=submit]:hover
+
+#dialog-box .dialog-content ul {
+	margin:10px 0 10px 20px; 
+	padding:0; 
+	height:50px;
+}
+
+.dialog-content .title{
+    margin-left: auto;
+    margin-right: auto;
+	margin-bottom: 5px;
+    width:95%;
+    text-align:center;
+    color: white;
+    padding: 5px 5px 5px 5px;
+    background-color: #0E4298;
+    font-size: 12px;
+    font-weight: bold;
+    line-height:1;
+	border-radius: 10px;
+}
+
+.dialog-content table {
+	margin-bottom: 10px; margin-top: 5px;  
+}
+.dialog-content table, td, th {
+	text-align: left; padding: 2px; border: solid 1px #cccccc;
+    border: 1px solid black;
+	border-collapse: collapse;
+}
+
+.dialog-content th {
+    background-color: graytext;
+    color: white;
+}
+
+.dialog-content .save-cancel{
+    margin-left: auto;
+    margin-right: auto;
+	margin-top: 5px;
+    border-top-style: ridge;
+    border-top-width: 2px;
+	padding-top: 5px;
+}

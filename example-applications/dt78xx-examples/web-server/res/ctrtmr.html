@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="stylesheet.css" />
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js">
+</script>
+<style type="text/css"> 
+.span100 {display:inline-block; width:100px;} 
+</style>
+
+<script>
+$(document).ready(function()
+{
+	//show and enable all elements in the specified container element
+	function show_container(id)
+	{
+		$(id).find("select").prop("disabled", false);
+		$(id).show();
+	}
+	//hide and disable all elements in the specified container element
+	function hide_container(id)
+	{
+		$(id).hide();
+		$(id).find("select").prop("disabled", true);
+	}
+	
+	//update the page based on options selected
+	function update_ui()
+	{
+		//enable all elements first
+		$("select").prop("disabled", false );
+		$("button").prop("disabled", false );
+		
+		//Disable elements that are not relevant to the configuration
+		if ($("#gate").val()==="none")
+			$("#gate_din").prop("disabled", true );
+		else
+			$("#gate_din").prop("disabled", false );
+		if ($("#clock").val()==="int")
+			$("#clock_din").prop("disabled", true );
+		else
+			$("#clock_din").prop("disabled", false );
+		//hide clock divider specific configuration
+		if ($("#ctr_mode").val()==="divider")
+			show_container("#cfg_divider");
+		else
+			hide_container("#cfg_divider");
+		//hide one shot specific configuration
+		if ($("#ctr_mode").val()==="oneshot")
+			show_container("#cfg_1shot");
+		else
+			hide_container("#cfg_1shot");
+		//hide button to read counter
+		if ($("#ctr_mode").val()==="counter")
+			$("#read").show();
+		else
+			$("#read").hide();
+		
+		//Lastly, disable all if mode is idle
+		if ($("#ctr_mode").val()==="idle")
+		{
+			$("#ctr_cfg").find("select").prop("disabled", true );
+			$("#control").find("button").prop("disabled", true );
+		}
+	}
+	//get the current configuration by GET-ing "ctrtmr_get.io"
+	$.get("ctrtmr_get.io", "config", function(data, status)
+	{
+		/*
+		 * Response is a list of id=value pairs separated by semi-colons. The id
+		 * is the id of the HTML element in the page and the value is that 
+		 * element's value
+		 */
+		var cfg = data.split(";");
+		for (i=0; i< cfg.length-1; ++i)
+		{
+			var token = cfg[i].split("=");
+			$(token[0]).val(token[1]);
+		}
+		update_ui();
+	});
+	//update UI when any selection changes
+	$("select").change(function () 
+	{
+		update_ui();
+	});
+	//Form submit : Validate inputs before submitting
+	$("form").submit(function()
+	{
+		var mode = $("#ctr_mode").val(); 
+		if ((mode != "divider") && (mode != "oneshot"))
+			return true; //submit the form
+		
+		var pulse, period;
+		if (mode == "divider")
+		{
+			pulse = $("#cfg_divider_pulse").val();
+			period = $("#cfg_divider_divisor").val();
+		}
+		else
+		{
+			pulse = $("#cfg_1shot_pulse").val();
+			period = $("#cfg_1shot_divisor").val();
+		}
+		if ((pulse <= 0.0) || (pulse >= 100.0) || (period <= 0))
+		{
+			alert("Duty cycle must be between 1% and 99%.\n \
+Divisor must be greater than 0");
+			return false; //don't submit
+		}
+		return true; 
+	});	
+	//Handler for click on Start button
+	$("#start").click(function()
+	{
+		//Show the status
+		$("#result").html("Running");
+		//post command to server; if error show alert and update status
+		$.post("ctrtmr.io", {start: "1"},
+			function(data, status)
+			{
+				if (data)
+					alert(data);
+				$("#result").html("");
+			});	
+	});
+	//Handler for click on Stop button
+	$("#stop").click(function()
+	{
+		//clear status
+		$("#result").html("");
+		//post command to server
+		$.post("ctrtmr.io");	
+	});
+	//Handler for click on Read button
+	$("#read").click(function()
+	{
+		//GET counter value and display it
+		$.get("ctrtmr.io", 
+			function(data, status)
+			{
+				if (data)
+					$("#result").html(data);
+			});	
+	});
+});
+</script>
+</head>
+<body id="pagebody">
+<div id="contentarea">
+  <h1>Counter/Timer</h1>
+	<p>
+	The Counter/Timer subsystem contains a single programmable 32-bit 
+	counter/timer which features selectable clocks, gates and modes. Digital
+	input pins in the I/O connector can be configured as external clock
+	and gate inputs and digital output pins can be configured as clock output.
+	Internal clock is 48 MHz.
+	</p>
+	<p>
+	This page shows the current configuration of the timer counter. If the
+	configuration is modified, it must be saved to the board to take effect.
+	Start and Stop start the counter timer operating in the selected mode.
+	</p>
+	
+  <fieldset class="dtfieldset" id="control" style="margin-bottom:15px;">
+	<legend>Control</legend>
+	<button class="redbutton" id="start">Start</button>
+	<button class="greenbutton" id="stop">Stop</button>
+	<button id="read" style="display:none;width:140px;">Read</button>
+	<span id="result"></span>
+  </fieldset>
+	
+  <fieldset class="dtfieldset">
+	<legend>Configuration</legend>
+	<form method="POST" action="ctrtmr_post.io">
+	<input type="submit" style="width:200px;" value="Save configuration">
+	<p>
+		Mode
+		<select name="mode" id="ctr_mode" style="width:140px">
+			<option value="idle">Idle</option>
+			<option value="divider">Clock divider</option>
+			<option value="counter">Counter</option>
+			<option value="oneshot">One-shot</option>
+		</select>
+	</p>
+	<table id="ctr_cfg">
+		<tr>
+			<td>Gate</td>
+			<td>
+				<select name="gate" id="gate" style="width:150px">
+					<option value="none">None</option>
+					<option value="exthi">External hi</option>
+					<option value="extlo">External lo</option>
+				</select>
+			</td>
+			<td>
+				Gate input&nbsp;
+				<select name="gate_din" id="gate_din" style="width:140px">
+					<option value="0">DIN 0</option>
+					<option value="1">DIN 1</option>
+					<option value="2">DIN 2</option>
+					<option value="3">DIN 3</option>
+					<option value="4">DIN 4</option>
+					<option value="5">DIN 5</option>
+					<option value="6">DIN 6</option>
+					<option value="7">DIN 7</option>
+				</select>
+			</td>
+		</tr>
+		<tr>
+			<td>Clock</td>
+			<td>
+				<select name="clock" id="clock" style="width:150px">
+					<option value="int">Internal 48MHz</option>
+					<option value="ext">External</option>
+				</select>
+			</td>
+			<td>
+				Clock input&nbsp;
+				<select name="clock_din" id="clock_din" style="width:140px">
+					<option value="0">DIN 0</option>
+					<option value="1">DIN 1</option>
+					<option value="2">DIN 2</option>
+					<option value="3">DIN 3</option>
+					<option value="4">DIN 4</option>
+					<option value="5">DIN 5</option>
+					<option value="6">DIN 6</option>
+					<option value="7">DIN 7</option>
+				</select>
+			</td>
+		</tr>
+	</table>
+	<fieldset class="dtfieldset" id="cfg_divider" style="display:none;">
+		<legend>Clock divider</legend>
+		<span class="span100">Divisor</span>
+		<input type="text" size="10" name="cfg_divider_divisor" 
+			   id="cfg_divider_divisor">
+		<span class="span100">Duty cycle</span>
+		<input type="text" size="3" maxlength="2" name="cfg_divider_pulse" 
+			   id="cfg_divider_pulse">&nbsp%
+		<br>
+		<span class="span100">Output</span>
+		<select name="cfg_divider_dout" id="cfg_divider_dout" style="width:140px">
+			<option value="0">DOUT 0</option>
+			<option value="1">DOUT 1</option>
+			<option value="2">DOUT 2</option>
+			<option value="3">DOUT 3</option>
+			<option value="4">DOUT 4</option>
+			<option value="5">DOUT 5</option>
+			<option value="6">DOUT 6</option>
+			<option value="7">DOUT 7</option>
+		</select>
+		<select name="cfg_divider_polarity" id="cfg_divider_polarity" style="width:140px">
+			<option value="0">active low</option>
+			<option value="1">active high</option>
+		</select>
+	</fieldset>
+	<fieldset class="dtfieldset" id="cfg_1shot" style="display:none;">
+		<legend>One shot</legend>
+		<span class="span100">Divisor</span>
+		<input type="text" size="10" name="cfg_1shot_divisor" 
+			   id="cfg_1shot_divisor">
+		<span class="span100">Duty cycle</span>
+		<input type="text" size="3" maxlength="2" name="cfg_1shot_pulse" 
+			   id="cfg_1shot_pulse">&nbsp%<br>
+		<span class="span100">Output</span>
+		<select name="cfg_1shot_dout" id="cfg_1shot_dout" style="width:140px">
+			<option value="0">DOUT 0</option>
+			<option value="1">DOUT 1</option>
+			<option value="2">DOUT 2</option>
+			<option value="3">DOUT 3</option>
+			<option value="4">DOUT 4</option>
+			<option value="5">DOUT 5</option>
+			<option value="6">DOUT 6</option>
+			<option value="7">DOUT 7</option>
+		</select>
+		<select name="cfg_1shot_polarity" id="cfg_1shot_polarity" style="width:140px">
+			<option value="0">active low</option>
+			<option value="1">active high</option>
+		</select>
+	</fieldset>
+	</form>
+	</fieldset>
+</div>
+</body>
+</html>

@@ -1,0 +1,269 @@
+Texas Instruments     Pin Mux Utility for ARM MPU Processors v2.5.2.0		02/04/13
+
+R E L E A S E  N O T E S 
+
+1. See Help > Readme menu item for an updated description of program features.
+
+2. See revision history at bottom of this file.
+
+3. See User's Guide on this Wiki page:
+
+   http://processors.wiki.ti.com/index.php/Pin_Mux_Utility_for_ARM_MPU_Processors_v2
+
+4. Supports the following devices:
+   AM335x Rev 1.x, AM335x Rev 2.x
+   AM3505, AM3517
+   AM3703, AM3715
+   AM3871, AM3872, AM3874 
+   AM3892, AM3894, 
+   C6A8167, C6A8168
+   DM3725, DM3730
+   DM8165, DM8166, DM8167, DM8168, 
+   OMAP3503, OMAP3515, OMAP3525, OMAP3530
+
+5. New pin muxing features of the AM335x Silicon Revision 2.0 and later:
+
+       a) Enhancements to AM335x Rev 2.x provide a few new pin multiplexing options that were not 
+          available on AM335x Rev 1.x.
+
+       b) Mode1 and Mode2 signal assignments for the GPMC_CSn3 terminal are only available with 
+          AM335x Rev 2.x or newer devices.
+
+       c) Mode2 signal assignment for the LCD_HSYNC and LCD_VSYNC terminals are only available 
+          with AM335x Rev 2.x or newer devices.
+
+       d) Mode2 signal assignment for the GPMC_A9 terminal on AM335x Rev 2.x or newer devices 
+          has two possible signal functions which are selected with new level of pin multiplexing 
+          that is controlled with bit zero of the SMA2 register.
+
+   For more details refer to Section 1.2 of the AM335x Technical Reference Manual.
+
+6. You can import design state files of device type AM335X or AM335x Rev 1.x or AM335x Rev 2.x.
+   Files with device type AM335x were created with a previous version of this tool.  
+
+   If you import a file with device type AM335x, for a AM335x Rev 1.x or AM335x Rev 2.x design 
+   you will see an error message saying "Errors occurred loading design file."  A log file
+   will be generated.  If you look at that log file it will complain about signals in the design state 
+   file that are not in the current device model.  Ignore this error message.  This happens because 
+   starting with Pin Mux v2.5.1.0 the following balls are removed because the pad config registers 
+   are not actually implemented in the AM335x design (Rev 1.x or 2.x)
+	PORZ, OSC0_IN, OSC0_OUT, OSC1_IN, OSC1_OUT, 
+	USB0_DM, USB0_DP, USB0_CE, USB0_ID, USB0_VBUS,
+	USB1_DM, USB1_DP, USB1_CE, USB1_ID, USB1_VBUS,
+	DDR_RESETN, DDR_CSN0, DDR_CKE, DDR_CK, DDR_NCK, DDR_CASN, DDR_RASN, DDR_WEN, DDR_BA0..DDR_BA2,
+	DDR_A0..DDR_A15, DDR_ODT, DDR_D0..DDR_D15, DDR_DQM0..DDR_DQM1, DDR_DQS0, DDR_DQSN0, DDR_DQS1, 
+        DDR_DQSN1,DDR_VREF, DDR_VTP,AIN0..AIN7,VREFP, VREFN
+
+    You would then see these messages in the "PinMuxDesignState_<device type>_Load_Errors.txt" file:
+
+    Error: Ball with location string "2 ZCE E15 - ZCZ B15 - " with Mode 0 Name "PORZ" in design file was not found in the current device model.
+    Error: Ball with location string "2 ZCE W11 - ZCZ V10 - " with Mode 0 Name "OSC0_IN" in design file was not found in the current device model.
+    .
+    .
+    .
+    Error: Ball with location string "2 ZCE A9 - ZCZ B9 - " with Mode 0 Name "VREFP" in design file was not found in the current device model.
+    Error: Ball with location string "2 ZCE B9 - ZCZ A9 - " with Mode 0 Name "VREFN" in design file was not found in the current device model.
+
+
+7. If you import a file with device type AM335x, or AM335x Rev 1.x for a AM335x Rev 2.x design 
+   you will see an error message saying "Errors occurred loading design file."  A log file
+   will be generated.  If you look at that file it will complain about pin mux map locations that were "Reserved" in the AM335x Rev 1.x
+   but they now contain new pin muxing options.  These cells will be set to "Not Selected" during the import.
+
+   You would then see these messages in the "PinMuxDesignState_<device type>_Load_Errors.txt" file:
+
+   INFO: At row 35 in GUI, Importing Mode 0 Name "GPMC_CSN3" for Mux Mode 1. "Reserved" in design file was changed to "Not Selected" to match current device model.
+   INFO: At row 35 in GUI, Importing Mode 0 Name "GPMC_CSN3" for Mux Mode 2. "Reserved" in design file was changed to "Not Selected" to match current device model.
+   INFO: At row 57 in GUI, Importing Mode 0 Name "LCD_VSYNC" for Mux Mode 2. "Reserved" in design file was changed to "Not Selected" to match current device model.
+   INFO: At row 58 in GUI, Importing Mode 0 Name "LCD_HSYNC" for Mux Mode 2. "Reserved" in design file was changed to "Not Selected" to match current device model.
+
+
+8. The generated board-dependent C header file (pinmux.h) will now contain status messages about the overall status of the design
+   and any specific kinds of error that occur in your design.  
+
+   If your design has no errors you will seee this in the generated pinmux.h file:
+
+    /* Design Status: NO ERRORS */
+
+
+   This illustrates some of the error messages that can occur in the generated pinmux.h file:
+   (This was a test case where I inserted several different type of errors in the same design.)
+
+    /* Design Status: INVALID DESIGN */
+    /* Design Error: PIN MUXING CONFLICT(S) - More than one signal selected at the same device ball location. */
+    /* Design Error: PKG CONFLICT(S) - A signal is selected where there is no ball for this package type. Look for RED in "Bot/Top Ball" column. */
+    /* Design Error: MULTI-MUXED SIGNAL VIOLATION(S) - The same internal signal is routed to more than one ball. */
+    /* Design Error: I/O SET VIOLATION(S) - A peripheral interface has a combination of selected signals that are not supported. */
+    /* Please reload your design state file (*.DAT) using File -> Open -> Design and check status colors in peripheral interface grid */
+
+    If the generated pinmux.h file: has this status:
+
+    /* Design Status: POSSIBLY INVALID DESIGN */
+
+    There are either MULTI-MUXED SIGNAL VIOLATION(S) or PKG CONFLICT(S).
+    MULTI-MUXED SIGNAL VIOLATION(S) could be OK if you intentionally output an output-only signal to multiple ball locations.
+
+    PKG CONFLICT(S) errors could be erroneous.  If the generated pinmux.h has this type of error, do a File -> Load -> Design 
+    and scan the Pin Mux Grid in the main windows for cases where entries in the "Bot/Top Ball" column are colored RED.  For 
+    the ZCE package, in the USB1 interface, signal USB1_DRVVBUS is selected by default even though there is no connection to a 
+    package ball location.  You can ignore the error in this case.
+
+
+    
+   ****************************************************************************************
+   *** The remainder of the release notes apply to all versions of the Pin Mux Utility ****
+   ****************************************************************************************
+
+
+9. Pin Multiplexing: Valid IO Sets and Restrictions (AM335x device only)
+
+   The AM335x device contains many peripheral interfaces. In order to reduce package size and lower overall system cost while 
+   maintaining maximum functionality, many of the AM335x terminals can multiplex up to eight signal functions. Although there 
+   are many combinations of pin multiplexing that are possible, only a certain number of sets, called IO Sets, are valid due to 
+   timing limitations. These valid IO Sets were carefully chosen to provide many possible application scenarios for the user.
+ 
+   Pin Mux Utility helps a system designer select the appropriate pin-multiplexing configuration for their AM335x-based 
+   product design. This Pin Mux Utility provides a way to select valid IO Sets of specific peripheral interfaces to ensure 
+   the pin multiplexing configuration selected for a design only uses valid IO Sets supported by the AM335x device.
+
+   A few IO Sets have additional restrictions not defined in the Pin Mux Utility.  These additional restrictions are described below.
+
+   MCASP0 Interface
+        Operation of MCASP0 is not supported for OPP50.
+
+   MCASP1 Interface
+        Operation of MCASP1 is not supported for OPP50.
+
+   MMC0, MMC1, MMC2 Interfaces 
+        Only Standard (STD) and High Speed (HS) modes are supported. New SDR12, SDR25, SDR50 modes as defined in SD3.0 spec 
+        are not supported.
+
+   GEMAC_CPSW Interface
+        Operation of GEMAC_CPSW is not supported for OPP50.
+
+10. Interface Status for Peripheral Interfaces with IO Sets (AM335x only). 
+   IO Set Match = Signal selections match a pre-defined IO Set exactly (acceptable status)
+
+   IO Set Subset = Signal selections are a subset of a pre-defined IO Set. (acceptable status)
+
+   IO Set Violation = Signal selections are not contained within any pre-defined valid IO Set.
+                      Operation is not guaranteed. (NOT an acceptable status)
+
+11. Includes IO power domain voltage display and checking for peripheral interfaces that are not all using the same
+   IO cell supply voltage. (AM335x only) Not checked for MISC or GLUE interfaces.
+
+12. Includes Multi-Muxed Violation status for peripheral interfaces (for all supported devices).  This applies to cases where the same 
+   internal signal is muxed to multiple ball locations.  A violation is flagged if the signal is selected at more than one ball location.
+   This may be intentional and acceptable if an output-only signal needs to come out at multiple ball locations.
+
+13. Pad Configuration Parameters.
+   Input Enable parameter (IDIS or IEN).  This parameter is defaulted based on the current mux selection 
+   for the pad which determines the current I/O direction (I, O or I/O).  This parameter should not need 
+   to be editted in most cases.  For all signals that have I/O capability, the input enable bit will 
+   default to 1 (IEN).
+
+   However, some signals with I/O capability need to be used as output only depending on 
+   how the hardware module itself is configured.  If the ball needs to be configured as output,
+   the Input Enable pad configuration bit is recommended to be changed to IDIS.
+
+   Also, most GPIO signals have I/O capability.  If used as output only, the Input Enable bit is
+   recommended to be set to IDIS.   
+
+
+14. Other Pad Configuration Parameters.
+
+   Active-Mode Internal Pull defaults to a setting specified in the device model for each ball.
+
+   Standby-Mode Internal Pull defaults to PI (pull-inhibited) for all signals.  
+
+   Active-Mode Internal Pull and Standby-Mode Internal Pull settings may need to be editted depending on
+   pull-up or pull-down resistors that are present in the schematic design.
+
+   Standby Configuration defaults to SIG (output latched signal state) for all signals.
+
+   Wake Up Input Enable defaults to disabled for all signals.
+
+   These parameters need to be editted on a ball-by-ball basis.  Groups of balls can be editted 
+   to the same setting together if multiple cells in Pad Config column are selected.
+
+
+R E V I S I O N   H I S T O R Y
+---------------------------------------------------------------------------------------------------------------
+Version: v2.5.2.0                 Date: 02-04-2013       Predecessor:  v2.5.1.0
+---------------------------------------------------------------------------------------------------------------
+
+1. Added release note #5 (above)
+
+2. Removed GPLv2 license information from generated sample C header files.
+
+---------------------------------------------------------------------------------------------------------------
+Version: v2.5.1.0                 Date: 12-18-2012       Predecessor:  v2.4.1.0
+---------------------------------------------------------------------------------------------------------------
+
+1. AM335x device now has separate selections for silicon Rev 1.x and Rev 2.x.  Separate
+   device data comma separated spreadsheet (.CSV) files are used.  
+   AM335x Rev 1.x changes to spreadsheet v0.91 
+	The following balls are removed in v0.91 because the pad config registers are not implemented.
+	PORZ, OSC0_IN, OSC0_OUT, OSC1_IN, OSC1_OUT, 
+	USB0_DM, USB0_DP, USB0_CE, USB0_ID, USB0_VBUS,
+	USB1_DM, USB1_DP, USB1_CE, USB1_ID, USB1_VBUS,
+	DDR_RESETN, DDR_CSN0, DDR_CKE, DDR_CK, DDR_NCK, DDR_CASN, DDR_RASN, DDR_WEN, DDR_BA0..DDR_BA2,
+	DDR_A0..DDR_A15, DDR_ODT, DDR_D0..DDR_D15, DDR_DQM0..DDR_DQM1, DDR_DQS0, DDR_DQSN0, DDR_DQS1, DDR_DQSN1,
+	DDR_VREF, DDR_VTP,
+	AIN0..AIN7
+	VREFP, VREFN
+	 
+   AM335x Rev 2.x gets spreadsheet v2.0.0.0
+
+2. For AM335x change configuration xml file to not convert signal names in GUI to upper case or lower case.
+   Allow mixed case to show as in the data manual.
+
+3. Changed criteria for dropping a device pad from "blank pad config register name" to "blank register offset".
+   This is because am335x does not have the register name column and needs to remove device pads where the
+   pad config registers are not implemented.
+
+4. Set data grid view property AutoSizeRowsMode = AllCells.  This was because with lower case signal names
+   the part of the letters that extend below the bottom line get cut off.   Fixed window resizing for the
+   Interface View case.  Use Rows[0].height instead of RowTemplate.height.
+
+5. Added support for signals having multiple interface names.  This happens if there is an additional mux control
+   in the IP block.  For AM335x, there is a signal "mmc2_dat7_mux0 / rmii2_crs_dv_mux2" with an interface name of
+   "MMC2 / GEMAC_CPSW".  This signal will now be included in both the MMC2 and GEMAC_CPSW interface views.
+   This is required to make the IO Sets work correctly.
+
+6. Added code to insert status msgs like this in the generated board-dependent C header file (pinmux.h)
+    /* Design Status: INVALID DESIGN */
+    /* Design Error: PIN MUXING CONFLICT(S) - More than one signal selected at the same device ball location. */
+    /* Design Error: PKG CONFLICT(S) - A signal is selected where there is no ball for this package type. Look for RED in "Bot/Top Ball" column. */
+    /* Design Error: MULTI-MUXED SIGNAL VIOLATION(S) - The same internal signal is routed to more than one ball. */
+    /* Design Error: I/O SET VIOLATION(S) - A peripheral interface has a combination of selected signals that are not supported. */
+    /* Please reload your design state file (*.DAT) using File -> Open -> Design and check status colors in peripheral interface grid */
+
+
+---------------------------------------------------------------------------------------------------------------
+Version: v2.4.1.0                 Date: 04-23-2012       Predecessor:  v2.3.1.0
+---------------------------------------------------------------------------------------------------------------
+
+1. Spreadsheet update for AM335x from v0.88 to v0.89.  IO Sets table changes only.
+
+0.89	4/5/2012	Paul Eaves	"Updated the Notes column in the SA Power Supply Pins sheet.
+                                         Removed IO Sets from the PRU GPIO signals in the IO Sets sheet.
+                                         Removed IO Sets from the pr1_mii0_rxlink and pr1_mii1_rxlink signals 
+                                         in the IO Sets sheet.
+                                         Removed the voltage restrictions from the McASP0 and McASP1 signals 
+                                         in the IO Sets sheet."
+
+2. AM389x-C6A816x-DM816x device now has separate selections for silicon Rev 1.x and Rev 2.x.  Separate
+   device data comma separated spreadsheet (.CSV) files are used.
+
+---------------------------------------------------------------------------------------------------------------
+Version: v2.3.1.0                 Date: 03-13-2012       Predecessor:  v2.3.0.0
+---------------------------------------------------------------------------------------------------------------
+
+1. Spreadsheet update for AM335x from v0.87 to v0.88.
+
+---------------------------------------------------------------------------------------------------------------
+Version: v2.3.0.0                 Date: 02-24-2012       Predecessor:  v2.2.1.0
+---------------------------------------------------------------------------------------------------------------
+
+1. Spreadsheet update for AM335x from v0.83 to v0.87.

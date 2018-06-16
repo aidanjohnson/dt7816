@@ -1,0 +1,1 @@
+./dtb/dt7837.dtb: ./dtb/.dt78xx.dtb.dts.tmp /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/arch/arm/boot/dts/am33xx-clocks.dtsi /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/arch/arm/boot/dts/tps65217.dtsi

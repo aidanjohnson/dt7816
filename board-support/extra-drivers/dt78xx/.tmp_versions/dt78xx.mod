@@ -1,0 +1,2 @@
+/opt/ti-sdk-am335x-evm-07.00.00.00/board-support/extra-drivers/dt78xx/dt78xx.ko
+/opt/ti-sdk-am335x-evm-07.00.00.00/board-support/extra-drivers/dt78xx/dt78xx_main.o /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/extra-drivers/dt78xx/dt78xx_sysfs.o /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/extra-drivers/dt78xx/dt78xx_fops.o /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/extra-drivers/dt78xx/dt78xx_misc.o /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/extra-drivers/dt78xx/dt78xx_pot.o

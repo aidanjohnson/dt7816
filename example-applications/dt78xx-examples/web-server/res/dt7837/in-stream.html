@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="stylesheet.css" />
+<link rel="stylesheet" type="text/css" href="dialog.css" />
+<link rel="stylesheet" type="text/css" href="hmenu.css" />
+<style type="text/css"> 
+.hdiv 
+{
+    border: 2px solid #d1d1d1;
+	border-radius: 10px;
+    padding: 5px 5px; 
+    background-color: #dddddd;
+    width:95%;
+    margin:5px 5px 5px 5px;	
+}
+</style>
+<script type="text/javascript" 
+		src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js">
+</script>
+<script type="text/javascript" src="dialog.js"></script>
+<script type="text/javascript" src="in-stream.js"></script>
+<script type="text/javascript">
+$(window).on('beforeunload', function()
+{
+	console.log('beforeunload');
+});	
+$(document).ready(function () 
+{
+	ws_open("status.io"); //open web socket
+	//update UI trigger source selection changes
+	$("#trig-src").change(function () 
+	{
+		//disable all
+		$("#trig-cfg-din *").attr("disabled", true);
+		$("#trig-cfg-din").css("border", "2px solid #d1d1d1");
+		$("#trig-cfg-din").css("background-color", "#dddddd");
+		
+		$("#trig-cfg-ain *").attr("disabled", true);
+		$("#trig-cfg-ain").css("border", "2px solid #d1d1d1");
+		$("#trig-cfg-ain").css("background-color", "#dddddd");
+		//Enable elements relevant to the trigger source and highlight
+		if ($("#trig-src").val()==="1")
+		{
+			$("#trig-cfg-din *").attr("disabled", false);
+			$("#trig-cfg-din").css("border", "2px solid #a1a1a1");
+			$("#trig-cfg-din").css("background-color", "#eeeeee");
+		}
+		else if ($("#trig-src").val()==="2")
+		{
+			$("#trig-cfg-ain *").attr("disabled", false);
+			$("#trig-cfg-ain").css("border", "2px solid #a1a1a1");
+			$("#trig-cfg-ain").css("background-color", "#eeeeee");
+		}
+	});
+	$('#trig-cfg').on('show', function()
+	{
+		$("#trig-src").trigger("change");
+	});	
+	$( "#ain-cfg" ).submit(function( event ) 
+	{
+		//if form is invalid return false 
+		dismiss();
+	});
+	$( "#trig-cfg" ).submit(function( event ) 
+	{
+		//if form is invalid return false 
+		dismiss();
+	});
+	$( "#clk-cfg" ).submit(function( event ) 
+	{
+		//if form is invalid return false 
+		dismiss();
+	});
+	$( "#buff-cfg" ).submit(function( event ) 
+	{
+		//if form is invalid return false 
+		dismiss();
+	});
+	$( "#din-cfg" ).submit(function( event ) 
+	{
+		dismiss();
+	});
+	//Handler for click on acquisition Stop button
+	$("#acq_stop").click(function()
+	{
+		//A GET to this url stops acquisition
+		$.get("acq_control.io", function(data, status)
+		{
+			console.log("data " + data + " status " + status);
+		});
+	});
+	//Handler for click on acquisition Start button
+	$("#acq_start").click(function()
+	{
+		$('#csv-download').hide();
+		$('#buff-done').text("Acquiring...");
+		//A POST to this url starts acquisition
+		$.post("acq_control.io", function(data, status)
+		{
+			//console.log("data " + data + " status " + status);
+			if (status !=='nocontent')
+				alert(data);
+		});
+	});
+	$( "#tach-cfg" ).submit(function( event ) 
+	{
+		dismiss();
+	});
+	$("#tach_enable").change(function() 
+	{
+		var disable = !$(this).prop('checked');
+		$("#tach_grp *").attr("disabled", disable);
+		if (disable)
+		{
+			$("#tach_grp").css("border", "2px solid #d1d1d1");
+			$("#tach_grp").css("background-color", "#dddddd");
+		}
+		else
+		{
+			$("#tach_grp").css("border", "2px solid #a1a1a1");
+			$("#tach_grp").css("background-color", "#eeeeee");
+		}
+    });
+	$('#tach-cfg').on('show', function()
+	{
+		$("#tach_enable").trigger("change");
+	});	
+	$( "#mctr-cfg" ).submit(function( event ) 
+	{
+		dismiss();
+	});
+	$("#mctr_enable").change(function() 
+	{
+		var disable = !$(this).prop('checked');
+		$("#mctr_grp *").attr("disabled", disable);
+		if (disable)
+		{
+			$("#mctr_grp").css("border", "2px solid #d1d1d1");
+			$("#mctr_grp").css("background-color", "#dddddd");
+		}
+		else
+		{
+			$("#mctr_grp").css("border", "2px solid #a1a1a1");
+			$("#mctr_grp").css("background-color", "#eeeeee");
+		}
+    });
+	$('#mctr-cfg').on('show', function()
+	{
+		$("#mctr_enable").trigger("change");
+	});	
+});
+
+
+</script>
+</head>
+<body id="pagebody">
+	<div id="contentarea">
+	<h1>Input Stream</h1>
+	<p>
+		The input stream is used to configure and acquire sampled data from a
+		combination of input subsystem; analog, digital, measure counter and 
+		tachometer.	Each input subsystem can be individually configured and 
+		enabled for	sampling.
+	</p>
+	<p>
+		This page also configures the acquisition start trigger, sampling rate,
+		and buffers. These are common to all input subsystems
+	</p>
+	<!-- Horizontal menu for configuration -->
+	<fieldset class="dtfieldset" style="padding:0px;">
+	<legend style="margin-bottom:0px;">Configuration</legend>
+	<div class="hmenu" style="background-color:white;">
+	<ul style="border-style:none;">
+		<li><a href="javascript:popup('#ain-cfg')">Analog</a></li>	
+		<li><a href="javascript:popup('#din-cfg')">Digital</a></li>	
+		<li><a href="javascript:popup('#tach-cfg')">Tachometer</a></li>	
+		<li><a href="javascript:popup('#mctr-cfg')">Measure<br />Counter</a></li>	
+		<li><a href="javascript:popup('#trig-cfg')">Trigger</a></li>	
+		<li><a href="javascript:popup('#clk-cfg')">Clock</a></li>	
+		<li><a href="javascript:popup('#buff-cfg')">Buffers</a></li>	
+	</ul>
+	</div>
+	</fieldset>
+	
+	<fieldset class="dtfieldset" style="margin-top:2px;">
+		<legend style="margin-bottom:0px;">Control &amp; Status</legend>
+		<button class="greenbutton" id="acq_start">Start</button>
+		<button class="redbutton" id="acq_stop">Stop</button>
+		<span id="buff-done"></span>
+		<a href="download.io" id="csv-download" 
+		   download="data.csv" style="display:none;"> Download data</a>
+	</fieldset>
+	
+	</div>
+	
+<div id="dialog-overlay"></div>
+<div id="dialog-box">
+	<!--  Dialog box for analog input configuration -->
+	<form class="dialog-content" method="POST" id="ain-cfg" action="ain-cfg.io">
+		<div class="title">Analog Input Configuration</div>
+			<table>
+				<tr>
+					<th>Channel</th>
+					<th>Enabled</th>
+					<th>Gain</th>
+					<th>Coupling</th>
+					<th>Current Source</th>
+				</tr>
+				<!--- AIN 0 --->
+				<tr>
+					<td>AIN0</td>
+					<td>
+						<input type="checkbox" name="0_enable" id="0_enable" 
+							   value="1">Yes
+					</td>
+					<td>
+						<select name="0_gain" id="0_gain">
+							<option value="0">1</option>
+							<option value="1">10</option>
+						</select>
+					</td>
+					<td>
+						<select name="0_coupling" id="0_coupling">
+							<option value="0">DC</option>
+							<option value="1">AC</option>
+						</select>
+					</td>
+					<td>
+						<input type="checkbox" name="0_current" id="0_current" 
+							   value="1">On
+					</td>
+				</tr>	
+				<tr>
+					<td>AIN1</td>
+					<td>
+						<input type="checkbox" name="1_enable" id="1_enable" 
+							   value="1">Yes
+					</td>
+					<td>
+						<select name="1_gain" id="1_gain">
+							<option value="0">1</option>
+							<option value="1">10</option>
+						</select>
+					</td>
+					<td>
+						<select name="1_coupling" id="1_coupling">
+							<option value="0">DC</option>
+							<option value="1">AC</option>
+						</select>
+					</td>
+					<td>
+						<input type="checkbox" name="1_current"  id="1_current" 
+							   value="1">On
+					</td>
+				</tr>	
+				<tr>
+					<td>AIN2</td>
+					<td>
+						<input type="checkbox" name="2_enable" id="2_enable" 
+							   value="1">Yes
+					</td>
+					<td>
+						<select name="2_gain" id="2_gain">
+							<option value="0">1</option>
+							<option value="1">10</option>
+						</select>
+					</td>
+					<td>
+						<select name="2_coupling" id="2_coupling">
+							<option value="0">DC</option>
+							<option value="1">AC</option>
+						</select>
+					</td>
+					<td>
+						<input type="checkbox" name="2_current"  id="2_current" 
+							   value="1">On
+					</td>
+				</tr>	
+				<tr>
+					<td>AIN3</td>
+					<td>
+						<input type="checkbox" name="3_enable" id="3_enable" 
+							   value="1">Yes
+					</td>
+					<td>
+						<select name="3_gain" id="3_gain">
+							<option value="0">1</option>
+							<option value="1">10</option>
+						</select>
+					</td>
+					<td>
+						<select name="3_coupling" id="3_coupling">
+							<option value="0">DC</option>
+							<option value="1">AC</option>
+						</select>
+					</td>
+					<td>
+						<input type="checkbox" name="3_current"  id="3_current" 
+							   value="1">On
+					</td>
+				</tr>	
+			</table>
+		<div class="save-cancel">
+		<!-- Save and Cancel buttons at the bottom right -->
+		<a href="javascript:dismiss();" class="button">Cancel</a>
+		<input type="submit" value="Save" class="button" 
+			   style="background-color:green;">
+		</div>	
+	</form>
+	
+	<!--  Dialog box for Trigger configuration -->
+	<form class="dialog-content" method="POST" id="trig-cfg" action="trig-cfg.io">
+		<div class="title">Acquisition Start Trigger</div>
+		<div>
+		Trigger Source
+		<select name="trig-src" id="trig-src" style="width:150px">
+			<option value="0">Software</option>
+			<option value="1">Digital input</option>
+			<option value="2">Analog input</option>
+		</select>
+		</div>
+		<div class="hdiv" id="trig-cfg-din">
+			<select name="din" id="din" style="width:80px">
+				<option value="0">DIN 0</option>
+				<option value="1">DIN 1</option>
+				<option value="2">DIN 2</option>
+				<option value="3">DIN 3</option>
+				<option value="4">DIN 4</option>
+				<option value="5">DIN 5</option>
+				<option value="6">DIN 6</option>
+				<option value="7">DIN 7</option>
+			</select>
+			<select name="din-edge" id="din-edge" style="width:130px">
+				<option value="0">Falling edge</option>
+				<option value="1">Rising edge</option>
+			</select>
+		</div>
+		<div class="hdiv" id="trig-cfg-ain">
+			<select name="ain" id="ain" style="width:80px">
+				<option value="0">AIN 0</option>
+				<option value="1">AIN 1</option>
+				<option value="2">AIN 2</option>
+				<option value="3">AIN 3</option>
+			</select>
+			<select name="ain-edge" id="ain-edge" style="width:130px">
+				<option value="0">Falling edge</option>
+				<option value="1">Rising edge</option>
+			</select>
+			<div style="display:inline;">
+			Threshold
+			<input type="text" size="6" maxlength="6" name="ain-threshold" 
+			id="ain-threshold">&nbsp;V				
+			</div>
+		</div>
+		
+		<div class="save-cancel">
+		<!-- Save and Cancel buttons at the bottom right -->
+		<a href="javascript:dismiss();" class="button">Cancel</a>
+		<input type="submit" value="Save" class="button" 
+			   style="background-color:green;">
+		</div>
+	</form>
+		
+	<!--  Dialog box for clock configuration -->
+	<form class="dialog-content" method="POST" id="clk-cfg" action="clk-cfg.io">
+		<div class="title">Sampling Rate</div>
+		<div>
+			Minimum <b>195.3125</b>Hz, maximum <b>105468.75</b>Hz 
+		<br />
+		<input type="text" size="9" maxlength="10" name="clk_freq" 
+			id="clk_freq">&nbsp;Hz
+		</div>
+		
+		<div class="save-cancel">
+		<!-- Save and Cancel buttons at the bottom right -->
+		<a href="javascript:dismiss();" class="button">Cancel</a>
+		<input type="submit" value="Save" class="button" 
+			   style="background-color:green;">
+		</div>
+	</form>
+	
+	<!--  Dialog box for buffer configuration -->
+	<form class="dialog-content" method="POST" id="buff-cfg" action="buff-cfg.io">
+		<div class="title">Buffers</div>
+		<input type="text" size="3" maxlength="5" name="sample_chan" 
+			id="sample_chan">&nbsp; samples per channel.
+		<br />
+		<span id="chan"></span> channels are currently enabled.
+		<fieldset>
+		<legend>Queue</legend>
+		<input type="text" size="2" maxlength="4" name="num_buffs" 
+			id="num_buffs">&nbsp; buffers queued
+		<br />
+		<input type="checkbox" name="overrun_stop" id="overrun_stop" value="1">
+		Stop acquisition when queue is empty
+		<br />
+		<input type="checkbox" name="resubmit" id="resubmit" value="1">
+		Requeue buffers on completion
+		</fieldset>
+		<div class="save-cancel">
+		<!-- Save and Cancel buttons at the bottom right -->
+		<a href="javascript:dismiss();" class="button">Cancel</a>
+		<input type="submit" value="Save" class="button" 
+			   style="background-color:green;">
+		</div>
+	</form>
+	
+	<!--  Dialog box for digital input configuration -->
+	<form class="dialog-content" method="POST" id="din-cfg" action="din-cfg.io">
+		<div class="title">Digital Inputs</div>
+		<input type="checkbox" name="din_enable" id="din_enable" value="1">
+		Enabled
+		<div class="save-cancel">
+		<!-- Save and Cancel buttons at the bottom right -->
+		<a href="javascript:dismiss();" class="button">Cancel</a>
+		<input type="submit" value="Save" class="button" 
+			   style="background-color:green;">
+		</div>
+	</form>
+	
+	<!--  Dialog box for tachometer configuration -->
+	<form class="dialog-content" method="POST" id="tach-cfg" action="tach-cfg.io">
+		<div class="title">Tachometer Configuration</div>
+		<div>
+		<input type="checkbox" name="tach_enable" id="tach_enable" value="1">
+		Enabled
+		</div>
+		<div class="hdiv" id="tach_grp">
+		<div>Measure between
+		<select name="tach_edge" id="tach_edge">
+			<option value="0">Falling edges</option>
+			<option value="1">Rising edges</option>
+		</select>
+		</div>
+		<div>
+		<input type="checkbox" name="tach_stale" id="tach_stale" value="1">
+		Enable stale data flag
+		</div>
+		</div>
+		<div class="save-cancel">
+		<!-- Save and Cancel buttons at the bottom right -->
+		<a href="javascript:dismiss();" class="button">Cancel</a>
+		<input type="submit" value="Save" class="button" 
+			   style="background-color:green;">
+		</div>
+	</form>
+	
+	<!--  Dialog box for measure counter configuration -->
+	<form class="dialog-content" method="POST" id="mctr-cfg" action="mctr-cfg.io">
+		<div class="title">Measure Counter Configuration</div>
+		<div>
+		<input type="checkbox" name="mctr_enable" id="mctr_enable" value="1">
+		Enabled
+		</div>
+		<div class="hdiv" id="mctr_grp">
+		<div>Starting edge
+		<select name="mctr_start" id="mctr_start">
+			<option value="0">AD complete</option>
+			<optgroup label="Falling edges">
+			<option value="16">Tach &#8681;</option>
+			<option value="32">DIN0 &#8681;</option>
+			<option value="34">DIN1 &#8681;</option>
+			<option value="36">DIN2 &#8681;</option>
+			<option value="38">DIN3 &#8681;</option>
+			<option value="40">DIN4 &#8681;</option>
+			<option value="42">DIN5 &#8681;</option>
+			<option value="44">DIN6 &#8681;</option>
+			<option value="46">DIN7 &#8681;</option>
+			</optgroup>
+			<optgroup label="Rising edges">
+			<option value="17">Tach &#8679;</option>
+			<option value="33">DIN0 &#8679;</option>
+			<option value="35">DIN1 &#8679;</option>
+			<option value="37">DIN2 &#8679;</option>
+			<option value="39">DIN3 &#8679;</option>
+			<option value="41">DIN4 &#8679;</option>
+			<option value="43">DIN5 &#8679;</option>
+			<option value="45">DIN6 &#8679;</option>
+			<option value="47">DIN7 &#8679;</option>
+			</optgroup>
+		</select>
+		</div>
+		<div>Stoping edge
+		<select name="mctr_stop" id="mctr_stop">
+			<option value="0">AD complete</option>
+			<optgroup label="Falling edges">
+			<option value="16">Tach &#8681;</option>
+			<option value="32">DIN0 &#8681;</option>
+			<option value="34">DIN1 &#8681;</option>
+			<option value="36">DIN2 &#8681;</option>
+			<option value="38">DIN3 &#8681;</option>
+			<option value="40">DIN4 &#8681;</option>
+			<option value="42">DIN5 &#8681;</option>
+			<option value="44">DIN6 &#8681;</option>
+			<option value="46">DIN7 &#8681;</option>
+			</optgroup>
+			<optgroup label="Rising edges">
+			<option value="17">Tach &#8679;</option>
+			<option value="33">DIN0 &#8679;</option>
+			<option value="35">DIN1 &#8679;</option>
+			<option value="37">DIN2 &#8679;</option>
+			<option value="39">DIN3 &#8679;</option>
+			<option value="41">DIN4 &#8679;</option>
+			<option value="43">DIN5 &#8679;</option>
+			<option value="45">DIN6 &#8679;</option>
+			<option value="47">DIN7 &#8679;</option>
+			</optgroup>
+		</select>
+		</div>
+		<div>
+		<input type="checkbox" name="mctr_stale" id="mctr_stale" value="1">
+		Enable stale data flag
+		</div>
+		</div>
+		<div class="save-cancel">
+		<!-- Save and Cancel buttons at the bottom right -->
+		<a href="javascript:dismiss();" class="button">Cancel</a>
+		<input type="submit" value="Save" class="button" 
+			   style="background-color:green;">
+		</div>
+	</form>
+	
+</div>
+	
+</body>
+</html>
