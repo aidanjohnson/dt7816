@@ -4,10 +4,11 @@ See the [manufacturer guide](https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/
 
 ## Instructions
 
-1. Download the three following files. Save each in your OS `~/Downloads` directory.
+1. Download the four following files. Save each in your OS `~/Downloads` directory.
   * http://software-dl.ti.com/sitara_linux/esd/AM335xSDK/07_00_00_00/exports/ti-sdk-am335x-evm-07.00.00.00-Linux-x86-Install.bin
   * ftp://ftp.mccdaq.com/downloads/DTSoftware/DT78XX_ARM/DT78XX-setup-3.2.bz2.run
   * http://www.fftw.org/fftw-3.3.4.tar.gz
+  * ftp://xmlsoft.org/libxml2/libxml2-2.9.8.tar.gz
 
 2. Download the three directories in [`INSTALL`](/INSTALL). Save these (a shell script, a Python executable program, and a directory containing the NetBeans IDE project templates) in `~/Downloads`.
   * `build_dev.sh`
@@ -21,7 +22,7 @@ See the [manufacturer guide](https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/
    ```
    The files required for the System on Module (SoM), TI Sitara AM3352, will then be installed automatically. The example programs provided will be built for NetBeans IDE.
 
-4. Follow steps on your screen and terminal; watch for any errors (especially fatal).
+4. Follow steps on your screen and terminal; watch for any errors (especially fatal) and refer to the Troubleshooting section below for assistance.
 
 5. Download and install Oracle's NetBeans 8.2. (Recommended instead of TI's Code Composer Studio because the manufacturer's guide assumes NetBeans 8.1.) Create a project for the example applications by following these instructions:
   * https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/Creating_Projects_in_Netbeans.htm

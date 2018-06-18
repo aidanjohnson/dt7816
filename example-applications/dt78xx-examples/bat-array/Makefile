@@ -46,7 +46,7 @@ CC := $(CROSS_COMPILE)gcc
 #   ----------------------------------------------------------------------------
 #   General options, sources and libraries
 #   ----------------------------------------------------------------------------
-NAME := sig-analyzer
+NAME := bat-array
 SRCS := main.c mongoose.c dt78xx_aio.c dt78xx_misc.c
 HDRS := 
 OBJS :=
