@@ -37,3 +37,6 @@ cd libxml2-2.9.8
 sudo ./configure --prefix=/opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/ --without-python
 sudo make
 sudo make install
+cd /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/include
+sudo mv libxml2/libxml ./
+sudo rm -r libxml2
