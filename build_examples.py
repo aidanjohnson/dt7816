@@ -6,6 +6,12 @@ path_examples = "/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-
 fftw_path = "/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/fftw-3.3.4"
 dirs = ['aio-in', 'aio-out', 'aout-single', 'clk-gen', 'digio', 'dt7816-calibration', 'event-counter', 'fir-filter', 'function-gen', 'sig-analyzer', 'usb-loopback', 'web-server']
 os.chdir(path_examples)
+
+call(["mkdir", "bat-array"])
+call(["mv", "~/Downloads/main.c", "bat-array"])
+call(["mv", "~/Downloads/Makefile", "bat-array"])
+call(["mv", "~/Downloads/README.txt", "bat-array"])
+
 for filename in os.listdir(path_examples):
 	if filename in dirs:
 		call(["cp", "-r", "/opt/ti-sdk-am335x-evm-07.00.00.00/nbproject", filename])
