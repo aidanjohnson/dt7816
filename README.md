@@ -10,7 +10,12 @@ See the [manufacturer guide](https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/
   * http://www.fftw.org/fftw-3.3.4.tar.gz
   * ftp://xmlsoft.org/libxml2/libxml2-2.9.8.tar.gz
 
-2. Download the compressed directories in [`INSTALL`](/INSTALL). Save these (a shell script, a Python executable program, the `bat-array` program files, and a directory containing the NetBeans IDE project templates) in `~/Downloads`.
+2. Download the compressed directories in [`INSTALL`](/INSTALL). Uncompress `INSTALL.tar.gz' with the command:
+   ```
+   tar -xzvf INSTALL.tar.gz
+   ```
+   
+   Save these (a shell script, a Python executable program, the `bat-array` program files, and a directory containing the NetBeans IDE project templates) in `~/Downloads`.
   * `build_dev.sh`
   * `build_examples.py`
   * `main.c`, `Makefile`, `README.md`
