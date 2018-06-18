@@ -10,7 +10,7 @@ os.chdir(path_examples)
 call(["mkdir", "bat-array"])
 call(["mv", "~/Downloads/main.c", "bat-array"])
 call(["mv", "~/Downloads/Makefile", "bat-array"])
-call(["mv", "~/Downloads/README.md", "bat-array"])
+call(["mv", "~/Downloads/README.txt", "bat-array"])
 
 for filename in os.listdir(path_examples):
 	if filename in dirs:
