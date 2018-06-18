@@ -21,6 +21,8 @@
 *.tar
 *.zip
 *.tar.gz
+!INSTALL/INSTALL.tar.gz
+*.tar.bz2
 *.ubi
 
 # Logs and databases #
