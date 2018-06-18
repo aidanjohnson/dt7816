@@ -43,6 +43,9 @@
 #include <math.h>
 #include "mongoose.h"
 
+#include "libxml/xmlwriter.h"
+#include "libxml/encoding.h"
+
 #include "dt78xx_ioctl.h"
 #include "dt78xx_aio.h"
 #include "dt78xx_misc.h"
