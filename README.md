@@ -59,3 +59,7 @@ See the [manufacturer guide](https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/
    You may have to reparse the project after the linkages, and there could be more broken include header links besides these above.
 
 4. In these instructions the superuser `sudo` command program for elevating security privelages has been included for redundancy. Moreover, these instructions will *only* work properly on Linux. These files were developed and tested on a machine running Ubuntu 18.04 LTS.
+
+5. Consult the following docs for help with `libxml`:
+   * http://xmlsoft.org/html/libxml-lib.html
+   * http://xmlsoft.org/examples/index.html
