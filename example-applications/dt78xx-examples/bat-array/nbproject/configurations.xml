@@ -31,11 +31,12 @@
           <buildCommandWorkingDir>.</buildCommandWorkingDir>
           <buildCommand>${MAKE} BOARD_TYPE=DT7816 -f Makefile</buildCommand>
           <cleanCommand>${MAKE} BOARD_TYPE=DT7816 -f Makefile clean</cleanCommand>
-          <executablePath></executablePath>
+          <executablePath>release/bat-array</executablePath>
           <cTool>
             <incDir>
               <pElem>../../../board-support/linux-3.12.10-ti2013.12.01/include/linux</pElem>
               <pElem>../../../board-support/linux-3.12.10-ti2013.12.01/include</pElem>
+              <pElem>../../../board-support/extra-drivers/dt78xx</pElem>
               <pElem>../common</pElem>
             </incDir>
             <preprocessorList>

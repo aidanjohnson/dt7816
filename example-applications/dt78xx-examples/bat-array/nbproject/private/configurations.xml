@@ -10,6 +10,7 @@
       <in>main.c</in>
       <in>mongoose.c</in>
       <in>mongoose.h</in>
+      <in>sig-analyze.c</in>
     </df>
   </logicalFolder>
   <projectmakefile>Makefile</projectmakefile>
