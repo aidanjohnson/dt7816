@@ -43,10 +43,10 @@
 #define DEFAULT_NUM_BUFF            (3)
 #ifdef DT7816
     #define DEV_STREAM_IN "/dev/dt7816-stream-in"
-    //DT7837 AIN device file
+    //AIN device file
     #define DEV_AIN "/dev/dt7816-ain"
     #define DEV_MEASURE "/dev/dt7816-measure"
-    //DT7837 Tachometer device file
+    //Tachometer device file
     #define DEV_TACH "/dev/dt7816-tach"
 #else
     #error Undefined board type
@@ -151,12 +151,6 @@ int main (int argc, char** argv)
             case 't':
                 chan_mask |= chan_mask_tach;
                 break;
-            
-            case 'g':
-#ifdef DT7837
-                ain_cfg.gain = atoi(optarg);
-#endif                
-                break;
                 
             default :
                 printf(usage, argv[0]);
@@ -164,7 +158,7 @@ int main (int argc, char** argv)
         }
     }  
     
-    if (optind >= argc) //missing csv file name
+    if (optind >= argc) //missing WAV file name
     {
         printf(usage, argv[0]);
         return (EXIT_FAILURE);
