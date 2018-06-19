@@ -32,6 +32,15 @@ sudo ln -s /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013
 sudo ln -s /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/include/linux/acpi.h /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/include/asm
 sudo ln -s /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/include/linux/thread_info.h /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/include/asm
 
+cd /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/include/asm
+sudo ln -s ../../../u-boot-2013.10-ti2013.12.01/include/errno.h 
+sudo ln -s ../../../../linux-devkit/sysroots/cortexa8hf-vfp-neon-3.8-oe-linux-gnueabi/usr/include/fcntl.h 
+
+cd /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/include/asm/
+sudo sed -i 3c"#include <uapi/asm-generic/errno.h>" errno.h
+cd /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/include/uapi/asm-generic/errno.h
+sudo sed -i 4c"#include <uapi/asm-generic/errno-base.h>" errno.h
+
 sudo tar -xzvf ~/Downloads/libxml2-2.9.8.tar.gz
 cd libxml2-2.9.8
 sudo ./configure --prefix=/opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/ --without-python

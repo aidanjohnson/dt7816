@@ -305,7 +305,7 @@ int main (int argc, char** argv)
         goto _exit;
     }
     
-    fprintf(stdout,"Sampling at %f Hz gain %hu queued %d buffers each of %d samples\n", 
+    fprintf(stdout,"Sampling at %f Hz gain %d queued %d buffers each of %d samples\n", 
                     clk.clk_freq, ain_cfg.gain, numbuf, samples_per_chan);
     
     //Wait for user input to start or abort
@@ -385,7 +385,7 @@ int main (int argc, char** argv)
 #ifdef DT7816
             //AIN channels are 16-bits  and always come first
             volt = raw2volts(*(int16_t *)raw, ain_cfg.gain); 
-            fprintf(fd_data,"%6d, %.5f,%1d", 
+            fprintf(fd_data,"%6d, %.5f,%d", 
                     j+(i*samples_per_chan),volt,*(int16_t *)raw);
             raw += sizeof(int16_t);
 #endif         
