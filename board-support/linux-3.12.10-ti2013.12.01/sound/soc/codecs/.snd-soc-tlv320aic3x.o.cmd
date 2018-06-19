@@ -1,0 +1,1 @@
+cmd_sound/soc/codecs/snd-soc-tlv320aic3x.o := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o sound/soc/codecs/snd-soc-tlv320aic3x.o sound/soc/codecs/tlv320aic3x.o 

@@ -1,0 +1,7 @@
+kernel/drivers/nfc/pn544/pn544.ko
+kernel/drivers/nfc/pn544/pn544_i2c.ko
+kernel/drivers/nfc/microread/microread.ko
+kernel/drivers/nfc/microread/microread_i2c.ko
+kernel/drivers/nfc/pn533.ko
+kernel/drivers/nfc/nfcwilink.ko
+kernel/drivers/nfc/nfcsim.ko

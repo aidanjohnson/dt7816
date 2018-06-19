@@ -1,0 +1,3 @@
+kernel/drivers/media/platform/davinci/vpfe_capture.ko
+kernel/drivers/media/platform/davinci/vpss.ko
+kernel/drivers/media/platform/davinci/dm644x_ccdc.ko

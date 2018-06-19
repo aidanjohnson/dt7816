@@ -1,0 +1,1 @@
+cmd_drivers/mailbox/built-in.o :=  /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/mailbox/built-in.o drivers/mailbox/omap-mailbox.o drivers/mailbox/mailbox_omap2.o 

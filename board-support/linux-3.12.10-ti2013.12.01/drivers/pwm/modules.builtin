@@ -1,0 +1,5 @@
+kernel/drivers/pwm/pwm-pca9685.ko
+kernel/drivers/pwm/pwm-tiecap.ko
+kernel/drivers/pwm/pwm-tiehrpwm.ko
+kernel/drivers/pwm/pwm-twl.ko
+kernel/drivers/pwm/pwm-twl-led.ko

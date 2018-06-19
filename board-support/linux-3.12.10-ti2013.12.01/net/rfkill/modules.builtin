@@ -1,0 +1,3 @@
+kernel/net/rfkill/rfkill.ko
+kernel/net/rfkill/rfkill-regulator.ko
+kernel/net/rfkill/rfkill-gpio.ko

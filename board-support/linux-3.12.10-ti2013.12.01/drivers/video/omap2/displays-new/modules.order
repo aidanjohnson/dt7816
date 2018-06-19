@@ -1,0 +1,5 @@
+kernel/drivers/video/omap2/displays-new/encoder-tfp410.ko
+kernel/drivers/video/omap2/displays-new/encoder-tpd12s015.ko
+kernel/drivers/video/omap2/displays-new/connector-dvi.ko
+kernel/drivers/video/omap2/displays-new/connector-hdmi.ko
+kernel/drivers/video/omap2/displays-new/panel-dpi.ko

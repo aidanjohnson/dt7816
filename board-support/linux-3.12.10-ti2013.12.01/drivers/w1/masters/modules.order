@@ -1,0 +1,5 @@
+kernel/drivers/w1/masters/ds2490.ko
+kernel/drivers/w1/masters/ds2482.ko
+kernel/drivers/w1/masters/ds1wm.ko
+kernel/drivers/w1/masters/w1-gpio.ko
+kernel/drivers/w1/masters/omap_hdq.ko

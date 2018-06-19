@@ -1,0 +1,1 @@
+cmd_drivers/mmc/card/built-in.o :=  /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/mmc/card/built-in.o drivers/mmc/card/mmc_block.o drivers/mmc/card/sdio_uart.o 

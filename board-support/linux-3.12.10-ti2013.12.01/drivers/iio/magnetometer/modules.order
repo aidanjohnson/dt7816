@@ -1,0 +1,5 @@
+kernel/drivers/iio/magnetometer/ak8975.ko
+kernel/drivers/iio/magnetometer/hid-sensor-magn-3d.ko
+kernel/drivers/iio/magnetometer/st_magn.ko
+kernel/drivers/iio/magnetometer/st_magn_i2c.ko
+kernel/drivers/iio/magnetometer/st_magn_spi.ko

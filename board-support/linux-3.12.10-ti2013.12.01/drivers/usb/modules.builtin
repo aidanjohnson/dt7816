@@ -1,0 +1,17 @@
+kernel/drivers/usb/usb-common.ko
+kernel/drivers/usb/chipidea/ci_hdrc.ko
+kernel/drivers/usb/chipidea/ci_hdrc_msm.ko
+kernel/drivers/usb/chipidea/ci_hdrc_pci.ko
+kernel/drivers/usb/chipidea/ci_hdrc_imx.ko
+kernel/drivers/usb/chipidea/usbmisc_imx.ko
+kernel/drivers/usb/core/usbcore.ko
+kernel/drivers/usb/gadget/udc-core.ko
+kernel/drivers/usb/mon/usbmon.ko
+kernel/drivers/usb/musb/musb_hdrc.ko
+kernel/drivers/usb/musb/musb_dsps.ko
+kernel/drivers/usb/musb/musb_am335x.ko
+kernel/drivers/usb/phy/phy-generic.ko
+kernel/drivers/usb/phy/phy-am335x-control.ko
+kernel/drivers/usb/phy/phy-am335x.ko
+kernel/drivers/usb/phy/phy-gpio-vbus-usb.ko
+kernel/drivers/usb/storage/usb-storage.ko

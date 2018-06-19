@@ -1,0 +1,14 @@
+kernel/drivers/media/i2c/soc_camera/imx074.ko
+kernel/drivers/media/i2c/soc_camera/mt9m001.ko
+kernel/drivers/media/i2c/soc_camera/mt9m111.ko
+kernel/drivers/media/i2c/soc_camera/mt9t031.ko
+kernel/drivers/media/i2c/soc_camera/mt9t112.ko
+kernel/drivers/media/i2c/soc_camera/mt9v022.ko
+kernel/drivers/media/i2c/soc_camera/ov2640.ko
+kernel/drivers/media/i2c/soc_camera/ov5642.ko
+kernel/drivers/media/i2c/soc_camera/ov6650.ko
+kernel/drivers/media/i2c/soc_camera/ov772x.ko
+kernel/drivers/media/i2c/soc_camera/ov9640.ko
+kernel/drivers/media/i2c/soc_camera/ov9740.ko
+kernel/drivers/media/i2c/soc_camera/rj54n1cb0c.ko
+kernel/drivers/media/i2c/soc_camera/tw9910.ko

@@ -1,0 +1,1 @@
+cmd_drivers/mfd/da9063.o := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/mfd/da9063.o drivers/mfd/da9063-core.o drivers/mfd/da9063-irq.o drivers/mfd/da9063-i2c.o 

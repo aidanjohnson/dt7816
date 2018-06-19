@@ -1,0 +1,1 @@
+cmd_drivers/media/platform/omap/omap-vout.o := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/media/platform/omap/omap-vout.o drivers/media/platform/omap/omap_vout.o drivers/media/platform/omap/omap_voutlib.o drivers/media/platform/omap/omap_vout_vrfb.o 

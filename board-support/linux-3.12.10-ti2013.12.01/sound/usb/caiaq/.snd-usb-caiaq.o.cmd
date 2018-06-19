@@ -1,0 +1,1 @@
+cmd_sound/usb/caiaq/snd-usb-caiaq.o := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o sound/usb/caiaq/snd-usb-caiaq.o sound/usb/caiaq/device.o sound/usb/caiaq/audio.o sound/usb/caiaq/midi.o sound/usb/caiaq/control.o sound/usb/caiaq/input.o 

@@ -1,0 +1,1 @@
+cmd_drivers/media/v4l2-core/built-in.o :=  /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/media/v4l2-core/built-in.o drivers/media/v4l2-core/videodev.o drivers/media/v4l2-core/v4l2-common.o drivers/media/v4l2-core/v4l2-dv-timings.o 

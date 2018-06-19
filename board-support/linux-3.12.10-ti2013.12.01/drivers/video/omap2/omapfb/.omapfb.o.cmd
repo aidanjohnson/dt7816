@@ -1,0 +1,1 @@
+cmd_drivers/video/omap2/omapfb/omapfb.o := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/video/omap2/omapfb/omapfb.o drivers/video/omap2/omapfb/omapfb-main.o drivers/video/omap2/omapfb/omapfb-sysfs.o drivers/video/omap2/omapfb/omapfb-ioctl.o 

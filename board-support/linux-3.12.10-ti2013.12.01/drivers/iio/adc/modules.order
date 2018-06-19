@@ -1,0 +1,14 @@
+kernel/drivers/iio/adc/ad_sigma_delta.ko
+kernel/drivers/iio/adc/ad7266.ko
+kernel/drivers/iio/adc/ad7298.ko
+kernel/drivers/iio/adc/ad7923.ko
+kernel/drivers/iio/adc/ad7476.ko
+kernel/drivers/iio/adc/ad7791.ko
+kernel/drivers/iio/adc/ad7793.ko
+kernel/drivers/iio/adc/ad7887.ko
+kernel/drivers/iio/adc/max1363.ko
+kernel/drivers/iio/adc/mcp320x.ko
+kernel/drivers/iio/adc/nau7802.ko
+kernel/drivers/iio/adc/ti-adc081c.ko
+kernel/drivers/iio/adc/ti_am335x_adc.ko
+kernel/drivers/iio/adc/twl6030-gpadc.ko

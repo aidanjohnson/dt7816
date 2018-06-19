@@ -1,0 +1,1 @@
+cmd_drivers/media/usb/dvb-usb/dvb-usb-af9005-remote.o := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/media/usb/dvb-usb/dvb-usb-af9005-remote.o drivers/media/usb/dvb-usb/af9005-remote.o 

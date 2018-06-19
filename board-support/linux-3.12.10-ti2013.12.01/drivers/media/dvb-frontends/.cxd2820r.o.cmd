@@ -1,0 +1,1 @@
+cmd_drivers/media/dvb-frontends/cxd2820r.o := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/media/dvb-frontends/cxd2820r.o drivers/media/dvb-frontends/cxd2820r_core.o drivers/media/dvb-frontends/cxd2820r_c.o drivers/media/dvb-frontends/cxd2820r_t.o drivers/media/dvb-frontends/cxd2820r_t2.o 

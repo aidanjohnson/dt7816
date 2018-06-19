@@ -1,0 +1,1 @@
+cmd_drivers/power/opp/built-in.o :=  /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/power/opp/built-in.o drivers/power/opp/core.o drivers/power/opp/omap-opp-control.o 
