@@ -1,0 +1,1 @@
+cmd_drivers/i2c/busses/i2c-designware-platform.o := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/i2c/busses/i2c-designware-platform.o drivers/i2c/busses/i2c-designware-platdrv.o 

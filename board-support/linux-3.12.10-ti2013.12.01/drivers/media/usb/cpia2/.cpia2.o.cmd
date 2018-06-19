@@ -1,0 +1,1 @@
+cmd_drivers/media/usb/cpia2/cpia2.o := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/media/usb/cpia2/cpia2.o drivers/media/usb/cpia2/cpia2_v4l.o drivers/media/usb/cpia2/cpia2_usb.o drivers/media/usb/cpia2/cpia2_core.o 

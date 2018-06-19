@@ -1,0 +1,10 @@
+kernel/drivers/input/input-core.ko
+kernel/drivers/input/ff-memless.ko
+kernel/drivers/input/input-polldev.ko
+kernel/drivers/input/matrix-keymap.ko
+kernel/drivers/input/mousedev.ko
+kernel/drivers/input/evdev.ko
+kernel/drivers/input/misc/twl4030-pwrbutton.ko
+kernel/drivers/input/misc/twl4030-vibra.ko
+kernel/drivers/input/misc/twl6040-vibra.ko
+kernel/drivers/input/misc/uinput.ko

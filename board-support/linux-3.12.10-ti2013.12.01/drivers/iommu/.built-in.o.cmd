@@ -1,0 +1,1 @@
+cmd_drivers/iommu/built-in.o :=  /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/iommu/built-in.o drivers/iommu/iommu.o drivers/iommu/of_iommu.o drivers/iommu/omap-iommu.o drivers/iommu/omap-iommu2.o drivers/iommu/omap-iovmm.o 

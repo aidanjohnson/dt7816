@@ -1,0 +1,1 @@
+cmd_drivers/mtd/devices/built-in.o :=  /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/mtd/devices/built-in.o drivers/mtd/devices/mtd_dataflash.o drivers/mtd/devices/m25p80.o drivers/mtd/devices/elm.o drivers/mtd/devices/sst25l.o 

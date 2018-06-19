@@ -1,0 +1,7 @@
+kernel/drivers/mfd/ti_am335x_tscadc.ko
+kernel/drivers/mfd/tps65217.ko
+kernel/drivers/mfd/twl4030-madc.ko
+kernel/drivers/mfd/mc13xxx-core.ko
+kernel/drivers/mfd/mc13xxx-spi.ko
+kernel/drivers/mfd/mc13xxx-i2c.ko
+kernel/drivers/mfd/mfd-core.ko

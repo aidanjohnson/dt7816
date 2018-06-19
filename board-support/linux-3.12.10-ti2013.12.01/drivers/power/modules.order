@@ -1,0 +1,3 @@
+kernel/drivers/power/generic-adc-battery.ko
+kernel/drivers/power/da9052-battery.ko
+kernel/drivers/power/gpio-charger.ko

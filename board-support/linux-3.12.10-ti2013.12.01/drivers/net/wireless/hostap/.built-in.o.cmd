@@ -1,0 +1,1 @@
+cmd_drivers/net/wireless/hostap/built-in.o :=  rm -f drivers/net/wireless/hostap/built-in.o; /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ar rcsD drivers/net/wireless/hostap/built-in.o

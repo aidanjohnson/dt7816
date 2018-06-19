@@ -1,0 +1,1 @@
+cmd_drivers/usb/musb/built-in.o :=  /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/usb/musb/built-in.o drivers/usb/musb/musb_hdrc.o drivers/usb/musb/musb_dsps.o drivers/usb/musb/musb_am335x.o 

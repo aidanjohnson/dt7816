@@ -1,0 +1,1 @@
+cmd_drivers/media/radio/si470x/radio-usb-si470x.o := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/media/radio/si470x/radio-usb-si470x.o drivers/media/radio/si470x/radio-si470x-common.o drivers/media/radio/si470x/radio-si470x-usb.o 

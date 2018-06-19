@@ -1,0 +1,2 @@
+kernel/drivers/watchdog/pcwd_usb.ko
+kernel/drivers/watchdog/softdog.ko

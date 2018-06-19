@@ -1,0 +1,1 @@
+cmd_net/netfilter/nfnetlink_queue.o := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o net/netfilter/nfnetlink_queue.o net/netfilter/nfnetlink_queue_core.o net/netfilter/nfnetlink_queue_ct.o 

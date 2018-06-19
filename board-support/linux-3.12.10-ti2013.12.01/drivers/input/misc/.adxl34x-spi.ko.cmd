@@ -1,0 +1,1 @@
+cmd_drivers/input/misc/adxl34x-spi.ko := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL -r  -T /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/scripts/module-common.lds --build-id  -o drivers/input/misc/adxl34x-spi.ko drivers/input/misc/adxl34x-spi.o drivers/input/misc/adxl34x-spi.mod.o

@@ -1,0 +1,7 @@
+kernel/drivers/misc/eeprom/eeprom.ko
+kernel/drivers/misc/eeprom/max6875.ko
+kernel/drivers/misc/eeprom/eeprom_93xx46.ko
+kernel/drivers/misc/ti-st/st_drv.ko
+kernel/drivers/misc/lis3lv02d/lis3lv02d.ko
+kernel/drivers/misc/lis3lv02d/lis3lv02d_spi.ko
+kernel/drivers/misc/lis3lv02d/lis3lv02d_i2c.ko

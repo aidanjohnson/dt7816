@@ -1,0 +1,9 @@
+kernel/drivers/media/platform/davinci/vpfe_capture.ko
+kernel/drivers/media/platform/davinci/vpss.ko
+kernel/drivers/media/platform/davinci/dm644x_ccdc.ko
+kernel/drivers/media/platform/omap/omap-vout.ko
+kernel/drivers/media/platform/omap3isp/omap3-isp.ko
+kernel/drivers/media/platform/m2m-deinterlace.ko
+kernel/drivers/media/platform/soc_camera/soc_camera.ko
+kernel/drivers/media/platform/soc_camera/soc_mediabus.ko
+kernel/drivers/media/platform/soc_camera/soc_camera_platform.ko

@@ -1,0 +1,5 @@
+kernel/drivers/iio/common/hid-sensors/hid-sensor-iio-common.ko
+kernel/drivers/iio/common/hid-sensors/hid-sensor-trigger.ko
+kernel/drivers/iio/common/st_sensors/st_sensors_i2c.ko
+kernel/drivers/iio/common/st_sensors/st_sensors_spi.ko
+kernel/drivers/iio/common/st_sensors/st_sensors.ko

@@ -1,0 +1,1 @@
+cmd_drivers/usb/chipidea/built-in.o :=  /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/usb/chipidea/built-in.o drivers/usb/chipidea/ci_hdrc.o drivers/usb/chipidea/ci_hdrc_msm.o drivers/usb/chipidea/ci_hdrc_pci.o drivers/usb/chipidea/ci_hdrc_imx.o drivers/usb/chipidea/usbmisc_imx.o 

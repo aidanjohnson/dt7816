@@ -1,0 +1,1 @@
+cmd_net/ieee802154/af_802154.o := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o net/ieee802154/af_802154.o net/ieee802154/af_ieee802154.o net/ieee802154/raw.o net/ieee802154/dgram.o 

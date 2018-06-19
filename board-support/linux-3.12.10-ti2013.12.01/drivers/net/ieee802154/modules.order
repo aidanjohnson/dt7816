@@ -1,0 +1,4 @@
+kernel/drivers/net/ieee802154/fakehard.ko
+kernel/drivers/net/ieee802154/fakelb.ko
+kernel/drivers/net/ieee802154/at86rf230.ko
+kernel/drivers/net/ieee802154/mrf24j40.ko

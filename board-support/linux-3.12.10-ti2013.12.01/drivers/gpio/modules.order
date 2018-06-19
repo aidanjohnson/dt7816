@@ -1,0 +1,13 @@
+kernel/drivers/gpio/gpio-generic.ko
+kernel/drivers/gpio/gpio-74x164.ko
+kernel/drivers/gpio/gpio-adnp.ko
+kernel/drivers/gpio/gpio-adp5588.ko
+kernel/drivers/gpio/gpio-da9055.ko
+kernel/drivers/gpio/gpio-max730x.ko
+kernel/drivers/gpio/gpio-max7300.ko
+kernel/drivers/gpio/gpio-max7301.ko
+kernel/drivers/gpio/gpio-max732x.ko
+kernel/drivers/gpio/gpio-mc33880.ko
+kernel/drivers/gpio/gpio-mcp23s08.ko
+kernel/drivers/gpio/gpio-pca953x.ko
+kernel/drivers/gpio/gpio-pcf857x.ko

@@ -1,0 +1,17 @@
+kernel/drivers/regulator/fixed.ko
+kernel/drivers/regulator/virtual.ko
+kernel/drivers/regulator/userspace-consumer.ko
+kernel/drivers/regulator/anatop-regulator.ko
+kernel/drivers/regulator/da9052-regulator.ko
+kernel/drivers/regulator/gpio-regulator.ko
+kernel/drivers/regulator/mc13783-regulator.ko
+kernel/drivers/regulator/mc13892-regulator.ko
+kernel/drivers/regulator/mc13xxx-regulator-core.ko
+kernel/drivers/regulator/palmas-regulator.ko
+kernel/drivers/regulator/pfuze100-regulator.ko
+kernel/drivers/regulator/ti-abb-regulator.ko
+kernel/drivers/regulator/tps65023-regulator.ko
+kernel/drivers/regulator/tps6507x-regulator.ko
+kernel/drivers/regulator/tps65217-regulator.ko
+kernel/drivers/regulator/tps65910-regulator.ko
+kernel/drivers/regulator/twl-regulator.ko

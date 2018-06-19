@@ -1,0 +1,15 @@
+kernel/drivers/iio/dac/ad5360.ko
+kernel/drivers/iio/dac/ad5380.ko
+kernel/drivers/iio/dac/ad5421.ko
+kernel/drivers/iio/dac/ad5624r_spi.ko
+kernel/drivers/iio/dac/ad5064.ko
+kernel/drivers/iio/dac/ad5504.ko
+kernel/drivers/iio/dac/ad5446.ko
+kernel/drivers/iio/dac/ad5449.ko
+kernel/drivers/iio/dac/ad5755.ko
+kernel/drivers/iio/dac/ad5764.ko
+kernel/drivers/iio/dac/ad5791.ko
+kernel/drivers/iio/dac/ad5686.ko
+kernel/drivers/iio/dac/ad7303.ko
+kernel/drivers/iio/dac/max517.ko
+kernel/drivers/iio/dac/mcp4725.ko
