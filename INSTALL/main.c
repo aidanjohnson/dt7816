@@ -31,6 +31,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <time.h>
 
 #include "dt78xx_ioctl.h"
 #include "dt78xx_aio.h"
@@ -43,18 +44,19 @@
 #define DEFAULT_SAMPLES_PER_CHAN    (1024)
 #define DEFAULT_NUM_BUFF            (2)
 #ifdef DT7816
-    #define DEV_STREAM_IN "/dev/dt7816-stream-in"
+    #define DEV_STREAM_IN           "/dev/dt7816-stream-in"
     //AIN device file
-    #define DEV_AIN "/dev/dt7816-ain"
+    #define DEV_AIN                 "/dev/dt7816-ain"
 #else
     #error Undefined board type
 #endif
 #define xstr(s) str(s)
 #define str(s) #s
 
-#define NUM_CHANNELS 1
-#define SAMPLE_RATE DEFAULT_SAMPLE_RATE_HZ
-#define BLOCK_SIZE DEFAULT_SAMPLES_PER_CHAN
+#define LEN                         255
+#define NUM_CHANNELS                1
+#define SAMPLE_RATE                 DEFAULT_SAMPLE_RATE_HZ
+#define BLOCK_SIZE                  DEFAULT_SAMPLES_PER_CHAN
 
 static int g_quit = 0;
 
@@ -98,7 +100,7 @@ static void stream_empty_cb(int i)
 /******************************************************************************
  * Command line arguments see usage above
  */
-int main (int argc, char** argv)
+int main (int argc, char **argv)
 {
     int ret = EXIT_SUCCESS;
     int fd_stream = 0;  
@@ -115,7 +117,9 @@ int main (int argc, char** argv)
     
     struct aio_struct *aio = NULL;
     
-    while ((opt = getopt(argc, argv, "tms:b:w:c:g:")) != -1) 
+    int fileNum = 0;
+    
+    while ((opt = getopt(argc, argv, "s:b:c:")) != -1) 
     {
         switch (opt) 
         {
@@ -289,14 +293,30 @@ int main (int argc, char** argv)
     
     //After completion ...
     ioctl(fd_stream, IOCTL_STOP_SUBSYS, 0);    
+    
     //Write acquired data to the specified file
-    const char *outputPath = argv[1];
+    const char *outputPath = "/path/to/SSD"; // a set path to local storage
+    const char *ID = argv[1]; // physical location/identity
+    time_t curTime;
+    curTime = time(NULL);
+    struct tm *locTime = localtime(&curTime);
+    char fileTime[LEN];
+    strftime(fileTime, LEN, "_%Y%m%d_%H%M%S.wav", locTime);
+    char fileName[LEN];
+    strcpy(fileName, ID); // identify
+    strcat(fileName, fileTime);
+    char filePath[LEN];
+    strcpy(filePath, outputPath);
+    strcat(filePath, fileName);
+    
     TinyWav tw;
-    tinywav_open_write(&tw, NUM_CHANNELS, SAMPLE_RATE, TW_FLOAT32, TW_INLINE, outputPath);
+    tinywav_open_write(&tw, NUM_CHANNELS, SAMPLE_RATE, TW_FLOAT32, TW_INLINE, filePath);
+    
     int i;
     for (i=0; i < numbuf; ++i)
     {
-        return tinywav_write_f(&tw, buf_array[i], BLOCK_SIZE);
+        fileNum += 1;
+        tinywav_write_f(&tw, buf_array[i], BLOCK_SIZE);
     }
     tinywav_close_write(&tw);
 
