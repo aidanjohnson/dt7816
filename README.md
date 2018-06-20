@@ -56,13 +56,13 @@ See the [manufacturer guide](https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/
   * `sig-analyzer`
   * `usb-loopback`
   * `web-server`
-  * `bat-array` (**WIP**: this is the custom built ADC recording program for the DAQ)
+  * `bat-array` (**WIP**: this is the custom built ADC recording program for the DAQ; samples recorded in the `.wav` format with a file naming convention.)
 
 3. For an unknown reason, the example C-language code conapplicationstains an header include for a differently named directory. To remedy this, create a link like so:
    ```
    sudo ln -s <target directory or file> <destination directory>
    ```
-   You may have to reparse the project after the linkages, and there could be more broken include header links besides these above.
+   You may have to reparse the project after the linkages, and there could be more broken include header links besides these above. For example, you may need to link from the header files in `linux-devkit/sysroots/cortexa8hf-vfp-neon-3.8-oe-linux-gnueabi/usr/include` and `board-support/u-boot-2013.10-ti2013.12.01/include` (targets) to `board-support/linux-3.12.10-ti2013.12.01/include/linux` (desitination).
 
 4. In these instructions the superuser `sudo` command program for elevating security privelages has been included for redundancy. Moreover, these instructions will *only* work properly on Linux. These files were developed and tested on a machine running Ubuntu 18.04 LTS.
 
