@@ -4,13 +4,10 @@
     <df root="." name="0">
       <df name="release">
       </df>
-      <df name="res">
-      </df>
-      <in>calib.c</in>
       <in>main.c</in>
-      <in>mongoose.c</in>
-      <in>mongoose.h</in>
-      <in>sig-analyze.c</in>
+      <in>main_tinywav.c</in>
+      <in>tinywav.c</in>
+      <in>tinywav.h</in>
     </df>
   </logicalFolder>
   <projectmakefile>Makefile</projectmakefile>
