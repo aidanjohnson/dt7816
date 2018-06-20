@@ -51,6 +51,11 @@
 #endif
 #define xstr(s) str(s)
 #define str(s) #s
+
+#define NUM_CHANNELS 1
+#define SAMPLE_RATE DEFAULT_SAMPLE_RATE_HZ
+#define BLOCK_SIZE DEFAULT_SAMPLES_PER_CHAN
+
 static int g_quit = 0;
 
 /*
@@ -285,36 +290,15 @@ int main (int argc, char** argv)
     //After completion ...
     ioctl(fd_stream, IOCTL_STOP_SUBSYS, 0);    
     //Write acquired data to the specified file
-    FILE * fd_data = fopen(argv[optind], "w");
-    if (!fd_data)
-    {
-        fprintf(stderr, "IOCTL_START_SUBSYS ERROR %d \"%s\"\n", 
-                errno, strerror(errno));
-        goto _exit;
-    }
-    //Header row in csv file
-    fprintf(fd_data,"Sample#,AIN0 (V), AIN0 (count)");
+    const char *outputPath = argv[1];
+    TinyWav tw;
+    tinywav_open_write(&tw, NUM_CHANNELS, SAMPLE_RATE, TW_FLOAT32, TW_INLINE, outputPath);
     int i;
     for (i=0; i < numbuf; ++i)
     {
-        int j;
-        float volt;
-        void *raw = buf_array[i];
-        for (j=1; j <= samples_per_chan ;++j)
-        {
-#ifdef DT7816
-            //AIN channels are 16-bits  and always come first
-            volt = raw2volts(*(int16_t *)raw, ain_cfg.gain); 
-            fprintf(fd_data,"%6d, %.5f,%hd", 
-                    j+(i*samples_per_chan),volt,*(int16_t *)raw);
-            raw += sizeof(int16_t);
-#endif               
-            fprintf(fd_data,"\n");
-        }
+        return tinywav_write_f(&tw, buf_array[i], BLOCK_SIZE);
     }
-    fclose(fd_data);
-    fprintf(stdout, "Total %d samples written to %s\n", 
-            samples_per_chan*numbuf, argv[optind]);
+    tinywav_close_write(&tw);
 
 _exit : 
     aio_stop(aio);
