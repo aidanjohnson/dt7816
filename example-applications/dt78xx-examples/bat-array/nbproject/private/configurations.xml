@@ -5,7 +5,6 @@
       <df name="release">
       </df>
       <in>main.c</in>
-      <in>main_tinywav.c</in>
       <in>tinywav.c</in>
       <in>tinywav.h</in>
     </df>
