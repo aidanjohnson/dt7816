@@ -112,7 +112,7 @@ The second and alternative method is to locally network the client and host. Thi
    * `sig-analyzer`
    * `usb-loopback`
    * `web-server`
-   * `bat-array` (**WIP**: this is the custom built ADC recording program for the DAQ; samples recorded in the `.wav` format with a file naming convention.)
+   * `bat-array` ([**WIP**](https://github.com/aidanjohnson/dt7816/projects/1#card-10768858): this is the custom built ADC recording program for the DAQ; samples recorded in the `.wav` format with a file naming convention.)
 
 3. For an unknown reason, the example C-language code conapplicationstains an header include for a differently named directory. To remedy this, create a link like so:
    ```
