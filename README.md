@@ -114,11 +114,11 @@ The second and alternative method is to locally network the client and host. Thi
    * `web-server`
    * `bat-array` ([**WIP**](https://github.com/aidanjohnson/dt7816/projects/1#card-10768858): this is the custom built ADC recording program for the DAQ; samples recorded in the `.wav` format using [TinyWav](https://github.com/mhroth/tinywav) with a standardised file naming convention.)
 
-3. For an unknown reason, the example C-language code conapplicationstains an header include for a differently named directory. To remedy this, create a link like so:
+3. For an unknown reason, the example C-language code applications contains an include header for a differently named directories. To remedy this, create a link like so:
    ```
    sudo ln -s <target directory or file> <destination directory>
    ```
-   You may have to reparse the project after the linkages, and there could be more broken include header links besides these above. For example, you may need to link from the header files in `linux-devkit/sysroots/cortexa8hf-vfp-neon-3.8-oe-linux-gnueabi/usr/include` and `board-support/u-boot-2013.10-ti2013.12.01/include` (targets) to `board-support/linux-3.12.10-ti2013.12.01/include/linux` (desitination).
+   You may have to reparse the project after the linkages, and there could be more broken include header links besides these above. For example, you may need to link from the header files in `linux-devkit/sysroots/cortexa8hf-vfp-neon-3.8-oe-linux-gnueabi/usr/include` and `board-support/u-boot-2013.10-ti2013.12.01/include` (targets) to `board-support/linux-3.12.10-ti2013.12.01/include/linux` (desitination). The `build_dev.sh` script tries to mend this issue.
 
 4. In these instructions the superuser `sudo` command program for elevating security privelages has been included for redundancy. Moreover, these instructions will *only* work properly on Linux. These files were developed and tested on a machine running [Ubuntu 18.04 LTS](http://releases.ubuntu.com/18.04/).
 
@@ -130,6 +130,8 @@ The second and alternative method is to locally network the client and host. Thi
    * https://askubuntu.com/questions/22835/how-to-network-two-ubuntu-computers-using-ethernet-without-a-router
    * https://www.garron.me/en/linux/add-secondary-ip-linux.html
    * https://access.redhat.com/sites/default/files/attachments/rh_ip_command_cheatsheet_1214_jcs_print.pdf
+
+7. See https://msdn.microsoft.com/en-us/library/windows/desktop/aa365683(v=vs.85).aspx for an explanation of synchronous and asynchronous input/output (I/O) synchronisation.
 
 ## Acknowledgements
 Thank you to the [Applied Physics Laboratory](http://www.apl.washington.edu/) at the University of Washington, the [UW Institute for Neuroengineering](http://uwin.washington.edu/), and the [Union Bay Natural Area](https://botanicgardens.uw.edu/center-for-urban-horticulture/visit/union-bay-natural-area/) for funding and support. Contact: [Wu-Jung Lee](https://leewujung.github.io/) at wjlee@apl.washington.edu and [Aidan Johnson](https://aidanjohnson.github.io/) at johnsj96@uw.edu.
