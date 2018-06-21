@@ -34,7 +34,7 @@ See the [manufacturer guide](https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/
    * https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/Creating_Projects_in_Netbeans.htm
    * https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/Configuring_the_Resources_for_Netbeans_Code_Assistance.htm
 
-6. Complete the last step of: https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/Build_the_Drivers_.htm
+6. Complete the last step of https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/Build_the_Drivers_.htm. This requires the following set of instructions, which pertain to establishing a connection between the DAQ module and a PC (Unix-based, specifically Linux).
 
 ## Connection Instructions: For the DT7816 & a PC
 
