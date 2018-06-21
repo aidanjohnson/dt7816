@@ -1,4 +1,4 @@
-# MCC DT7816
+# APL-UW Union Bay Natural Area Bat Array: MCC DT7816
 
 See the [manufacturer guide](https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/DT7816_Getting_Started.htm) for the [DT7816](https://www.mccdaq.com/Products/ARM-DAQ/DT7816) if you want a more thorough guide necessary for manual setup and building. This repository is intended to make the building process easier and faster by automating it through a script. Download the tarball in `INSTALL` to build all the code for this DAQ, which is installed to the directory: `/opt/ti-sdk-am335x-evm-07.00.00.00/`. Note that, if built from scratch, the directory would not contain `INSTALL`, [`UM7816.pdf`](/UM7816.pdf), [`DT7816-Programming.pdf`](/DT7816-Programming.pdf) and `libuldaq-1.0.0`; these have been only included for convenience. Follow the instructions below to build it all from scratch.
 
