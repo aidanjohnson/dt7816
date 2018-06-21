@@ -46,47 +46,49 @@ The second and alternative method is to locally network the client and host. Thi
 
 2. Open up the host computer networking setting and create a new wired connection. Enter a name and the MAC address. Under the IPv4 tab, select manual. Then add the IP address and netmask: 10.0.0.1 and 255.255.255.0. 
 
-3. Differently, for the client computer (the DAQ board) we will set similar settings in its terminal through a serial console (see https://learn.adafruit.com/welcome-to-circuitpython/advanced-serial-console-on-mac-and-linux for instructions how; alternatively, via PuTTY). In short, you can connect to the client terminal via the serial console by running the command `screen /dev/ttyUSB0 115200`. You may have to run `sudo apt-get install screen` first. Log into the system with `root` as both the username and password. After running the command `ip ad`, we see that the Ethernet port is referred to as `eth0`.  Run the command `ip ad add 10.0.0.20/24 dev eth0 valid_lft forever preferred_lft forever`.
+3. Differently, for the client computer (the DAQ board) we will set similar settings in its terminal through a serial console (see https://learn.adafruit.com/welcome-to-circuitpython/advanced-serial-console-on-mac-and-linux for instructions how; alternatively, via PuTTY). In short, you can connect to the client terminal via the serial console by running the command `screen /dev/ttyUSB0 115200`. You may have to run `sudo apt-get install screen` first.
+   Log into the system with `root` as both the username and password. After running the command `ip ad`, we see that the Ethernet port is referred to as `eth0`.  Run the command `ip ad add 10.0.0.20/24 dev eth0 valid_lft forever preferred_lft forever`.
 
 4. Making sure the server and client are connected via Ethernet, test that the connection is functioning by pinging each other. Do this on the server's terminal with `ping 10.0.0.2` and on the client's terminal with `ping 10.0.0.1`. These ping tests will both be successful (no losses) if all is correct.
 
-5. Now we need to set up the NFS server. First, make sure NFS is installed on the Linux host computer by running `sudo apt-get install nfs-kernel-server`. Then create a directory to house the server contents that will be accessed when mounted. Do this with `sudo mkdir -p /export/DT7816-NFS`. Next, give permissions to this directory with `sudo chmod 777 /export/DT7816-NFS`. Lastly, mount the directory with `mount --bind /opt/ti-sdk-am335x-evm-07.00.00.00/ /export/DT7816-NFS`
+5. Now we need to set up the NFS server. First, make sure NFS is installed on the Linux host computer by running `sudo apt-get install nfs-kernel-server`. Then create a directory to house the server contents that will be accessed when mounted. Do this with `sudo mkdir -p /export/DT7816-NFS`. 
+   Next, give permissions to this directory with `sudo chmod 777 /export/DT7816-NFS`. Lastly, mount the directory with `mount --bind /opt/ti-sdk-am335x-evm-07.00.00.00/ /export/DT7816-NFS`
 
 6. Now we will continue to set up the NFS server. Edit the file `sudo nano /etc/default/nfs-kernel-server` to have the line `NEED_SVCGSSD="no"`. Then edit the file `sudo nano /etc/idmapd.conf` to have the lines:
-  ```
-  Nobody-User = nobody
-  Nobody-Group = nogroup
-  ```
+   ```
+   Nobody-User = nobody
+   Nobody-Group = nogroup
+   ```
   
 7. Restart the NFS server with `/etc/init.d/nfs-kernel-server restart`. 
 
 8. Edit the file `sudo nano /etc/hosts` to have the line `rcpbind mountd nfsd statd lockd rquotad : 10.0.0.0/255.255.255.0 127.0.0.1`. Repeat step 7.
 
 9. Edit the file `sudo nano /etc/fstab` to have the lines 
-  ```
-  \# DT78xx examples mapped for NFS
-  /opt/ti-sdk-am335x-evm-07.00.00.00/ /export/DT7816-NFS none bind 0 0
-  ```
-  so the NFS server starts automatically on boot-up. Check that the NFS has the folder we want with `showmount -e`.
+   ```
+   \# DT78xx examples mapped for NFS
+   /opt/ti-sdk-am335x-evm-07.00.00.00/ /export/DT7816-NFS none bind 0 0
+   ```
+   so the NFS server starts automatically on boot-up. Check that the NFS has the folder we want with `showmount -e`.
 
 10. Then, to ensure all is set up correctly, run `sudo nano /etc/network/interfaces` and add the lines:
-  ```
-  auto eth0:1
-  iface eth0:1 inet static
-  address 10.0.0.20
-  gateway 0.0.0.0
-  netmask 255.255.255.0
-  ```
-  and write that to disk.
+   ```
+   auto eth0:1
+   iface eth0:1 inet static
+   address 10.0.0.20
+   gateway 0.0.0.0
+   netmask 255.255.255.0
+   ```
+   and write that to disk.
 
 11. Now we will set up the NFS client. In the PuTTY terminal, once booted up and logged in on the DT7816, install `apt-get install nfs-common` and make a directory with `mkdir /usr/local/dt7816-nfs`. Then mount the NFS server with `mount -t nfs 10.0.0.10:/export/DT7816-NFS /usr/local/dt7816-nfs`.
 
 12. Edit the file `sudo nano /etc/fstab` to have the lines
-  ```
-  \# nfs mount development PC mapped directory 
-  10.0.0.10:/export/DT7816-NFS /usr/local/dt7816-nfs nfs rw,hard,intr 0 0
-  ```
-  To check all the directorys on the server are accesible by the client, run `ls -l /usr/local/dt7816-nfs`
+   ```
+   \# nfs mount development PC mapped directory 
+   10.0.0.10:/export/DT7816-NFS /usr/local/dt7816-nfs nfs rw,hard,intr 0 0
+   ```
+   To check all the directorys on the server are accesible by the client, run `ls -l /usr/local/dt7816-nfs`
 
 ## Troubleshooting
 
