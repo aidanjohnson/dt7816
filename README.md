@@ -90,7 +90,7 @@ The second and alternative method is to locally network the client and host. Thi
     # nfs mount development PC mapped directory 
     10.0.0.10:/export/DT7816-NFS /usr/local/dt7816-nfs nfs rw,hard,intr 0 0
     ```
-    To check all the directorys on the server are accesible by the client, run `ls -l /usr/local/dt7816-nfs`
+    To check all the directories on the server are accesible by the client, run `ls -l /usr/local/dt7816-nfs`
 
 ## Troubleshooting
 
