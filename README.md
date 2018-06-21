@@ -10,7 +10,7 @@ See the [manufacturer guide](https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/
    * http://www.fftw.org/fftw-3.3.4.tar.gz
    * ftp://xmlsoft.org/libxml2/libxml2-2.9.8.tar.gz
 
-2. Download the compressed directories in [`INSTALL`](/INSTALL). Uncompress `INSTALL.tar.gz' with the command:
+2. Download the compressed directories in [`INSTALL`](/INSTALL). Uncompress `INSTALL.tar.gz` with the command:
    ```
    tar -xzvf INSTALL.tar.gz
    ```
@@ -26,11 +26,11 @@ See the [manufacturer guide](https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/
    chmod +x build_dev.sh
    sudo ./build_dev.sh
    ```
-   The files required for the System on Module (SoM), TI Sitara AM3352, will then be installed automatically. The example programs provided will be built for NetBeans IDE.
+   The files required for the System on Module (SoM), [TI Sitara AM3352](http://www.ti.com/product/AM3352), will then be installed automatically. The example programs provided will be built for [Oracle's NetBeans 8.2 IDE](https://netbeans.org/downloads/).
 
 4. Follow steps on your screen and terminal; watch for any errors (especially fatal) and refer to the Troubleshooting section below for assistance.
 
-5. Download and install Oracle's NetBeans 8.2. (Recommended instead of TI's Code Composer Studio because the manufacturer's guide assumes NetBeans 8.1.) Create a project for the example applications by following these instructions:
+5. Download and install NetBeans 8.2. (Recommended instead of TI's Code Composer Studio because the manufacturer's guide assumes NetBeans 8.1.) Create a project for the example applications by following these instructions:
    * https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/Creating_Projects_in_Netbeans.htm
    * https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/Configuring_the_Resources_for_Netbeans_Code_Assistance.htm
 
