@@ -83,7 +83,7 @@ The second and alternative method is to locally network the client and host. Thi
      ```
     and write that to disk.
 
-11. Now we will set up the NFS client. In the PuTTY terminal, once booted up and logged in on the DT7816, install `apt-get install nfs-common` and make a directory with `mkdir /usr/local/dt7816-nfs`. Then mount the NFS server with `mount -t nfs 10.0.0.10:/export/DT7816-NFS /usr/local/dt7816-nfs`.
+11. Now we will set up the NFS client. In the serial console terminal, once booted up and logged in on the DT7816 using a baud rate of 115200 and at the USB-serial port `/dev/ttyUSB0`, install `apt-get install nfs-common` and make a directory with `mkdir /usr/local/dt7816-nfs`. Then mount the NFS server with `mount -t nfs 10.0.0.10:/export/DT7816-NFS /usr/local/dt7816-nfs`.
 
 12. Edit the file `sudo nano /etc/fstab` to have the lines
     ```
