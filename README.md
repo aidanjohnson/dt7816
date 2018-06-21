@@ -48,7 +48,7 @@ The second and alternative method is to locally network the client and host. Thi
   ```
   (Note: `enp4sof1` can differ; use the Ethernet port name from running `ifconfig`.)
 
-2. Open up the host computer networking setting and create a new wired connection. Enter a name and the MAC address. Under the IPV4 tab, select manual. Then add the IP address and netmask: 10.0.0.1 and 255.255.255.0. 
+2. Open up the host computer networking setting and create a new wired connection. Enter a name and the MAC address. Under the IPv4 tab, select manual. Then add the IP address and netmask: 10.0.0.1 and 255.255.255.0. 
 
 3. Differently, for the client computer (the DAQ board) we will set similar settings in its terminal (via PuTTY). After running the command `ip ad`, we see that the Ethernet port is referred to as `eth0`.  Run the command:
   ```
