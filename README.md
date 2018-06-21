@@ -36,7 +36,7 @@ See the [manufacturer guide](https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/
 
 6. Complete the last step of: https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/Build_the_Drivers_.htm
 
-##Connecting the DT7816 & a PC
+## Connecting the DT7816 & a PC
 
 There are two ways for a user to connect the host computer (PC) to the client computer (the DT7816). The first, which is documented at length in the Getting Started guide from the manufacturer, relies on using the `web-server` example application. In this method the client and host are connected to the same network (e.g., the APL-UW network) and the terminal of the client can be accessed from the host via an SSH application like PuTTY. However, this is cumbersome in the field and in general, especially when transfering or copying files (e.g., custom programs). 
 
@@ -72,7 +72,7 @@ The second and alternative method is to locally network the client and host. Thi
   Then create a directory to house the server contents that will be accessed when mounted. Do this by:
   ```
   sudo mkdir -p /export/DT7816-NFS
-  ```
+  ````
   Next, give permissions to this directory with
   ```
   sudo chmod 777 /export/DT7816-NFS
@@ -89,7 +89,7 @@ The second and alternative method is to locally network the client and host. Thi
   to have the line
   ```
   NEED_SVCGSSD="no"
-    ```
+  ```
   Then edit the file
   ```
   sudo nano /etc/idmapd.conf
@@ -113,7 +113,7 @@ The second and alternative method is to locally network the client and host. Thi
   ```
   rcpbind mountd nfsd statd lockd rquotad : 10.0.0.0/255.255.255.0 127.0.0.1
   ```
-Repeat step 7.
+  Repeat step 7.
 
 9. Edit the file
   ```
