@@ -54,7 +54,7 @@ The second and alternative method is to locally network the client and host. Thi
   ```
   screen /dev/ttyUSB0 115200
   ```
-  Login into the system with `root` as both the username and password. After running the command `ip ad`, we see that the Ethernet port is referred to as `eth0`.  Run the command:
+  You may have to run `sudo apt-get install screen` first. Log into the system with `root` as both the username and password. After running the command `ip ad`, we see that the Ethernet port is referred to as `eth0`.  Run the command:
   ```
   ip ad add 10.0.0.20/24 dev eth0 valid_lft forever preferred_lft forever
   ``` 
