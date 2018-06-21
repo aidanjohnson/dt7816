@@ -310,7 +310,7 @@ int main (int argc, char **argv)
     ioctl(fd_stream, IOCTL_STOP_SUBSYS, 0);    
     
     //Write acquired data to the specified file
-    const char *outputPath = "/path/to/SSD"; // a set path to local storage
+    const char *outputPath = "/usr/local/path/to/ssd/"; // a set path to local storage
     const char *ID = argv[1]; // physical location/identity
     time_t curTime;
     curTime = time(NULL);
