@@ -50,7 +50,11 @@ The second and alternative method is to locally network the client and host. Thi
 
 2. Open up the host computer networking setting and create a new wired connection. Enter a name and the MAC address. Under the IPv4 tab, select manual. Then add the IP address and netmask: 10.0.0.1 and 255.255.255.0. 
 
-3. Differently, for the client computer (the DAQ board) we will set similar settings in its terminal (via PuTTY). After running the command `ip ad`, we see that the Ethernet port is referred to as `eth0`.  Run the command:
+3. Differently, for the client computer (the DAQ board) we will set similar settings in its terminal through a serial console (see https://learn.adafruit.com/welcome-to-circuitpython/advanced-serial-console-on-mac-and-linux for instructions how; alternatively, via PuTTY). In short, you can connect to the client terminal via the serial console by running the command:
+  ```
+  screen /dev/ttyUSB0 115200
+  ```
+  Login into the system with `root` as both the username and password. After running the command `ip ad`, we see that the Ethernet port is referred to as `eth0`.  Run the command:
   ```
   ip ad add 10.0.0.20/24 dev eth0 valid_lft forever preferred_lft forever
   ``` 
