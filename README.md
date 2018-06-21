@@ -132,4 +132,4 @@ The second and alternative method is to locally network the client and host. Thi
    * https://access.redhat.com/sites/default/files/attachments/rh_ip_command_cheatsheet_1214_jcs_print.pdf
 
 ## Acknowledgements
-Thank you to the [Applied Physics Laboratory](http://www.apl.washington.edu/) at the University of Washington, the (UW Institute for Neuroengineering)[http://uwin.washington.edu/], and the (Union Bay Natural Area)[https://botanicgardens.uw.edu/center-for-urban-horticulture/visit/union-bay-natural-area/]
+Thank you to the [Applied Physics Laboratory](http://www.apl.washington.edu/) at the University of Washington, the (UW Institute for Neuroengineering)[http://uwin.washington.edu/], and the [Union Bay Natural Area](https://botanicgardens.uw.edu/center-for-urban-horticulture/visit/union-bay-natural-area/) for funding and support. Contact: [Wu-Jung Lee](https://leewujung.github.io/) at wjlee@apl.washington.edu and [Aidan Johnson](https://aidanjohnson.github.io/) at johnsj96@uw.edu.
