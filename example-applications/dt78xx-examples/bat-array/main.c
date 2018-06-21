@@ -54,6 +54,7 @@
 #define xstr(s) str(s)
 #define str(s) #s
 
+#define PATH_TO_STORAGE             "/usr/local/path/to/ssd/"
 #define LEN                         255
 #define NUM_CHANNELS                1
 #define SAMPLE_RATE                 DEFAULT_SAMPLE_RATE_HZ
@@ -67,8 +68,9 @@ static int g_quit = 0;
 static const char usage[]=
 {
 "Samples AIN0 and writes data"
-"to specified file in WAV format\n"
-"Usage : %s [options] <file>\n"
+"to specified file in WAV format;"
+"WAV files saved to path to storage\n"
+"Usage : %s [options] <file or location identifier>\n"
 "Options\n"
 "-b buffers : number of buffers queued, default " xstr(DEFAULT_NUM_BUFF) "\n"
 "-s samples : number of samples per buffer, default " xstr(DEFAULT_SAMPLES_PER_CHAN) "\n"
@@ -310,7 +312,7 @@ int main (int argc, char **argv)
     ioctl(fd_stream, IOCTL_STOP_SUBSYS, 0);    
     
     //Write acquired data to the specified file
-    const char *outputPath = "/usr/local/path/to/ssd/"; // a set path to local storage
+    const char *outputPath = PATH_TO_STORAGE; // a set path to local storage
     const char *ID = argv[1]; // physical location/identity
     time_t curTime;
     curTime = time(NULL);
