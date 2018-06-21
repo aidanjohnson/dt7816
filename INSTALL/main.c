@@ -47,6 +47,7 @@
     #define DEV_STREAM_IN           "/dev/dt7816-stream-in"
     //AIN device file
     #define DEV_AIN                 "/dev/dt7816-ain"
+    #define DOUT_DEV                "/dev/dt7816-dout"
 #else
     #error Undefined board type
 #endif
@@ -97,11 +98,24 @@ static void stream_empty_cb(int i)
 }
 #endif
 
+static void led_indicators(char *system, int streaming) 
+{
+    // writing := LED0, := LED1, := LED2, := LED3,
+    // := LED4, := LED5, := LED6, := LED7  
+    //update debug leds (8 total): on = success
+    dt78xx_led_t led;
+    uint16_t status = strtoul(system, NULL, 2);
+    led.mask = 0xff;    // all bits are enabled (8 LEDs, L-R)
+    led.state = (unsigned char) (status & 0xff);
+    ioctl(streaming, IOCTL_LED_SET, &led);    
+}
+
 /******************************************************************************
  * Command line arguments see usage above
  */
 int main (int argc, char **argv)
 {
+    char sysStatus[8] = {0};
     int ret = EXIT_SUCCESS;
     int fd_stream = 0;  
     int fd_ain = 0;
@@ -245,6 +259,7 @@ int main (int argc, char **argv)
     fprintf(stdout,"Sampling at %f Hz gain %hu queued %d buffers each of %d samples\n", 
                     clk.clk_freq, ain_cfg.gain, numbuf, samples_per_chan);
     
+    //TODO: figure out way to start sampling without use of command line
     //Wait for user input to start or abort
     fprintf(stdout,"Press s to start, any other key to quit\n");
     ret = 0;
@@ -295,7 +310,7 @@ int main (int argc, char **argv)
     ioctl(fd_stream, IOCTL_STOP_SUBSYS, 0);    
     
     //Write acquired data to the specified file
-    const char *outputPath = "/path/to/SSD"; // a set path to local storage
+    const char *outputPath = "/usr/local/path/to/ssd/"; // a set path to local storage
     const char *ID = argv[1]; // physical location/identity
     time_t curTime;
     curTime = time(NULL);
@@ -315,11 +330,15 @@ int main (int argc, char **argv)
     int i;
     for (i=0; i < numbuf; ++i)
     {
+        sysStatus[0] = 1;
+        led_indicators(sysStatus, fd_stream);
         fileNum += 1;
         tinywav_write_f(&tw, buf_array[i], BLOCK_SIZE);
     }
     tinywav_close_write(&tw);
-
+    sysStatus[0] = 0;
+    led_indicators(sysStatus, fd_stream);
+    
 _exit : 
     aio_stop(aio);
     aio_destroy(aio);
