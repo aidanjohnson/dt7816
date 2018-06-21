@@ -1,4 +1,4 @@
-# APL-UW Union Bay Natural Area Bat Array: MCC DT7816
+# Bat Array: MCC DT7816
 
 See the [manufacturer guide](https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/DT7816_Getting_Started.htm) for the [DT7816](https://www.mccdaq.com/Products/ARM-DAQ/DT7816) if you want a more thorough guide necessary for manual setup and building. This repository is intended to make the building process easier and faster by automating it through a script. Download the tarball in `INSTALL` to build all the code for this DAQ, which is installed to the directory: `/opt/ti-sdk-am335x-evm-07.00.00.00/`. Note that, if built from scratch, the directory would not contain `INSTALL`, [`UM7816.pdf`](/UM7816.pdf), [`DT7816-Programming.pdf`](/DT7816-Programming.pdf) and `libuldaq-1.0.0`; these have been only included for convenience. Follow the instructions below to build it all from scratch.
 
@@ -130,3 +130,6 @@ The second and alternative method is to locally network the client and host. Thi
    * https://askubuntu.com/questions/22835/how-to-network-two-ubuntu-computers-using-ethernet-without-a-router
    * https://www.garron.me/en/linux/add-secondary-ip-linux.html
    * https://access.redhat.com/sites/default/files/attachments/rh_ip_command_cheatsheet_1214_jcs_print.pdf
+
+## Acknowledgements
+Thank you to the [Applied Physics Laboratory](http://www.apl.washington.edu/) at the University of Washington, the (UW Institute for Neuroengineering)[http://uwin.washington.edu/], and the (Union Bay Natural Area)[https://botanicgardens.uw.edu/center-for-urban-horticulture/visit/union-bay-natural-area/]
