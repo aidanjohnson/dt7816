@@ -42,7 +42,7 @@ There are two ways for a user to connect the host computer (PC) to the client co
 
 The second and alternative method is to locally network the client and host. This is achieved by using the host as a NFS server and the client a NFS client. The USB-Serial cable allows PuTTY to connect to the board so the user can access the terminal interface necessary to perform any and all operations on the DT7816 module. The conduit for the transfer of data is an Ethernet cable that creates the local network (LAN). This secction will provide a step-by-step guide to setting up the LAN and NFS mounting.
   
-1. On the host computer, run the `ifconfig` command to find the MAC address. Likely, you will have to instead use the `ip a l` command if you are using a newer Linux version. Under `wl*` (where * are wild-card characters) copy the MAC address following `link/ether` (it looks like **:**:**:**:**:**). Before closing, make sure the automatically connect box is checked. Alternatively this can be done as a command line:
+1. On the host computer, run the `ifconfig` command to find the MAC address. Likely, you will have to instead use the `ip a l` command if you are using a newer Linux version. Under `wl*` (where * are wild-card characters) copy the MAC address following `link/ether` (it looks like \*\*:\*\*:\*\*:\*\*:\*\*:\*\*). Before closing, make sure the automatically connect box is checked. Alternatively this can be done as a command line:
   ```
   sudo ip ad add 10.0.0.10/24 dev enp4sof1
   ```
