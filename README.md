@@ -34,9 +34,9 @@ See the [manufacturer guide](https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/
    * https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/Creating_Projects_in_Netbeans.htm
    * https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/Configuring_the_Resources_for_Netbeans_Code_Assistance.htm
 
-6. Complete the last step of https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/Build_the_Drivers_.htm. This requires the following set of instructions, which pertain to establishing a connection between the DAQ module and a PC (Unix-based, specifically Linux).
+6. Complete the last step of https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/Build_the_Drivers_.htm. This requires the following set of instructions, which pertain to establishing a connection between the DT7816 DAQ module and a Unix-based, specifically Linux, PC.
 
-## Connection Instructions: For the DT7816 & a PC
+## Connection Instructions
 
 There are two ways for a user to connect the host computer (PC) to the client computer (the DT7816). The first, which is documented at length in the Getting Started guide from the manufacturer, relies on using the `web-server` example application. In this method the client and host are connected to the same network (e.g., the APL-UW network) and the terminal of the client can be accessed from the host via an SSH application like PuTTY. However, this is cumbersome in the field and in general, especially when transfering or copying files (e.g., custom programs). 
 
@@ -120,7 +120,7 @@ The second and alternative method is to locally network the client and host. Thi
    ```
    You may have to reparse the project after the linkages, and there could be more broken include header links besides these above. For example, you may need to link from the header files in `linux-devkit/sysroots/cortexa8hf-vfp-neon-3.8-oe-linux-gnueabi/usr/include` and `board-support/u-boot-2013.10-ti2013.12.01/include` (targets) to `board-support/linux-3.12.10-ti2013.12.01/include/linux` (desitination).
 
-4. In these instructions the superuser `sudo` command program for elevating security privelages has been included for redundancy. Moreover, these instructions will *only* work properly on Linux. These files were developed and tested on a machine running Ubuntu 18.04 LTS.
+4. In these instructions the superuser `sudo` command program for elevating security privelages has been included for redundancy. Moreover, these instructions will *only* work properly on Linux. These files were developed and tested on a machine running [Ubuntu 18.04 LTS](http://releases.ubuntu.com/18.04/).
 
 5. Consult the following docs for help with `libxml`:
    * http://xmlsoft.org/html/libxml-lib.html
