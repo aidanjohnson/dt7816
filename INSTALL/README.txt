@@ -6,10 +6,11 @@ for additional details on (a)synchronous I/O.
 
 -------------------------------------------------------------------------------
 Samples AIN0 and writes data to specified file in WAV format
+WAV files saved to path to storage
 
 Usage 
 
-bat-array [options] <file>
+bat-array [options] <file or location identifier>
 Options
 -b buffers : number of buffers queued, default 2
 -s samples : number of samples per buffer, default 1024
