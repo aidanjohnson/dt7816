@@ -12,7 +12,6 @@ Usage
 
 bat-array [options] <file or location identifier>
 Options
--b buffers : number of buffers queued, default 2
 -s samples : number of samples per buffer, default 1024
 -c clk     : sampling rate in Hz, default is 400KHz
 
