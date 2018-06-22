@@ -83,7 +83,7 @@ The second and alternative method is to locally network the client and host. Thi
      ```
     and write that to disk.
 
-11. Now we will set up the NFS client. In the serial console terminal, once booted up and logged in on the DT7816 using a baud rate of 115200 and at the USB-serial port `/dev/ttyUSB0`, install `apt-get install nfs-common` and make a directory with `mkdir /usr/local/dt7816-nfs`. Then mount the NFS server with `mount -t nfs 10.0.0.10:/export/DT7816-NFS /usr/local/dt7816-nfs`.
+11. Now we will set up the NFS client. In the serial console terminal, once booted up and logged in on the DT7816 using a baud rate of 115200 and at the USB-Serial port `/dev/ttyUSB0`, install `apt-get install nfs-common` and make a directory with `mkdir /usr/local/dt7816-nfs`. Then mount the NFS server with `mount -t nfs 10.0.0.10:/export/DT7816-NFS /usr/local/dt7816-nfs`.
 
 12. Edit the file `sudo nano /etc/fstab` to have the lines
     ```
@@ -91,6 +91,25 @@ The second and alternative method is to locally network the client and host. Thi
     10.0.0.10:/export/DT7816-NFS /usr/local/dt7816-nfs nfs rw,hard,intr 0 0
     ```
     To check all the directories on the server are accesible by the client, run `ls -l /usr/local/dt7816-nfs`
+
+## Operation Instructions
+
+1. Assuming the above installation and connection instructions were performed successfully, connect a Linux PC to the DT7816 board via the USB-Serial cable. On the serial end, connect the female header to the J10 pins (the centre row of the parallel row pin trio). Have the black lead attach to pin 1 (the pin closest to the J10 label and microSD card reader. Pair the PC and board with a male-to-male Ethernet cable, as described in the above instructions. Plug the DC power cable to the board so it boots up.
+
+2. In Terminal on the PC, run the command `screen /dev/ttyUSB0 115200` to connect to the serial console of the DAQ. The terminal console will initially be blank; be patient and after a few moments press the 'return' carriage key. Now some boot messages should be displayed. When it asks for a username, type `root` and type `root` for the password. You now are accessing the serial console.
+
+3. To check that the NFS server is functioning, type the command `ls -l /usr/local/dt7816-nfs`. You should then see a list of all the files in the `/opt/ti-sdk-am335x-evm-07.00.00.00/` directory on the PC. 
+
+4. Now that we are confident that the preliminary steps are functioning correctly, we can then access the programs or applications that we've written in C. For our purposes we will be running the `bat-array` program such that the board will autonomously sample and record the soundscape. *--more to be added later on mounting a local storage device (e.g., HDD or SSD) at a predefined file structure location--*
+
+5. Inconveniently, the board's local time clock needs to be set and synchronised to a common time so the `wav` files can be properly time-stamped in their file name. We can synchronise the board's clock to local clock that *must* be used for both boards--I would use my digital wristwatch or computer's time when the time was exactly zero seconds (HH:MM:00). Specifically run the commands:
+   * `date +%Y%m%d -s "YYYmmdd"` where YYYY is the year, mm is the month and dd is the day.
+   * `date +%H%M%S -s "HH:MM:SS"` where HH is hours in 24-hour time, MM is minutes and SS is seconds.
+   * `date +%Z -s "PST"
+   *--more on this a the common external clock that is described in the [User Manual](/UM7816.pdf) on pp. 35-39 and p. 48 is implemented--*
+6. Since we want to run the `bat-array` program without the PC connected to the board, we will need to copy the program over to local, on-board memory. To do so, run the command `cp -r /usr/local/dt7816-nfs/example-applications/dt78xx-examples/bat-array/ /usr/local/`. Then change directories to that location with `cd /usr/local/bat-array`.
+
+7. Now we can run the program. To do so, run the command `./release/bat-array <identifier>` on the serial console (via Terminal) where `<identifier>` is a identifier of your choosing for the board's recordings (e.g., N for North). At the console mesage, type 's' and then press 'return' key. The program will now automatically run saving the recordings to the local storage directory as `.wav` files. *--more on this as the program is developed for all 8 channels and the buffer block size, etc. is finalised--*
 
 ## Troubleshooting
 
