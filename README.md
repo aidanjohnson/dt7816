@@ -10,7 +10,7 @@ See the [manufacturer guide](https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/
    * http://www.fftw.org/fftw-3.3.4.tar.gz
    * ftp://xmlsoft.org/libxml2/libxml2-2.9.8.tar.gz
 
-2. Download the compressed directories in `INSTALL`. Uncompress [`INSTALL.tar.gz`](/INSTALL/INSTALL.tar.gz) with the command:
+2. Download the compressed directories in `INSTALL`. Uncompress [`INSTALL.tar.gz`](/INSTALL/INSTALL.tar.gz), which is formed with the script `INSTALL_tar.sh`, using the command:
    ```
    tar -xzvf INSTALL.tar.gz
    ```
