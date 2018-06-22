@@ -44,7 +44,7 @@ The second and alternative method is to locally network the client and host. Thi
   
 1. On the host computer, run the `ifconfig` command to find the MAC address. Likely, you will have to instead use the `ip a l` command if you are using a newer Linux version. Under `wl*` (where * are wild-card characters) copy the MAC address following `link/ether` (it looks like \*\*:\*\*:\*\*:\*\*:\*\*:\*\*). Before closing, make sure the automatically connect box is checked. Alternatively this can be done as a command line `sudo ip ad add 10.0.0.10/24 dev enp4sof1`. (Note: `enp4sof1` can differ; use the Ethernet port name from running `ifconfig`.)
 
-2. Open up the host computer networking setting and create a new wired connection. Enter a name and the MAC address. Under the IPv4 tab, select manual. Then add the IP address and netmask: 10.0.0.1 and 255.255.255.0. 
+2. Open up the host computer networking setting and create a new wired connection. Enter a name and the MAC address. Under the IPv4 tab, select manual. Then add the IP address and netmask: 10.0.0.1 and 255.255.255.0. Leave the gateway empty/blank.
 
 3. Differently, for the client computer (the DAQ board) we will set similar settings in its terminal through a serial console (see https://learn.adafruit.com/welcome-to-circuitpython/advanced-serial-console-on-mac-and-linux for instructions how; alternatively, via PuTTY). In short, you can connect to the client terminal via the serial console by running the command `screen /dev/ttyUSB0 115200`. You may have to run `sudo apt-get install screen` first.
 
