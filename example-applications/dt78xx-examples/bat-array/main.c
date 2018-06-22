@@ -42,6 +42,7 @@
 #define _WAIT_STREAM_EMPTY_         (1)
 #define DEFAULT_SAMPLE_RATE_HZ      (400000.0f)
 #define DEFAULT_SAMPLES_PER_CHAN    (16384)
+
 #ifdef DT7816
     #define DEV_STREAM_IN           "/dev/dt7816-stream-in"
     //AIN device file
@@ -140,6 +141,7 @@ int main (int argc, char **argv)
     opt = 0;
     while ((opt = getopt(argc, argv, "s:c:")) != -1) 
     {// AIN0, default gain, DC coupling, current source off
+
         switch (opt) 
         {
             case 's':
