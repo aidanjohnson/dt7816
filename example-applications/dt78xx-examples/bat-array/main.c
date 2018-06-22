@@ -41,8 +41,7 @@
 
 #define _WAIT_STREAM_EMPTY_         (1)
 #define DEFAULT_SAMPLE_RATE_HZ      (400000.0f)
-#define DEFAULT_SAMPLES_PER_CHAN    (1024)
-#define DEFAULT_NUM_BUFF            (2)
+#define DEFAULT_SAMPLES_PER_CHAN    (16384)
 #ifdef DT7816
     #define DEV_STREAM_IN           "/dev/dt7816-stream-in"
     //AIN device file
@@ -57,6 +56,7 @@
 #define PATH_TO_STORAGE             "/usr/local/path/to/ssd/"
 #define LEN                         255
 #define NUM_CHANNELS                1
+#define NUM_BUFF                    1
 #define SAMPLE_RATE                 DEFAULT_SAMPLE_RATE_HZ
 #define BLOCK_SIZE                  DEFAULT_SAMPLES_PER_CHAN
 
@@ -72,7 +72,6 @@ static const char usage[]=
 "WAV files saved to path to storage\n"
 "Usage : %s [options] <file or location identifier>\n"
 "Options\n"
-"-b buffers : number of buffers queued, default " xstr(DEFAULT_NUM_BUFF) "\n"
 "-s samples : number of samples per buffer, default " xstr(DEFAULT_SAMPLES_PER_CHAN) "\n"
 "-c clk     : sampling rate in Hz, default " xstr(DEFAULT_SAMPLE_RATE_HZ) "\n"
 
@@ -122,21 +121,25 @@ int main (int argc, char **argv)
     int fd_stream = 0;  
     int fd_ain = 0;
     int opt;
-    int samples_per_chan = DEFAULT_SAMPLES_PER_CHAN;
-    int numbuf = DEFAULT_NUM_BUFF;
+    int samples_per_chan = BLOCK_SIZE;
+    int numbuf = NUM_BUFF;
     chan_mask_t chan_mask = chan_mask_ain0;
-    dt78xx_clk_config_t clk = {.ext_clk=0, 
+    dt78xx_clk_config_t clk = {.ext_clk=0, //Internal clock
                                .ext_clk_din=0, 
-                               .clk_freq=DEFAULT_SAMPLE_RATE_HZ};
-    dt78xx_ain_config_t ain_cfg ={.ain=0,.gain=1,.ac_coupling=0,.current_on=0,
-                                  .differential=0};
+                               .clk_freq=DEFAULT_SAMPLE_RATE_HZ
+                              };
+    dt78xx_ain_config_t ain_cfg ={.ain=0, //AIN0
+                                  .gain=1, //Default gain
+                                  .ac_coupling=0, //DC coupling
+                                  .current_on=0, //Current source off
+                                  .differential=0
+                                 }; 
     
     struct aio_struct *aio = NULL;
     
-    int fileNum = 0;
-    
-    while ((opt = getopt(argc, argv, "s:b:c:")) != -1) 
-    {
+    opt = 0;
+    while ((opt = getopt(argc, argv, "s:c:")) != -1) 
+    {// AIN0, default gain, DC coupling, current source off
         switch (opt) 
         {
             case 's':
@@ -147,16 +150,7 @@ int main (int argc, char **argv)
                     return (EXIT_FAILURE);
                 }
                 break;
-            
-            case 'b':
-                numbuf = strtoul(optarg, NULL, 10);
-                if (numbuf <=0)
-                {
-                    printf(usage, argv[0]);
-                    return (EXIT_FAILURE);
-                }
-                break;
-            
+                        
             case 'c':
                 clk.clk_freq = atof(optarg);
                 break;
@@ -172,6 +166,8 @@ int main (int argc, char **argv)
         printf(usage, argv[0]);
         return (EXIT_FAILURE);
     }
+    
+    //Open input stream
     fd_stream = open(DEV_STREAM_IN, O_RDONLY);
     if (fd_stream < 0)
     {
@@ -180,6 +176,7 @@ int main (int argc, char **argv)
         return (EXIT_FAILURE);
     }
     
+    //Open analog input
     fd_ain = open(DEV_AIN, O_RDONLY);
     if (fd_ain < 0)
     {
@@ -193,7 +190,7 @@ int main (int argc, char **argv)
     //Set up ctrl-C handler to terminate process gracefully
     sigaction_register(SIGINT, sigint_handler);
 
-    //configure sampling rate. The actual rate is returned on success
+    //Configure sampling rate. The actual rate is returned on success
     if (ioctl(fd_stream, IOCTL_SAMPLE_CLK_SET, &clk))
     {
         perror("IOCTL_SAMPLE_CLK_SET");    
@@ -216,13 +213,14 @@ int main (int argc, char **argv)
         goto _exit;
     }
     
-    //write channel mask
+    //Write channel mask
     if (ioctl(fd_stream, IOCTL_CHAN_MASK_SET, &chan_mask))
     {
         fprintf(stderr, "IOCTL_CHAN_MASK_SET ERROR %d \"%s\"\n", 
                 errno, strerror(errno));
         goto _exit;
     }
+    
     //Channel gain, coupling and current source
     if (ioctl(fd_ain, IOCTL_AIN_CFG_SET, &ain_cfg))
     {
@@ -243,7 +241,7 @@ int main (int argc, char **argv)
         goto _exit;
     }
     
-    //size each buffer to hold the specified samples for each channel
+    //Size/allocate a buffer to hold the specified samples for each channel
     int buflen = aio_buff_size(samples_per_chan, chan_mask, &samples_per_chan);
     void **buf_array = aio_buff_alloc(aio, numbuf, buflen);
     if (!buf_array)
@@ -251,17 +249,10 @@ int main (int argc, char **argv)
         fprintf(stderr, "ERROR aio_buff_alloc\n");
         goto _exit;
     }
-    //submit the buffers
-    if (aio_start(aio))
-    {
-        fprintf(stderr, "ERROR aio_start\n");
-        goto _exit;
-    }
     
-    fprintf(stdout,"Sampling at %f Hz gain %hu queued %d buffers each of %d samples\n", 
-                    clk.clk_freq, ain_cfg.gain, numbuf, samples_per_chan);
+    fprintf(stdout,"Sampling at %f Hz to buffer of %d samples\n", 
+                    clk.clk_freq, samples_per_chan);
     
-    //TODO: figure out way to start sampling without use of command line
     //Wait for user input to start or abort
     fprintf(stdout,"Press s to start, any other key to quit\n");
     ret = 0;
@@ -270,12 +261,14 @@ int main (int argc, char **argv)
         int c = getchar();
         if (c == 's')
         {
+            //ARM
             if ((ioctl(fd_stream, IOCTL_ARM_SUBSYS, 0)))   
             {
                 fprintf(stderr, "IOCTL_ARM_SUBSYS ERROR %d \"%s\"\n", 
                         errno, strerror(errno));
                 goto _exit;
             }
+            //Issue a software start
             if ((ioctl(fd_stream, IOCTL_START_SUBSYS, 0)))
             {
                 fprintf(stderr, "IOCTL_START_SUBSYS ERROR %d \"%s\"\n", 
@@ -287,59 +280,67 @@ int main (int argc, char **argv)
         goto _exit;
     }
     
-    //wait for all buffers to complete
-#ifdef _WAIT_STREAM_EMPTY_
+    int fileNum = 0;
     while (!g_quit)
     {
-        if (aio_wait(aio, -1) < 0)
-            break;
-    }
-#else
-    int buff_done = 0;
-    while (!g_quit && (buff_done != numbuf))
-    {
-        if (aio_wait(aio, -1) > 0)
+        //Submit the buffers for asynchronous I/O
+        if (aio_start(aio))
         {
-            ++buff_done;
-            fprintf(stdout, "%d buffers done\n", buff_done);
+            fprintf(stderr, "ERROR aio_start\n");
+            goto _exit;
         }
-        else
-            break; //error
-    }
-#endif        
+
+        //Wait for all buffers to complete
+        int buff_done = 0;
+        while (!g_quit && (buff_done < numbuf))
+        {
+            int ret = aio_wait(aio, 0);
+            if (ret < 0) //error
+                break;
+            buff_done += ret;
+        }
     
-    //After completion ...
-    ioctl(fd_stream, IOCTL_STOP_SUBSYS, 0);    
-    
-    //Write acquired data to the specified file
-    const char *outputPath = PATH_TO_STORAGE; // a set path to local storage
-    const char *ID = argv[1]; // physical location/identity
-    time_t curTime;
-    curTime = time(NULL);
-    struct tm *locTime = localtime(&curTime);
-    char fileTime[LEN];
-    strftime(fileTime, LEN, "_%Y%m%d_%H%M%S.wav", locTime);
-    char fileName[LEN];
-    strcpy(fileName, ID); // identify
-    strcat(fileName, fileTime);
-    char filePath[LEN];
-    strcpy(filePath, outputPath);
-    strcat(filePath, fileName);
-    
-    TinyWav tw;
-    tinywav_open_write(&tw, NUM_CHANNELS, SAMPLE_RATE, TW_FLOAT32, TW_INLINE, filePath);
-    
-    int i;
-    for (i=0; i < numbuf; ++i)
-    {
+        //Stop streaming after buffer completion
+        ioctl(fd_stream, IOCTL_STOP_SUBSYS, 0);  
+        aio_stop(aio);   
+
+        //Write acquired data to the specified file
+        const char *outputPath = PATH_TO_STORAGE; // a set path to local storage
+        const char *ID = argv[1]; // physical location/identity
+        time_t curTime;
+        curTime = time(NULL);
+        struct tm *locTime = localtime(&curTime);
+        char fileTime[LEN];
+        strftime(fileTime, LEN, "_%Y%m%d_%H%M%S.wav", locTime);
+        char fileName[LEN];
+        strcpy(fileName, ID); // identify
+        strcat(fileName, fileTime);
+        char filePath[LEN];
+        strcpy(filePath, outputPath);
+        strcat(filePath, fileName);
+
+        TinyWav tw;
+        tinywav_open_write(&tw, 
+                NUM_CHANNELS, 
+                SAMPLE_RATE, 
+                TW_FLOAT32, //Output samples: 32-bit floats. TW_INT16: 16-bit
+                TW_INLINE, //Samples inlined in a single buffer.
+                           //Other options include TW_INTERLEAVED and TW_SPLIT
+                filePath
+        );
+
         sysStatus[0] = 1;
         led_indicators(sysStatus, fd_stream);
         fileNum += 1;
-        tinywav_write_f(&tw, buf_array[i], BLOCK_SIZE);
+        tinywav_write_f(&tw, buf_array, buflen);
+        
+        tinywav_close_write(&tw);
+        sysStatus[0] = 0;
+        led_indicators(sysStatus, fd_stream);
+        
+        //delay
+        usleep(50*1000);
     }
-    tinywav_close_write(&tw);
-    sysStatus[0] = 0;
-    led_indicators(sysStatus, fd_stream);
     
 _exit : 
     aio_stop(aio);
