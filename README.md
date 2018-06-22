@@ -30,7 +30,7 @@ See the [manufacturer guide](https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/
 
 4. Follow steps on your screen and terminal; watch for any errors (especially fatal) and refer to the Troubleshooting section below for assistance.
 
-5. Download and install NetBeans 8.2. (Recommended instead of TI's Code Composer Studio because the manufacturer's guide assumes NetBeans 8.1.) Create a project for the example applications by following these instructions:
+5. Download and install NetBeans 8.2. (Recommended instead of TI's Code Composer Studio because the manufacturer's guide assumes NetBeans 8.1.) If for some reason you decide not use the Python script `build_examples.py` to create a project for each of the example applications, follow these instructions:
    * https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/Creating_Projects_in_Netbeans.htm
    * https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/Configuring_the_Resources_for_Netbeans_Code_Assistance.htm
 
