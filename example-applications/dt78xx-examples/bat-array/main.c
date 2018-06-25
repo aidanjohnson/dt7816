@@ -102,7 +102,7 @@ static void stream_empty_cb(int i)
 
 static void led_indicators(char *system, int streaming) 
 {
-    // writing := LED0, := LED1, := LED2, := LED3,
+    // standby := LED0, writing := LED1, recording := LED2, buffering := LED3,
     // := LED4, := LED5, := LED6, := LED7  
     //update debug leds (8 total): on = 1 = success
     dt78xx_led_t led;
@@ -260,6 +260,8 @@ int main (int argc, char **argv)
     ret = 0;
     while (1)
     {
+        sysStatus[0] = 1; //LED1 on
+        led_indicators(sysStatus, fd_stream);
         int c = getchar();
         if (c == 's')
         {
@@ -281,10 +283,15 @@ int main (int argc, char **argv)
         }
         goto _exit;
     }
-    
+    sysStatus[0] = 0; //LED1 off
+    led_indicators(sysStatus, fd_stream);
+        
     int fileNum = 0; //Diagnostic/debugging file counter
     while (!g_quit)
     {
+        sysStatus[2] = 1; //LED2 on
+        led_indicators(sysStatus, fd_stream);
+            
         //Submit the buffers for asynchronous I/O
         if (aio_start(aio))
         {
@@ -296,6 +303,8 @@ int main (int argc, char **argv)
         int buff_done = 0;
         while (!g_quit && (buff_done < numbuf))
         {
+            sysStatus[3] = 1; //LED3 on
+            led_indicators(sysStatus, fd_stream);
             int ret = aio_wait(aio, 0);
             if (ret < 0) //error
                 break;
@@ -304,7 +313,9 @@ int main (int argc, char **argv)
     
         //Stop streaming after buffer completion
         ioctl(fd_stream, IOCTL_STOP_SUBSYS, 0);  
-        aio_stop(aio);   
+        aio_stop(aio);
+        sysStatus[3] = 0; //LED3 off
+        led_indicators(sysStatus, fd_stream);
 
         //Write acquired data to the specified file
         const char *outputPath = PATH_TO_STORAGE; //A set path to local storage
@@ -316,7 +327,7 @@ int main (int argc, char **argv)
         strftime(fileTime, LEN, "_%Y%m%d_%H%M%S.wav", locTime); //YYYYMMDD_HHmmss
         char fileName[LEN];
         strcpy(fileName, ID); //Identify
-        strcat(fileName, fileTime);//Timestamped
+        strcat(fileName, fileTime); //Timestamped
         char filePath[LEN];
         strcpy(filePath, outputPath); //Directory path
         strcat(filePath, fileName); //Full file path: concatenates filename
@@ -332,22 +343,24 @@ int main (int argc, char **argv)
         );
 
         //Writes
-        sysStatus[0] = 1; //LED0 on
+        sysStatus[1] = 1; //LED0 on
         led_indicators(sysStatus, fd_stream);
         fileNum += 1;
         tinywav_write_f(&tw, buf_array, buflen); //Writes to .wav output file
         
         //Stops writing
         tinywav_close_write(&tw);
-        sysStatus[0] = 0; //LED0 off
+        sysStatus[1] = 0; //LED0 off
         led_indicators(sysStatus, fd_stream);
         
         //Delay: Not sure why it helps prevent errors?
         usleep(50*1000);
     }
+    sysStatus[2] = 0; //LED2 off
+    led_indicators(sysStatus, fd_stream);
 
 //Exit protocol and procedure    
-_exit : 
+_exit :
     aio_stop(aio);
     aio_destroy(aio);
     if (fd_ain > 0)
