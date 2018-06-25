@@ -41,7 +41,7 @@
 
 #define _WAIT_STREAM_EMPTY_         (1)
 #define DEFAULT_SAMPLE_RATE_HZ      (400000.0f)
-#define DEFAULT_SAMPLES_PER_CHAN    (16384) // More causes an error?
+#define DEFAULT_SAMPLES_PER_CHAN    (1024576) // More causes an error? 16384
 
 #ifdef DT7816
     #define DEV_STREAM_IN           "/dev/dt7816-stream-in"
@@ -57,7 +57,7 @@
 #define PATH_TO_STORAGE             "/usr/local/path/to/ssd/"
 #define LEN                         255
 #define NUM_CHANNELS                1
-#define NUM_BUFF                    1
+#define NUM_BUFFS                   1
 #define SAMPLE_RATE                 DEFAULT_SAMPLE_RATE_HZ
 #define BLOCK_SIZE                  DEFAULT_SAMPLES_PER_CHAN
 
@@ -100,15 +100,15 @@ static void stream_empty_cb(int i)
 }
 #endif
 
-static void led_indicators(char *system, int streaming) 
+static void led_indicators(uint8_t status, int streaming) 
 {
     // standby := LED0, writing := LED1, recording := LED2, buffering := LED3,
     // := LED4, := LED5, := LED6, := LED7  
     //update debug leds (8 total): on = 1 = success
     dt78xx_led_t led;
-    uint16_t status = strtoul(system, NULL, 2);
     led.mask = 0xff;    // all bits are enabled (8 LEDs, L-R)
-    led.state = (unsigned char) (status & 0xff);
+    led.state = (status & 0xff);
+    fprintf(stderr, "%d\n", status);
     ioctl(streaming, IOCTL_LED_SET, &led);    
 }
 
@@ -117,13 +117,12 @@ static void led_indicators(char *system, int streaming)
  */
 int main (int argc, char **argv)
 {
-    char sysStatus[8] = {0};
+    uint8_t sysStatus = 0x00;
     int ret = EXIT_SUCCESS;
     int fd_stream = 0;  
     int fd_ain = 0;
     int opt;
     int samples_per_chan = BLOCK_SIZE;
-    int numbuf = NUM_BUFF;
     chan_mask_t chan_mask = chan_mask_ain0;
     dt78xx_clk_config_t clk = {.ext_clk=0, //Internal clock
                                .ext_clk_din=0, 
@@ -170,6 +169,7 @@ int main (int argc, char **argv)
     }
     
     //Open input stream
+    fprintf(stderr, "Opening stream...\n");
     fd_stream = open(DEV_STREAM_IN, O_RDONLY);
     if (fd_stream < 0)
     {
@@ -179,6 +179,7 @@ int main (int argc, char **argv)
     }
     
     //Open analog input
+    fprintf(stderr, "Opening analog input...\n");
     fd_ain = open(DEV_AIN, O_RDONLY);
     if (fd_ain < 0)
     {
@@ -231,12 +232,9 @@ int main (int argc, char **argv)
         goto _exit;
     }
     
-    //Create and initialize AIO structures
-#ifdef _WAIT_STREAM_EMPTY_
-    aio = aio_create(fd_stream, 0, NULL, stream_empty_cb);
-#else
+    //Create and initialise AIO structures
+    fprintf(stderr, "Initialising...\n");
     aio = aio_create(fd_stream, 0, NULL, NULL);
-#endif
     if (!aio)
     {
         fprintf(stderr, "ERROR aio_create\n");
@@ -244,8 +242,9 @@ int main (int argc, char **argv)
     }
     
     //Size/allocate a buffer to hold the specified samples for each channel
+    fprintf(stderr, "Sizing buffer...\n");
     int buflen = aio_buff_size(samples_per_chan, chan_mask, &samples_per_chan);
-    void **buf_array = aio_buff_alloc(aio, numbuf, buflen);
+    void **buf_array = aio_buff_alloc(aio, NUM_BUFFS, buflen);
     if (!buf_array)
     {
         fprintf(stderr, "ERROR aio_buff_alloc\n");
@@ -260,9 +259,11 @@ int main (int argc, char **argv)
     ret = 0;
     while (1)
     {
-        sysStatus[0] = 1; //LED1 on
+        fprintf(stderr, "Waiting for user...\n");
+        sysStatus += 0x02; //LED1 on
         led_indicators(sysStatus, fd_stream);
         int c = getchar();
+        fprintf(stderr, "User input acknowledged...\n");
         if (c == 's')
         {
             //ARM
@@ -283,13 +284,14 @@ int main (int argc, char **argv)
         }
         goto _exit;
     }
-    sysStatus[0] = 0; //LED1 off
+    sysStatus -= 0x02; //LED1 off
     led_indicators(sysStatus, fd_stream);
         
     int fileNum = 0; //Diagnostic/debugging file counter
+    //Infinite loop until aborted by ctrl-C
     while (!g_quit)
     {
-        sysStatus[2] = 1; //LED2 on
+        sysStatus += 0x04; //LED2 on
         led_indicators(sysStatus, fd_stream);
             
         //Submit the buffers for asynchronous I/O
@@ -300,24 +302,23 @@ int main (int argc, char **argv)
         }
 
         //Wait for all buffers to complete
+        fprintf(stderr, "Filling buffer...\n");
         int buff_done = 0;
-        while (!g_quit && (buff_done < numbuf))
+        while (!g_quit && (buff_done < NUM_BUFFS))
         {
-            sysStatus[3] = 1; //LED3 on
-            led_indicators(sysStatus, fd_stream);
             int ret = aio_wait(aio, 0);
             if (ret < 0) //error
                 break;
             buff_done += ret;
         }
     
+        fprintf(stderr, "Buffer Complete...\n");
         //Stop streaming after buffer completion
         ioctl(fd_stream, IOCTL_STOP_SUBSYS, 0);  
         aio_stop(aio);
-        sysStatus[3] = 0; //LED3 off
-        led_indicators(sysStatus, fd_stream);
-
+        
         //Write acquired data to the specified file
+        fprintf(stderr, "Writing...\n");
         const char *outputPath = PATH_TO_STORAGE; //A set path to local storage
         const char *ID = argv[1]; //Physical location/identity: identifier
         time_t curTime;
@@ -336,28 +337,29 @@ int main (int argc, char **argv)
         tinywav_open_write(&tw, 
                 NUM_CHANNELS, 
                 SAMPLE_RATE, 
-                TW_FLOAT32, //Output samples: 32-bit floats. TW_INT16: 16-bit
+                TW_INT16, //Output samples: 16-bit ints. TW_FLOAT32: 32-bit floats
                 TW_INLINE, //Samples in-line in a single buffer.
                            //Other options include TW_INTERLEAVED and TW_SPLIT
                 filePath
         );
 
         //Writes
-        sysStatus[1] = 1; //LED0 on
+        sysStatus += 0x01; //LED0 on
         led_indicators(sysStatus, fd_stream);
         fileNum += 1;
-        tinywav_write_f(&tw, buf_array, buflen); //Writes to .wav output file
-        
+        fprintf(stderr, "%dth ", fileNum);
+        tinywav_write_f(&tw, buf_array, sizeof(buflen)); //Writes to .wav output file
         //Stops writing
         tinywav_close_write(&tw);
-        sysStatus[1] = 0; //LED0 off
+        sysStatus -= 0x01; //LED0 off
         led_indicators(sysStatus, fd_stream);
+        fprintf(stderr, ".wav Written.\n");
         
-        //Delay: Not sure why it helps prevent errors?
-        usleep(50*1000);
+//        aio_buff_free(aio);
+        sysStatus -= 0x04; //LED2 off
+        led_indicators(sysStatus, fd_stream);
     }
-    sysStatus[2] = 0; //LED2 off
-    led_indicators(sysStatus, fd_stream);
+
 
 //Exit protocol and procedure    
 _exit :
