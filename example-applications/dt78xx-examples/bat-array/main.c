@@ -41,7 +41,7 @@
 
 #define _WAIT_STREAM_EMPTY_         (1)
 #define DEFAULT_SAMPLE_RATE_HZ      (400000.0f)
-#define DEFAULT_SAMPLES_PER_CHAN    (16384)
+#define DEFAULT_SAMPLES_PER_CHAN    (16384) // More causes an error?
 
 #ifdef DT7816
     #define DEV_STREAM_IN           "/dev/dt7816-stream-in"
@@ -104,7 +104,7 @@ static void led_indicators(char *system, int streaming)
 {
     // writing := LED0, := LED1, := LED2, := LED3,
     // := LED4, := LED5, := LED6, := LED7  
-    //update debug leds (8 total): on = success
+    //update debug leds (8 total): on = 1 = success
     dt78xx_led_t led;
     uint16_t status = strtoul(system, NULL, 2);
     led.mask = 0xff;    // all bits are enabled (8 LEDs, L-R)
@@ -140,7 +140,7 @@ int main (int argc, char **argv)
     
     opt = 0;
     while ((opt = getopt(argc, argv, "s:c:")) != -1) 
-    {// AIN0, default gain, DC coupling, current source off
+    {
 
         switch (opt) 
         {
@@ -206,7 +206,7 @@ int main (int argc, char **argv)
         goto _exit;
     }
     
-    //configure for software trigger
+    //Configure for software trigger
     dt78xx_trig_config_t trig_cfg;
     trig_cfg.src = trig_src_sw;
     if (ioctl(fd_stream, IOCTL_START_TRIG_CFG_SET, &trig_cfg))
@@ -282,7 +282,7 @@ int main (int argc, char **argv)
         goto _exit;
     }
     
-    int fileNum = 0;
+    int fileNum = 0; //Diagnostic/debugging file counter
     while (!g_quit)
     {
         //Submit the buffers for asynchronous I/O
@@ -307,43 +307,46 @@ int main (int argc, char **argv)
         aio_stop(aio);   
 
         //Write acquired data to the specified file
-        const char *outputPath = PATH_TO_STORAGE; // a set path to local storage
-        const char *ID = argv[1]; // physical location/identity
+        const char *outputPath = PATH_TO_STORAGE; //A set path to local storage
+        const char *ID = argv[1]; //Physical location/identity: identifier
         time_t curTime;
         curTime = time(NULL);
         struct tm *locTime = localtime(&curTime);
         char fileTime[LEN];
-        strftime(fileTime, LEN, "_%Y%m%d_%H%M%S.wav", locTime);
+        strftime(fileTime, LEN, "_%Y%m%d_%H%M%S.wav", locTime); //YYYYMMDD_HHmmss
         char fileName[LEN];
-        strcpy(fileName, ID); // identify
-        strcat(fileName, fileTime);
+        strcpy(fileName, ID); //Identify
+        strcat(fileName, fileTime);//Timestamped
         char filePath[LEN];
-        strcpy(filePath, outputPath);
-        strcat(filePath, fileName);
+        strcpy(filePath, outputPath); //Directory path
+        strcat(filePath, fileName); //Full file path: concatenates filename
 
         TinyWav tw;
         tinywav_open_write(&tw, 
                 NUM_CHANNELS, 
                 SAMPLE_RATE, 
                 TW_FLOAT32, //Output samples: 32-bit floats. TW_INT16: 16-bit
-                TW_INLINE, //Samples inlined in a single buffer.
+                TW_INLINE, //Samples in-line in a single buffer.
                            //Other options include TW_INTERLEAVED and TW_SPLIT
                 filePath
         );
 
-        sysStatus[0] = 1;
+        //Writes
+        sysStatus[0] = 1; //LED0 on
         led_indicators(sysStatus, fd_stream);
         fileNum += 1;
-        tinywav_write_f(&tw, buf_array, buflen);
+        tinywav_write_f(&tw, buf_array, buflen); //Writes to .wav output file
         
+        //Stops writing
         tinywav_close_write(&tw);
-        sysStatus[0] = 0;
+        sysStatus[0] = 0; //LED0 off
         led_indicators(sysStatus, fd_stream);
         
-        //delay
+        //Delay: Not sure why it helps prevent errors?
         usleep(50*1000);
     }
-    
+
+//Exit protocol and procedure    
 _exit : 
     aio_stop(aio);
     aio_destroy(aio);
