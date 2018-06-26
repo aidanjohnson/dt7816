@@ -39,9 +39,14 @@
 
 #include "tinywav.h"
 
-#define _WAIT_STREAM_EMPTY_         (1)
+/*****************************************************************************
+ * Macros
+ */
 #define DEFAULT_SAMPLE_RATE_HZ      (400000.0f)
-#define DEFAULT_SAMPLES_PER_CHAN    (16384)
+#define DEFAULT_SAMPLES_PER_CHAN    (1024576) // More causes an error? 16384
+#define DEFAULT_GAIN                (1) // gain 1 => +/- 10 V
+#define DEFAULT_TRIG_LEVEL_V        (0.0f)
+#define NUM_BUFFS                   (1)
 
 #ifdef DT7816
     #define DEV_STREAM_IN           "/dev/dt7816-stream-in"
@@ -57,25 +62,43 @@
 #define PATH_TO_STORAGE             "/usr/local/path/to/ssd/"
 #define LEN                         255
 #define NUM_CHANNELS                1
-#define NUM_BUFF                    1
 #define SAMPLE_RATE                 DEFAULT_SAMPLE_RATE_HZ
 #define BLOCK_SIZE                  DEFAULT_SAMPLES_PER_CHAN
 
 static int g_quit = 0;
 
+/*****************************************************************************
+ * Data types
+ */
+
+struct buffer
+{
+    int32_t num_samples;
+    float values[1];  //variable sized array with num_samples
+};
+
+struct buffer_object
+{
+    float sample_rate;  
+    int32_t num_samples;
+    struct buffer *vbuf;  //buffer with raw values converted to voltage
+};
+
 /*
  * Command line arguments
  */
-static const char usage[]=
+static const char g_usage[]=
 {
 "Samples AIN0 and writes data"
 "to specified file in WAV format;"
 "WAV files saved to path to storage\n"
 "Usage : %s [options] <file or location identifier>\n"
 "Options\n"
-"-s samples : number of samples per buffer, default " xstr(DEFAULT_SAMPLES_PER_CHAN) "\n"
-"-c clk     : sampling rate in Hz, default " xstr(DEFAULT_SAMPLE_RATE_HZ) "\n"
-
+"-s|--samples : number of samples per buffer, default " xstr(DEFAULT_SAMPLES_PER_CHAN) "\n"
+"-c|--clk : sampling rate in Hz, default " xstr(DEFAULT_SAMPLE_RATE_HZ) "\n"
+"-d|--daemon : runs this application as a daemon process\n"
+"-a|--auto : auto trigger acquisition. By default, acquisition is triggered \n" 
+"            when the voltage on AIN0 crosses 0V rising\n"    
 };
 
 /*****************************************************************************
@@ -87,47 +110,41 @@ static void sigint_handler(int i)
     g_quit = -1;
 }
 
-#ifdef _WAIT_STREAM_EMPTY_
-/******************************************************************************
- * Output stream empty signal handler
- * @param i   : signal number SIGUSR2
- */
-static void stream_empty_cb(int i) 
+static void led_indicators(uint8_t status, int streaming) 
 {
-    fprintf(stdout, "%s\n", __func__);
-    //process queue empty indication; in this case quit the foreground loop
-    g_quit = 1;
-}
-#endif
-
-static void led_indicators(char *system, int streaming) 
-{
-    // writing := LED0, := LED1, := LED2, := LED3,
+    // standby := LED0, writing := LED1, recording := LED2, buffering := LED3,
     // := LED4, := LED5, := LED6, := LED7  
-    //update debug leds (8 total): on = success
+    //update debug leds (8 total): on = 1 = success
     dt78xx_led_t led;
-    uint16_t status = strtoul(system, NULL, 2);
     led.mask = 0xff;    // all bits are enabled (8 LEDs, L-R)
-    led.state = (unsigned char) (status & 0xff);
+    led.state = (status & 0xff);
+//    fprintf(stderr, "%d\n", status);
     ioctl(streaming, IOCTL_LED_SET, &led);    
 }
 
 /******************************************************************************
  * Command line arguments see usage above
  */
-int main (int argc, char **argv)
+int main (int argc, char** argv)
 {
-    char sysStatus[8] = {0};
+    uint8_t sysStatus = 0x00;
     int ret = EXIT_SUCCESS;
-    int fd_stream = 0;  
-    int fd_ain = 0;
+    int daemonise = 0;
+    int auto_trig = 0;
+//    int fd_stream = 0;  
+//    int fd_ain = 0;
     int opt;
     int samples_per_chan = BLOCK_SIZE;
-    int numbuf = NUM_BUFF;
     chan_mask_t chan_mask = chan_mask_ain0;
+    
+    struct buffer_object buffer_object =
+    {
+        .sample_rate = SAMPLE_RATE,
+        .vbuf = NULL,
+    };
     dt78xx_clk_config_t clk = {.ext_clk=0, //Internal clock
                                .ext_clk_din=0, 
-                               .clk_freq=DEFAULT_SAMPLE_RATE_HZ
+                               .clk_freq=SAMPLE_RATE
                               };
     dt78xx_ain_config_t ain_cfg ={.ain=0, //AIN0
                                   .gain=1, //Default gain
@@ -136,11 +153,11 @@ int main (int argc, char **argv)
                                   .differential=0
                                  }; 
     
-    struct aio_struct *aio = NULL;
+//    struct aio_struct *aio = NULL;
     
     opt = 0;
     while ((opt = getopt(argc, argv, "s:c:")) != -1) 
-    {// AIN0, default gain, DC coupling, current source off
+    {
 
         switch (opt) 
         {
@@ -148,7 +165,7 @@ int main (int argc, char **argv)
                 samples_per_chan = strtoul(optarg, NULL, 10);
                 if (samples_per_chan <= 0)
                 {
-                    printf(usage, argv[0]);
+                    printf(g_usage, argv[0]);
                     return (EXIT_FAILURE);
                 }
                 break;
@@ -156,21 +173,43 @@ int main (int argc, char **argv)
             case 'c':
                 clk.clk_freq = atof(optarg);
                 break;
+            
+            case 'd' :
+                daemonise = 1;
+                break;    
+            
+            case 'a' :
+                auto_trig = 1;
+                break;
                 
             default :
-                printf(usage, argv[0]);
+                printf(g_usage, argv[0]);
                 return EXIT_FAILURE;
         }
     }  
     
-    if (optind >= argc) //missing WAV file name
+    if (optind >= argc) //missing WAV file identifier
     {
-        printf(usage, argv[0]);
+        printf(g_usage, argv[0]);
         return (EXIT_FAILURE);
     }
     
+    if (buffer_object.sample_rate <= 0.0f)
+    {
+        printf(g_usage, argv[0]);
+        return (EXIT_FAILURE);
+    }
+    
+    //Run as a daemon if specified in command line. MUST preceed any file I/O
+    if (daemonise)
+    {
+        if (daemon(1,0) < 0)
+            perror("daemon");
+    }
+    
     //Open input stream
-    fd_stream = open(DEV_STREAM_IN, O_RDONLY);
+    fprintf(stderr, "Opening stream...\n");
+    int fd_stream = open(DEV_STREAM_IN, O_RDONLY);
     if (fd_stream < 0)
     {
         fprintf(stderr, "ERROR %d \"%s\" open %s\n", 
@@ -179,7 +218,8 @@ int main (int argc, char **argv)
     }
     
     //Open analog input
-    fd_ain = open(DEV_AIN, O_RDONLY);
+    fprintf(stderr, "Opening analog input...\n");
+    int fd_ain = open(DEV_AIN, O_RDONLY);
     if (fd_ain < 0)
     {
         fprintf(stderr, "ERROR %d \"%s\" open %s\n", 
@@ -187,17 +227,18 @@ int main (int argc, char **argv)
         close(fd_stream);
         return (EXIT_FAILURE);
     }
-    
             
     //Set up ctrl-C handler to terminate process gracefully
     sigaction_register(SIGINT, sigint_handler);
 
     //Configure sampling rate. The actual rate is returned on success
+    clk.clk_freq = buffer_object.sample_rate;
     if (ioctl(fd_stream, IOCTL_SAMPLE_CLK_SET, &clk))
     {
         perror("IOCTL_SAMPLE_CLK_SET");    
         goto _exit;
     }
+    buffer_object.sample_rate = clk.clk_freq; //Actual rate
     
     //Redundant, but shows how to get sample rate
     if (ioctl(fd_stream, IOCTL_SAMPLE_CLK_GET, &clk))
@@ -206,9 +247,18 @@ int main (int argc, char **argv)
         goto _exit;
     }
     
-    //configure for software trigger
+    //Configure for software trigger
+    fprintf(stderr, "Configuring trigger...\n");
     dt78xx_trig_config_t trig_cfg;
-    trig_cfg.src = trig_src_sw;
+    trig_cfg.src_cfg.threshold.ain = 0; //AIN0
+    if (auto_trig) //auto == software trigger
+        trig_cfg.src = trig_src_sw;
+    else           //default trigger == threshold trigger
+    {
+        trig_cfg.src = trig_src_threshold;
+        trig_cfg.src_cfg.threshold.edge_rising = 1;
+        trig_cfg.src_cfg.threshold.level = volts2raw(DEFAULT_TRIG_LEVEL_V,DEFAULT_GAIN);
+    }
     if (ioctl(fd_stream, IOCTL_START_TRIG_CFG_SET, &trig_cfg))
     {
         perror("IOCTL_START_TRIG_CFG_SET");    
@@ -231,12 +281,9 @@ int main (int argc, char **argv)
         goto _exit;
     }
     
-    //Create and initialize AIO structures
-#ifdef _WAIT_STREAM_EMPTY_
-    aio = aio_create(fd_stream, 0, NULL, stream_empty_cb);
-#else
-    aio = aio_create(fd_stream, 0, NULL, NULL);
-#endif
+    //Create and initialise AIO structures
+    fprintf(stderr, "Initialising...\n");
+    struct aio_struct *aio = aio_create(fd_stream, 0, NULL, NULL);
     if (!aio)
     {
         fprintf(stderr, "ERROR aio_create\n");
@@ -244,107 +291,158 @@ int main (int argc, char **argv)
     }
     
     //Size/allocate a buffer to hold the specified samples for each channel
-    int buflen = aio_buff_size(samples_per_chan, chan_mask, &samples_per_chan);
-    void **buf_array = aio_buff_alloc(aio, numbuf, buflen);
+    fprintf(stderr, "Allocating buffer...\n");
+    int buflen = aio_buff_size(BLOCK_SIZE, chan_mask, 
+                                &buffer_object.num_samples);
+    void **buf_array = aio_buff_alloc(aio, NUM_BUFFS, buflen);
     if (!buf_array)
     {
         fprintf(stderr, "ERROR aio_buff_alloc\n");
         goto _exit;
     }
     
-    fprintf(stdout,"Sampling at %f Hz to buffer of %d samples\n", 
+    fprintf(stdout,"Sampling at %f Hz to buffer of %d samples...\n", 
                     clk.clk_freq, samples_per_chan);
     
-    //Wait for user input to start or abort
-    fprintf(stdout,"Press s to start, any other key to quit\n");
-    ret = 0;
-    while (1)
-    {
-        int c = getchar();
-        if (c == 's')
-        {
-            //ARM
-            if ((ioctl(fd_stream, IOCTL_ARM_SUBSYS, 0)))   
-            {
-                fprintf(stderr, "IOCTL_ARM_SUBSYS ERROR %d \"%s\"\n", 
-                        errno, strerror(errno));
-                goto _exit;
-            }
-            //Issue a software start
-            if ((ioctl(fd_stream, IOCTL_START_SUBSYS, 0)))
-            {
-                fprintf(stderr, "IOCTL_START_SUBSYS ERROR %d \"%s\"\n", 
-                        errno, strerror(errno));
-                goto _exit;
-            }
-            break;
-        }
-        goto _exit;
-    }
+//    //Wait for user input to start or abort
+//    fprintf(stdout,"Press s to start, any other key to quit\n");
+//    while (1)
+//    {
+//        sysStatus += 0x02; //LED1 on
+//        led_indicators(sysStatus, fd_stream);
+//        int c = getchar();
+//        if (c == 's')
+//        {
+//            //ARM
+//            if ((ioctl(fd_stream, IOCTL_ARM_SUBSYS, 0)))   
+//            {
+//                fprintf(stderr, "IOCTL_ARM_SUBSYS ERROR %d \"%s\"\n", 
+//                        errno, strerror(errno));
+//                goto _exit;
+//            }
+//            //Issue a software start
+//            if ((ioctl(fd_stream, IOCTL_START_SUBSYS, 0)))
+//            {
+//                fprintf(stderr, "IOCTL_START_SUBSYS ERROR %d \"%s\"\n", 
+//                        errno, strerror(errno));
+//                goto _exit;
+//            }
+//            break;
+//        }
+//        goto _exit;
+//    }
+//    fprintf(stderr, "User input acknowledged...\nTo abort, press ctrl+c...\n");
+//    sysStatus -= 0x02; //LED1 off
+//    led_indicators(sysStatus, fd_stream);
     
-    int fileNum = 0;
+    ret = 0;
+    int fileNum = 0; //Diagnostic/debugging file counter
+    //Infinite loop until aborted by ctrl-C
     while (!g_quit)
     {
+        sysStatus += 0x04; //LED2 on
+        led_indicators(sysStatus, fd_stream);
+        
+        fprintf(stderr, "%d\n", aio_start(aio));
+        
         //Submit the buffers for asynchronous I/O
         if (aio_start(aio))
         {
             fprintf(stderr, "ERROR aio_start\n");
-            goto _exit;
+            break;
         }
 
+        //ARM
+        if ((ioctl(fd_stream, IOCTL_ARM_SUBSYS, 0)))   
+        {
+            fprintf(stderr, "IOCTL_ARM_SUBSYS ERROR %d \"%s\"\n", 
+                    errno, strerror(errno));
+            break;
+        }
+
+        /* Issue a software start; this is redundant if trigger source is 
+         * threshold trigger or external trigger */ 
+        if ((ioctl(fd_stream, IOCTL_START_SUBSYS, 0)))
+        {
+            fprintf(stderr, "IOCTL_START_SUBSYS ERROR %d \"%s\"\n", 
+                    errno, strerror(errno));
+            break;
+        }
+        
         //Wait for all buffers to complete
+        fprintf(stderr, "Filling buffer...\n");
         int buff_done = 0;
-        while (!g_quit && (buff_done < numbuf))
+        while (!g_quit && (buff_done < NUM_BUFFS))
         {
             int ret = aio_wait(aio, 0);
             if (ret < 0) //error
                 break;
             buff_done += ret;
         }
-    
+
+        fprintf(stderr, "Buffer Complete...\n");
         //Stop streaming after buffer completion
         ioctl(fd_stream, IOCTL_STOP_SUBSYS, 0);  
-        aio_stop(aio);   
-
+        aio_stop(aio);
+        
+                //convert the raw values to voltage
+        float *out = buffer_object.vbuf->values;
+        for (buff_done=0; buff_done < NUM_BUFFS; ++buff_done)
+        { 
+            //AIN channels are 16-bits
+            int16_t *raw = buf_array[buff_done];
+            int sample;
+            for (sample=0; sample < buffer_object.num_samples; 
+                 ++sample, ++raw, ++out)
+            {
+                *out = raw2volts(*raw, DEFAULT_GAIN); 
+            }
+        }
+        
         //Write acquired data to the specified file
-        const char *outputPath = PATH_TO_STORAGE; // a set path to local storage
-        const char *ID = argv[1]; // physical location/identity
+        fprintf(stderr, "Writing...\n");
+        const char *outputPath = PATH_TO_STORAGE; //A set path to local storage
+        const char *ID = argv[1]; //Physical location/identity: identifier
         time_t curTime;
         curTime = time(NULL);
         struct tm *locTime = localtime(&curTime);
         char fileTime[LEN];
-        strftime(fileTime, LEN, "_%Y%m%d_%H%M%S.wav", locTime);
+        strftime(fileTime, LEN, "_%Y%m%d_%H%M%S.wav", locTime); //YYYYMMDD_HHmmss
         char fileName[LEN];
-        strcpy(fileName, ID); // identify
-        strcat(fileName, fileTime);
+        strcpy(fileName, ID); //Identify
+        strcat(fileName, fileTime); //Timestamped
         char filePath[LEN];
-        strcpy(filePath, outputPath);
-        strcat(filePath, fileName);
+        strcpy(filePath, outputPath); //Directory path
+        strcat(filePath, fileName); //Full file path: concatenates filename
 
         TinyWav tw;
         tinywav_open_write(&tw, 
                 NUM_CHANNELS, 
                 SAMPLE_RATE, 
-                TW_FLOAT32, //Output samples: 32-bit floats. TW_INT16: 16-bit
-                TW_INLINE, //Samples inlined in a single buffer.
+                TW_INT16, //Output samples: 16-bit ints. TW_FLOAT32: 32-bit floats
+                TW_INLINE, //Samples in-line in a single buffer.
                            //Other options include TW_INTERLEAVED and TW_SPLIT
                 filePath
         );
 
-        sysStatus[0] = 1;
+        //Writes
+        sysStatus += 0x01; //LED0 on
         led_indicators(sysStatus, fd_stream);
         fileNum += 1;
-        tinywav_write_f(&tw, buf_array, buflen);
-        
+        fprintf(stderr, "%dth ", fileNum);
+        tinywav_write_f(&tw, out, sizeof(buflen)); //Writes to .wav output file
+        //Stops writing
         tinywav_close_write(&tw);
-        sysStatus[0] = 0;
+        sysStatus -= 0x01; //LED0 off
         led_indicators(sysStatus, fd_stream);
+        fprintf(stderr, ".wav Written.\n");
         
-        //delay
-        usleep(50*1000);
+        sysStatus -= 0x04; //LED2 off
+        led_indicators(sysStatus, fd_stream);
     }
-    
-_exit : 
+
+//Exit protocol and procedure    
+_exit :
     aio_stop(aio);
     aio_destroy(aio);
     if (fd_ain > 0)
