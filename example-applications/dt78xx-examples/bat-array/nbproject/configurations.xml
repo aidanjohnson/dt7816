@@ -49,6 +49,14 @@
           <preBuildCommand></preBuildCommand>
         </preBuild>
       </makefileType>
+      <folder path="0">
+        <cTool>
+          <standard>10</standard>
+        </cTool>
+        <ccTool>
+          <standard>8</standard>
+        </ccTool>
+      </folder>
       <item path="main.c" ex="false" tool="0" flavor2="9">
       </item>
     </conf>

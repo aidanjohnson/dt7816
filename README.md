@@ -141,5 +141,7 @@ The second and alternative method is to locally network the client and host. Thi
 
 7. See https://msdn.microsoft.com/en-us/library/windows/desktop/aa365683(v=vs.85).aspx for an explanation of synchronous and asynchronous input/output (I/O) synchronisation.
 
+8. Not entirely sure why this fixes the 'cannot resolve syscall' warning in NetBeans, but for each NetBeans project, right click to access the 'Properties' menu. Then under 'C Compiler'->'C Standard' set to C11, and under 'C++ compiler'->'C++ Standard' set to C++11. See this Stack Overflow [post](https://stackoverflow.com/questions/30686264/erroneous-unable-to-resolve-identifier-in-netbeans/35025731) for more information and discussion.
+
 ## Acknowledgements
 Thank you to the [Applied Physics Laboratory](http://www.apl.washington.edu/) at the University of Washington, the [UW Institute for Neuroengineering](http://uwin.washington.edu/), and the [Union Bay Natural Area](https://botanicgardens.uw.edu/center-for-urban-horticulture/visit/union-bay-natural-area/) for funding and support. Contact: [Wu-Jung Lee](https://leewujung.github.io/) at wjlee@apl.washington.edu and [Aidan Johnson](https://aidanjohnson.github.io/) at johnsj96@uw.edu.
