@@ -4,11 +4,7 @@
     <df root="." name="0">
       <df name="release">
       </df>
-      <df name="res">
-      </df>
       <in>main.c</in>
-      <in>mongoose.c</in>
-      <in>mongoose.h</in>
     </df>
   </logicalFolder>
   <projectmakefile>Makefile</projectmakefile>

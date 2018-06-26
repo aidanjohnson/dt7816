@@ -1,6 +1,6 @@
 #ifndef _ERRNO_H
 
-#include <uapi/asm-generic/errno.h>
+#include <asm-generic/errno.h>
 
 extern int errno;
 

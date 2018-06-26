@@ -4,19 +4,7 @@
     <df root="." name="0">
       <df name="release">
       </df>
-      <df name="res">
-        <df name="dt7816">
-        </df>
-        <df name="dt7837">
-        </df>
-      </df>
-      <in>ctrtmr.c</in>
-      <in>digio.c</in>
-      <in>in-stream.c</in>
       <in>main.c</in>
-      <in>mongoose.c</in>
-      <in>mongoose.h</in>
-      <in>webdefs.h</in>
     </df>
   </logicalFolder>
   <projectmakefile>Makefile</projectmakefile>

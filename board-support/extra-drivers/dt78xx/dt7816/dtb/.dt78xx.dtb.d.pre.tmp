@@ -1,9 +1,0 @@
-dt7816.o: dt7816.dts \
- /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/arch/arm/boot/dts/am33xx.dtsi \
- /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/arch/arm/boot/dts/include/dt-bindings/gpio/gpio.h \
- /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/arch/arm/boot/dts/include/dt-bindings/pinctrl/am33xx.h \
- /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/arch/arm/boot/dts/include/dt-bindings/pinctrl/omap.h \
- /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/arch/arm/boot/dts/include/dt-bindings/opp/am33xx.h \
- /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/arch/arm/boot/dts/skeleton.dtsi \
- /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/arch/arm/boot/dts/am335x-bone-common.dtsi \
- /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/extra-drivers/dt78xx/dt78xx_dts.h
