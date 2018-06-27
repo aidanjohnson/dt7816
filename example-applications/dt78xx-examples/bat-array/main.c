@@ -49,7 +49,6 @@
 #define DEFAULT_SAMPLES_PER_CHAN    (1000) // No more than 2^16
 #define DEFAULT_GAIN                (1) // gain 1 => +/- 10 V
 #define DEFAULT_TRIG_LEVEL_V        (0.0f)
-#define NUM_BUFFS                   (1)
 
 #ifdef DT7816
     #define DEV_STREAM_IN           "/dev/dt7816-stream-in"
@@ -64,7 +63,8 @@
 
 #define PATH_TO_STORAGE             "/usr/local/path/to/ssd/"
 #define LEN                         255
-#define NUM_CHANNELS                1
+#define NUM_CHANNELS                1 //8
+#define NUM_BUFFS                   1 //
 #define SAMPLE_RATE                 DEFAULT_SAMPLE_RATE_HZ
 #define BLOCK_SIZE                  DEFAULT_SAMPLES_PER_CHAN
 
@@ -148,12 +148,13 @@ int main (int argc, char** argv)
     int ret = EXIT_SUCCESS;
     int daemonise = 0;
     int auto_trig = 1;
-//    int fd_stream = 0;  
-//    int fd_ain = 0;
     int opt;
     int samples_per_chan = BLOCK_SIZE;
     
     chan_mask_t chan_mask = chan_mask_ain0;
+//    chan_mask_t chan_mask = {chan_mask_ain0, chan_mask_ain1, chan_mask_ain2,
+//                             chan_mask_ain3, chan_mask_ain4, chan_mask_ain5
+//                             chan_mask_ain6, chan_mask_ain7};
     struct aio_struct *aio = NULL;
 
     struct buffer_object buffer_object =
@@ -165,13 +166,56 @@ int main (int argc, char** argv)
                                .ext_clk_din=0, 
                                .clk_freq=SAMPLE_RATE
                               };
-    dt78xx_ain_config_t ain_cfg ={.ain=0, //AIN0
+    dt78xx_ain_config_t ain0_cfg ={.ain=0, //AIN0
                                   .gain=1, //Default gain
                                   .ac_coupling=0, //DC coupling
                                   .current_on=0, //Current source off
                                   .differential=0
                                  }; 
-        
+//    dt78xx_ain_config_t ain1_cfg ={.ain=1, //AIN1
+//                                   .gain=1, //Default gain
+//                                   .ac_coupling=0, //DC coupling
+//                                   .current_on=0, //Current source off
+//                                   .differential=0
+//                                  }; 
+//    dt78xx_ain_config_t ain2_cfg ={.ain=2, //AIN2
+//                                   .gain=1, //Default gain
+//                                   .ac_coupling=0, //DC coupling
+//                                   .current_on=0, //Current source off
+//                                   .differential=0
+//                                  }; 
+//    dt78xx_ain_config_t ain3_cfg ={.ain=3, //AIN3
+//                                   .gain=1, //Default gain
+//                                   .ac_coupling=0, //DC coupling
+//                                   .current_on=0, //Current source off
+//                                   .differential=0
+//                                  }; 
+//    dt78xx_ain_config_t ain4_cfg ={.ain=4, //AIN4
+//                                   .gain=1, //Default gain
+//                                   .ac_coupling=0, //DC coupling
+//                                   .current_on=0, //Current source off
+//                                   .differential=0
+//                                  }; 
+//    dt78xx_ain_config_t ain5_cfg ={.ain=5, //AIN5
+//                                   .gain=1, //Default gain
+//                                   .ac_coupling=0, //DC coupling
+//                                   .current_on=0, //Current source off
+//                                   .differential=0
+//                                  }; 
+//    dt78xx_ain_config_t ain6_cfg ={.ain=6, //AIN6
+//                                   .gain=1, //Default gain
+//                                   .ac_coupling=0, //DC coupling
+//                                   .current_on=0, //Current source off
+//                                   .differential=0
+//                                  }; 
+//    dt78xx_ain_config_t ain7_cfg ={.ain=7, //AIN7
+//                                   .gain=1, //Default gain
+//                                   .ac_coupling=0, //DC coupling
+//                                   .current_on=0, //Current source off
+//                                   .differential=0
+//                                  }; 
+    dt78xx_ain_config_t ain_cfg[NUM_CHANNELS] = {ain0_cfg};
+    
     opt = 0;
     while ((opt = getopt(argc, argv, "s:c:d:t:")) != -1) 
     {
@@ -293,11 +337,14 @@ int main (int argc, char** argv)
     }
     
     //Channel gain, coupling and current source
-    if (ioctl(fd_ain, IOCTL_AIN_CFG_SET, &ain_cfg))
-    {
-        fprintf(stderr, "IOCTL_AIN_CFG_SET ERROR %d \"%s\"\n", 
-                errno, strerror(errno));
-        goto _exit;
+    int ain;
+    for (ain = 0; ain < NUM_CHANNELS; ain++) {
+            if (ioctl(fd_ain, IOCTL_AIN_CFG_SET, &ain_cfg[ain]))
+            {
+                fprintf(stderr, "IOCTL_AIN%d_CFG_SET ERROR %d \"%s\"\n", 
+                        ain, errno, strerror(errno));
+                goto _exit;
+            }
     }
     
     //Create and initialise AIO structures
@@ -433,7 +480,8 @@ int main (int argc, char** argv)
         //convert the raw values to voltage
         fprintf(stderr, "Converting to voltage...\n");
         float *out = buffer_object.vbuf->values;
-        float volts[samples_per_chan];
+        const int v_length = buffer_object.num_samples * NUM_BUFFS;
+        float volts[v_length][NUM_CHANNELS];
         for (buff_done=0; buff_done < NUM_BUFFS; ++buff_done)
         { 
             //AIN channels are 16-bits
@@ -442,33 +490,44 @@ int main (int argc, char** argv)
             for (sample=0; sample < buffer_object.num_samples; 
                     ++sample, ++raw, ++out)
             {
-                fprintf(stderr, "Sample %d\n", sample);
-                *out = raw2volts(*raw, ain_cfg.gain);
-                volts[sample] = *out;
+                for (ain = 0; ain < NUM_CHANNELS; ain++)
+                {
+                    fprintf(stderr, "Sample %d of channel %d\n", sample, ain);
+                    *out = raw2volts(*raw, ain_cfg[ain].gain);
+                    int sample_ain = sample + buffer_object.num_samples * (buff_done - 1);
+                    volts[sample_ain][ain] = *out;
+                }
             }
         }
         
         //Write acquired data to the specified file
         fprintf(stderr, "Making .wav...\n");
-        fprintf(stderr, "Getting path...\n");
+        fprintf(stderr, "Getting path... ");
         const char *outputPath = PATH_TO_STORAGE; //A set path to local storage
-        fprintf(stderr, "Getting identifier..\n");
-        const char *ID = argv[1]; //Physical location/identity: identifier
-        fprintf(stderr, "Getting time...\n");
+        fprintf(stderr, "%s\n", outputPath);
+        fprintf(stderr, "Getting identifier... ");
+        fprintf(stderr, "%s\n", argv[optind]);
+        const char *ID;
+        ID = argv[optind]; //Physical location/identity: identifier
+//        fprintf(stderr, "%s\n", ID);
+//        fprintf(stderr, "Getting time...\n");
         time_t curTime;
         curTime = time(NULL);
         struct tm *locTime = localtime(&curTime);
-        fprintf(stderr, "Creating timestamp...\n");
+        fprintf(stderr, "Creating timestamp... ");
         char fileTime[LEN];
         strftime(fileTime, LEN, "_%Y%m%d_%H%M%S.wav", locTime); //YYYYMMDD_HHmmss
+        fprintf(stderr, "%s\n", fileTime);
+        fprintf(stderr, "Creating file name...\n");
         char fileName[LEN];
         strcpy(fileName, ID); //Identify
         strcat(fileName, fileTime); //Timestamped
+        fprintf(stderr, "Creating file path... ");
         char filePath[LEN];
         strcpy(filePath, outputPath); //Directory path
         strcat(filePath, fileName); //Full file path: concatenates filename
-        
-        fprintf(stderr, "Writing...\n");
+        fprintf(stderr, "%s\n", filePath);
+        fprintf(stderr, "Writing... ");
 
         wavfile wf;
         create_open_wavfile(&wf, 
@@ -477,19 +536,17 @@ int main (int argc, char** argv)
                 filePath
         );
 
-        //Writes
         sysStatus += 0x01; //LED0 on
         led_indicators(sysStatus, fd_stream);
         fileNum += 1;
-        fprintf(stderr, "%do ", fileNum);
-        write_file(&wf, volts, sizeof(buflen)); //Writes to .wav output file
+        //Writes to .wav output file
+        int success = write_file(&wf, v_length, NUM_CHANNELS, 
+                                 (int16_t *) volts); 
+        if (success) fprintf(stderr, "%do .wav file written\n", fileNum);
         //Stops writing
+        fprintf(stderr, "Cleaning up... ");
         close_wav(&wf);
-        sysStatus -= 0x01; //LED0 off
-        led_indicators(sysStatus, fd_stream);
-        fprintf(stderr, ".wav Written.\n");
-        
-        sysStatus -= 0x04; //LED2 off
+        sysStatus -= 0x05; //LED0 and LED2 off
         led_indicators(sysStatus, fd_stream);
     }
 

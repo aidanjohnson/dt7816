@@ -72,6 +72,7 @@ void create_open_wavfile(wavfile *wav, int32_t sample_rate,
 
 void close_wav(wavfile *file);
 
-int write_file(wavfile *wav, int16_t data[], int file_length);
+int write_file(wavfile *wav, int file_length, int file_channels,
+               int16_t data[file_length][file_channels]);
 
 #endif /* WAV_WRITER_H */

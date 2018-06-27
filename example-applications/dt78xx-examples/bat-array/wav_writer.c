@@ -40,17 +40,17 @@
 
 #include <string.h>
 #include <assert.h>
-#include <alloca.h>
 #include <netinet/in.h>
 
 void create_open_wavfile(wavfile *wav, int32_t sample_rate, 
                          int16_t num_channels, const char *path) {
     
-    int bits_per_sample = 2; // 16-bit resolution, two byte signed integer
-    wav->file = fopen(path, "wb+");
+    int bytes_per_sample = 2; // 16-bit resolution, two byte signed integer
+    wav->file = fopen(path, "w");
+    fprintf(stderr, "to %s\n", path);
     assert(wav->file != NULL);
     wav->num_samples_writ = 0;
-    wav->bits_per_sample = bits_per_sample;
+    wav->bits_per_sample = 8 * bytes_per_sample;
     wav->num_channels = num_channels;
     wavfile_header file_header;
     file_header.riff_tag = htonl(0x52494646); // "RIFF"
@@ -74,30 +74,35 @@ void create_open_wavfile(wavfile *wav, int32_t sample_rate,
 
 void close_wav(wavfile *file) {
     uint32_t data_length = file->num_samples_writ * 
-                           file->header.num_channels * 
+                           file->num_channels * 
                            file->bits_per_sample;
+    fprintf(stderr, "data length: %d ", data_length);
     fseek(file->file, 4, SEEK_SET);
     uint32_t size_length = 36 + data_length;
+    fprintf(stderr, "size length: %d\n", size_length);
     fwrite(&size_length, sizeof(uint32_t), 1, file->file);
     
     fseek(file->file, 40, SEEK_SET);
     fwrite(&data_length, sizeof(uint32_t), 1, file->file);
     
-    fclose(file->file);
+    fprintf(stderr, "Closing file... ");
+    int closed = fclose(file->file);
+    if (closed) fprintf(stderr, "closed\n");
     file->file = NULL;
 }
 
-int write_file(wavfile *wav, int16_t *data, int file_length) {
-//    fprintf(stderr, "%s\n", wav->header.riff_tag);
-    int16_t *z = (int16_t *) alloca(wav->header.num_channels*file_length*sizeof(int16_t));
+int write_file(wavfile *wav, int file_length, int file_channels, 
+               int16_t data[file_length][file_channels]) {
+    int16_t *z = (int16_t *) malloc(file_channels*file_length*sizeof(int16_t));
     int i, j, k;
     for (i = 0, k = 0; i < file_length; ++i) {
-        for (j = 0; j < wav->header.num_channels; ++j) {
-            z[k++] = (int16_t) (data[j*file_length+i] * 32767.0f); // 2^15 - 1
+        for (j = 0; j < file_channels; ++j) {
+            // channel buffer is split e.g. [[0000],[1111],[2222],...]
+            z[k++] = (int16_t) (data[j][i] * 32767.0f); // 2^15 - 1
         }
     }
     
     wav->num_samples_writ += file_length;
     return (int) fwrite(z, sizeof(int16_t), 
-                        wav->header.num_channels * file_length, wav->file);
+                        file_channels * file_length, wav->file);
 }
