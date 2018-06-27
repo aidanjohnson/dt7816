@@ -47,7 +47,7 @@ CC := $(CROSS_COMPILE)gcc
 #   General options, sources and libraries
 #   ----------------------------------------------------------------------------
 NAME := bat-array
-SRCS := main.c dt78xx_aio.c dt78xx_misc.c tinywav.c
+SRCS := main.c dt78xx_aio.c dt78xx_misc.c wav_writer.c
 HDRS := 
 OBJS :=
 DEBUG :=

@@ -120,7 +120,7 @@ The second and alternative method is to locally network the client and host. Thi
    ```
 2. Called by `build_dev.sh`, `build_examples.py` is a Python script that builds each of the [example applications](/example-applications/dt78xx-examples/) according to the manufacturer's instructions. See the installation directory for information on what each of these do. The script also creates a NetBeans project for each. It builds:
    * examples: `aio-in`, `aio-out`, `aout-single`, `clk-gen`, `digio`, `dt7816-calibration`, `event-counter`, `fir-filter`, `function-gen`, `sig-analyzer`, `usb-loopback`, `web-server`
-   * `bat-array` ([**WIP**](https://github.com/aidanjohnson/dt7816/projects/1#card-10768858): this is the custom built ADC recording program for the DAQ; samples recorded in the `.wav` format using [TinyWav](https://github.com/mhroth/tinywav) with a standardised file naming convention.)
+   * `bat-array` ([**WIP**](https://github.com/aidanjohnson/dt7816/projects/1#card-10768858): this is the custom built ADC recording program for the DAQ; samples recorded in the `.wav` format using with a standardised file naming convention.)
 
 3. For an unknown reason, the example C-language code applications contains an include header for a differently named directories. To remedy this, create a link like so:
    ```

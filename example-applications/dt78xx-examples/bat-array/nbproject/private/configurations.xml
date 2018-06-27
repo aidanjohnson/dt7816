@@ -5,8 +5,8 @@
       <df name="release">
       </df>
       <in>main.c</in>
-      <in>tinywav.c</in>
-      <in>tinywav.h</in>
+      <in>wav_writer.c</in>
+      <in>wav_writer.h</in>
     </df>
   </logicalFolder>
   <projectmakefile>Makefile</projectmakefile>
