@@ -70,9 +70,9 @@ typedef struct wavfile {
 void create_open_wavfile(wavfile *wav, int32_t sample_rate, 
                          int16_t num_channels, const char *path);
 
-void close_wav(wavfile *file);
+void close_wav(wavfile *wav);
 
 int write_file(wavfile *wav, int file_length, int file_channels,
-               int16_t data[file_length][file_channels]);
+               float data[file_length][file_channels]);
 
 #endif /* WAV_WRITER_H */

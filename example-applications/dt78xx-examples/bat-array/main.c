@@ -46,7 +46,7 @@
  */
 #define _WAIT_STREAM_EMPTY_         (1)
 #define DEFAULT_SAMPLE_RATE_HZ      (400000.0f)
-#define DEFAULT_SAMPLES_PER_CHAN    (1000) // No more than 2^16
+#define DEFAULT_SAMPLES_PER_CHAN    (128) // No more than 2^16
 #define DEFAULT_GAIN                (1) // gain 1 => +/- 10 V
 #define DEFAULT_TRIG_LEVEL_V        (0.0f)
 
@@ -499,6 +499,8 @@ int main (int argc, char** argv)
                 }
             }
         }
+//        fprintf(stderr, "%f\n", volts[buffer_object.num_samples-10][0]);
+//        fprintf(stderr, "%f\n", volts[buffer_object.num_samples-1][0]);
         
         //Write acquired data to the specified file
         fprintf(stderr, "Making .wav...\n");
@@ -540,8 +542,7 @@ int main (int argc, char** argv)
         led_indicators(sysStatus, fd_stream);
         fileNum += 1;
         //Writes to .wav output file
-        int success = write_file(&wf, v_length, NUM_CHANNELS, 
-                                 (int16_t *) volts); 
+        int success = write_file(&wf, v_length, NUM_CHANNELS, volts); 
         if (success) fprintf(stderr, "%do .wav file written\n", fileNum);
         //Stops writing
         fprintf(stderr, "Cleaning up... ");

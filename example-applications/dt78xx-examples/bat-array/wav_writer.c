@@ -59,11 +59,11 @@ void create_open_wavfile(wavfile *wav, int32_t sample_rate,
     file_header.data_tag = htonl(0x64617461); // "data"
     
     file_header.fmt_length = 16; // PCM
-    file_header.audio_format = wav->bits_per_sample - 1; // 1 for PCM
+    file_header.audio_format = bytes_per_sample - 1; // 1 for PCM
     file_header.num_channels = wav->num_channels;
     file_header.sample_rate = sample_rate;
-    file_header.byte_rate = sample_rate * wav->num_channels * wav->bits_per_sample / 8;
-    file_header.block_align = wav->num_channels * wav->bits_per_sample / 8;
+    file_header.byte_rate = sample_rate * num_channels * bytes_per_sample;
+    file_header.block_align = num_channels * bytes_per_sample;
     file_header.bits_per_sample = wav->bits_per_sample;
     file_header.data_length = 0;
     file_header.riff_length = 0;
@@ -72,27 +72,27 @@ void create_open_wavfile(wavfile *wav, int32_t sample_rate,
     wav->header = file_header;
 }
 
-void close_wav(wavfile *file) {
-    uint32_t data_length = file->num_samples_writ * 
-                           file->num_channels * 
-                           file->bits_per_sample;
+void close_wav(wavfile *wav) {
+    uint32_t data_length = wav->num_samples_writ * 
+                           wav->num_channels * 
+                           wav->bits_per_sample;
     fprintf(stderr, "data length: %d ", data_length);
-    fseek(file->file, 4, SEEK_SET);
+    fseek(wav->file, 4, SEEK_SET);
     uint32_t size_length = 36 + data_length;
     fprintf(stderr, "size length: %d\n", size_length);
-    fwrite(&size_length, sizeof(uint32_t), 1, file->file);
+    fwrite(&size_length, sizeof(uint32_t), 1, wav->file);
     
-    fseek(file->file, 40, SEEK_SET);
-    fwrite(&data_length, sizeof(uint32_t), 1, file->file);
+    fseek(wav->file, 40, SEEK_SET);
+    fwrite(&data_length, sizeof(uint32_t), 1, wav->file);
     
     fprintf(stderr, "Closing file... ");
-    int closed = fclose(file->file);
+    int closed = fclose(wav->file);
     if (closed) fprintf(stderr, "closed\n");
-    file->file = NULL;
+    wav->file = NULL;
 }
 
 int write_file(wavfile *wav, int file_length, int file_channels, 
-               int16_t data[file_length][file_channels]) {
+               float data[file_length][file_channels]) {
     int16_t *z = (int16_t *) malloc(file_channels*file_length*sizeof(int16_t));
     int i, j, k;
     for (i = 0, k = 0; i < file_length; ++i) {
@@ -103,6 +103,6 @@ int write_file(wavfile *wav, int file_length, int file_channels,
     }
     
     wav->num_samples_writ += file_length;
-    return (int) fwrite(z, sizeof(int16_t), 
+    return (int) fwrite((void*)z, sizeof(int16_t), 
                         file_channels * file_length, wav->file);
 }
