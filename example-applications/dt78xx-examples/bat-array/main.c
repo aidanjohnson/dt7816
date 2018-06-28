@@ -45,9 +45,8 @@
 /*****************************************************************************
  * Macros
  */
-#define _WAIT_STREAM_EMPTY_         (1)
 #define DEFAULT_SAMPLE_RATE_HZ      (400000.0f)
-#define DEFAULT_SAMPLES_PER_CHAN    (128) // No more than 2^16
+#define DEFAULT_SAMPLES_PER_CHAN    (65536) // No more than 2^16 = 65536
 #define DEFAULT_GAIN                (1) // gain 1 => +/- 10 V
 #define DEFAULT_TRIG_LEVEL_V        (0.0f)
 
@@ -115,19 +114,6 @@ static void sigint_handler(int i)
     g_quit = -1;
 }
 
-#ifdef _WAIT_STREAM_EMPTY_
-/******************************************************************************
- * Output stream empty signal handler
- * @param i   : signal number SIGUSR2
- */
-static void stream_empty_cb(int i) 
-{
-    fprintf(stdout, "%s\n", __func__);
-    //process queue empty indication; in this case quit the foreground loop
-    g_quit = 1;
-}
-#endif
-
 static void led_indicators(uint8_t status, int streaming) 
 {
     // standby := LED0, writing := LED1, recording := LED2, buffering := LED3,
@@ -154,9 +140,8 @@ int main (int argc, char** argv)
     
     chan_mask_t chan_mask = chan_mask_ain0;
 //    chan_mask_t chan_mask = {chan_mask_ain0, chan_mask_ain1, chan_mask_ain2,
-//                             chan_mask_ain3, chan_mask_ain4, chan_mask_ain5
+//                             chan_mask_ain3, chan_mask_ain4, chan_mask_ain5,
 //                             chan_mask_ain6, chan_mask_ain7};
-    struct aio_struct *aio = NULL;
 
     struct buffer_object buffer_object =
     {
@@ -216,7 +201,10 @@ int main (int argc, char** argv)
 //                                   .differential=0
 //                                  }; 
     dt78xx_ain_config_t ain_cfg[NUM_CHANNELS] = {ain0_cfg};
-    
+//    dt78xx_ain_config_t ain_cfg[NUM_CHANNELS] = {ain0_cfg, ain1_cfg, ain2_cfg,
+//                                                 ain3_cfg, ain4_cfg, ain5_cfg,
+//                                                 ain6_cfg, ain7_cfg};
+
     opt = 0;
     while ((opt = getopt(argc, argv, "s:c:d:t:")) != -1) 
     {
@@ -350,11 +338,7 @@ int main (int argc, char** argv)
     
     //Create and initialise AIO structures
     fprintf(stderr, "Initialising...\n");
-#ifdef _WAIT_STREAM_EMPTY_
-    aio = aio_create(fd_stream, 0, NULL, stream_empty_cb);
-#else
-    aio = aio_create(fd_stream, 0, NULL, NULL);
-#endif
+    struct aio_struct *aio = aio_create(fd_stream, 0, NULL, NULL);
     if (!aio)
     {
         fprintf(stderr, "ERROR aio_create\n");
@@ -366,7 +350,7 @@ int main (int argc, char** argv)
     int buflen = aio_buff_size(samples_per_chan, chan_mask, 
                                 &buffer_object.num_samples);
     fprintf(stdout,"Sampling at %f Hz to buffer of %d samples...\n", 
-                    clk.clk_freq, buflen);
+                    clk.clk_freq, buffer_object.num_samples);
     void **buf_array = aio_buff_alloc(aio, NUM_BUFFS, buflen);
     if (!buf_array)
     {
@@ -404,15 +388,17 @@ int main (int argc, char** argv)
     {
         sysStatus += 0x04; //LED2 on
         led_indicators(sysStatus, fd_stream);
-        
+
         //submit the buffers
+        fprintf(stderr, "Starting... bufffer ");
         if (aio_start(aio))
         {
             fprintf(stderr, "ERROR aio_start\n");
             goto _exit;
         }
-    
+
         //ARM
+        fprintf(stderr, "... ARM ");
         if ((ioctl(fd_stream, IOCTL_ARM_SUBSYS, 0)))   
         {
             fprintf(stderr, "IOCTL_ARM_SUBSYS ERROR %d \"%s\"\n", 
@@ -422,33 +408,24 @@ int main (int argc, char** argv)
 
         /* Issue a software start; this is redundant if trigger source is 
          * threshold trigger or external trigger */ 
+        fprintf(stderr, "... software\n");
         if ((ioctl(fd_stream, IOCTL_START_SUBSYS, 0)))
         {
             fprintf(stderr, "IOCTL_START_SUBSYS ERROR %d \"%s\"\n", 
                     errno, strerror(errno));
             goto _exit;
         }
-        
+
         //Wait for all buffers to complete
+        fprintf(stderr, "Waiting...\n");
         int buff_done = 0;
-#ifdef _WAIT_STREAM_EMPTY_
-       while (!g_quit)
-       {
-           if (aio_wait(aio, -1) < 0)
-               break;
-       }
-#else
-       while (!g_quit && (buff_done != NUM_BUFFS))
-       {
-           if (aio_wait(aio, -1) > 0)
-           {
-               ++buff_done;
-               fprintf(stdout, "%d buffers done\n", buff_done);
-           }
-           else
-               break; //error
-       }
-#endif 
+        while (!g_quit && (buff_done < NUM_BUFFS))
+        {
+            int ret = aio_wait(aio, 0);
+            if (ret < 0) //error
+                break;
+            buff_done += ret;
+        }
 
         //Stop streaming after buffer completion
         fprintf(stderr, "Buffer Complete...\n");
@@ -470,14 +447,14 @@ int main (int argc, char** argv)
             {
                 for (ain = 0; ain < NUM_CHANNELS; ain++)
                 {
-                    fprintf(stderr, "Sample %d of channel %d\n", sample, ain);
+//                    fprintf(stderr, "Sample %d of channel %d\n", sample, ain);
                     *out = raw2volts(*raw, ain_cfg[ain].gain);
                     int sample_ain = sample + buffer_object.num_samples * (buff_done + ain);
                     volts[sample_ain] = *out;
                 }
             }
         }
-        
+
         //Write acquired data to the specified file
         fprintf(stderr, "Making .aiff...\n");
         fprintf(stderr, "Getting path... ");
@@ -490,6 +467,10 @@ int main (int argc, char** argv)
         time_t curTime;
         curTime = time(NULL);
         struct tm *locTime = localtime(&curTime);
+        int64_t millis;
+        time_t secs = millis / 1000;
+        tm *ptm = gmtime(&secs);
+        uint32_t ms = millis % 1000;
         fprintf(stderr, "Creating timestamp... ");
         char fileTime[LEN];
         strftime(fileTime, LEN, "_%Y%m%d_%H%M%S.aiff", locTime); //YYYYMMDD_HHmmss
@@ -526,7 +507,7 @@ int main (int argc, char** argv)
             int writ = AIFF_WriteSamples32Bit(file, (int32_t*) volts, (int) buffer_object.num_samples);
             int end = AIFF_EndWritingSamples(file);
             if (start && writ && end) fprintf(stderr, "%do .aiff file written\n", fileNum);
-            
+
             //Stops writing
             fprintf(stderr, "Closing file... ");
             if (AIFF_CloseFile(file)) {
