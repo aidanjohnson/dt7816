@@ -2,11 +2,19 @@
 <configurationDescriptor version="100">
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
     <df root="." name="0">
-      <df name="release">
-      </df>
+      <in>aifx.c</in>
+      <in>config.h</in>
+      <in>endian.h</in>
+      <in>extended.c</in>
+      <in>float32.c</in>
+      <in>g711.c</in>
+      <in>iff.c</in>
+      <in>libaiff.c</in>
+      <in>libaiff.h</in>
+      <in>lpcm.c</in>
       <in>main.c</in>
-      <in>wav_writer.c</in>
-      <in>wav_writer.h</in>
+      <in>pascal.c</in>
+      <in>private.h</in>
     </df>
   </logicalFolder>
   <projectmakefile>Makefile</projectmakefile>

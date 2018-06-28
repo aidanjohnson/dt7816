@@ -56,11 +56,9 @@ sudo ln -sf /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/cortexa8hf-
 sudo ln -s /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/lib/gcc/arm-linux-gnueabihf/4.7.3/include-fixed/syslimits.h /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/include/linux/
 sudo ln -sf /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/lib/gcc/arm-linux-gnueabihf/4.7.3/include/stdbool.h /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/include/linux/
 
-sudo tar -xzvf ~/Downloads/libxml2-2.9.8.tar.gz
-cd libxml2-2.9.8
-sudo ./configure --prefix=/opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/ --without-python
+sudo tar -xzvf ~/Downloads/libaiff-5.0-release.tar.gz /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications
+cd libaiff-5.0
+sudo ./configure --prefix=/opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01
 sudo make
 sudo make install
-cd /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/include
-sudo mv libxml2/libxml ./
-sudo rm -r libxml2
+sudo ln -sf /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/libaiff-5.0/libaiff.* /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/lib/

@@ -102,14 +102,14 @@ The second and alternative method is to locally network the client and host. Thi
 
 4. Now that we are confident that the preliminary steps are functioning correctly, we can then access the programs or applications that we've written in C. For our purposes we will be running the `bat-array` program such that the board will autonomously sample and record the soundscape. ***—more to be added later on mounting a local storage device (e.g., HDD for lower cost per GB or SSD for lower Watt consumption) at a predefined file structure location—***
 
-5. Inconveniently, the board's local time clock needs to be set and synchronised to a common time so the `wav` files can be properly time-stamped in their file name. We can synchronise the board's clock to local clock that *must* be used for both boards--I would use my digital wristwatch or computer's time when the time was exactly zero seconds (HH:MM:00). Specifically run the commands:
+5. Inconveniently, the board's local time clock needs to be set and synchronised to a common time so the `aiff` files can be properly time-stamped in their file name. We can synchronise the board's clock to local clock that *must* be used for both boards--I would use my digital wristwatch or computer's time when the time was exactly zero seconds (HH:MM:00). Specifically run the commands:
    * `date +%Y%m%d -s "YYYmmdd"` where YYYY is the year, mm is the month and dd is the day.
    * `date +%H%M%S -s "HH:MM:SS"` where HH is hours in 24-hour time, MM is minutes and SS is seconds.
    * `date +%Z -s "PST"`
    ***—more on a common external clock that is described in the [User Manual](/UM7816.pdf) on pp. 35-39 and p. 48 as it is implemented—***
 6. Since we want to run the `bat-array` program without the PC connected to the board, we will need to copy the program over to local, on-board memory. To do so, run the command `cp -r /usr/local/dt7816-nfs/example-applications/dt78xx-examples/bat-array/ /usr/local/`. Then change directories to that location with `cd /usr/local/bat-array`.
 
-7. Now we can run the program. To do so, run the command `./release/bat-array <identifier>` on the serial console (via Terminal) where `<identifier>` is a identifier of your choosing for the board's recordings (e.g., N for North). At the console mesage, type 's' and then press 'return' key. The program will now automatically run saving the recordings to the local storage directory as `.wav` files. ***—more on this as the program is developed for all 8 channels and the buffer block size, etc. is finalised—***
+7. Now we can run the program. To do so, run the command `./release/bat-array <identifier>` on the serial console (via Terminal) where `<identifier>` is a identifier of your choosing for the board's recordings (e.g., N for North). At the console mesage, type 's' and then press 'return' key. The program will now automatically run saving the recordings to the local storage directory as `.aiff` files. ***—more on this as the program is developed for all 8 channels and the buffer block size, etc. is finalised—***
 
 ## Troubleshooting
 
@@ -120,7 +120,7 @@ The second and alternative method is to locally network the client and host. Thi
    ```
 2. Called by `build_dev.sh`, `build_examples.py` is a Python script that builds each of the [example applications](/example-applications/dt78xx-examples/) according to the manufacturer's instructions. See the installation directory for information on what each of these do. The script also creates a NetBeans project for each. It builds:
    * examples: `aio-in`, `aio-out`, `aout-single`, `clk-gen`, `digio`, `dt7816-calibration`, `event-counter`, `fir-filter`, `function-gen`, `sig-analyzer`, `usb-loopback`, `web-server`
-   * `bat-array` ([**WIP**](https://github.com/aidanjohnson/dt7816/projects/1#card-10768858): this is the custom built ADC recording program for the DAQ; samples recorded in the `.wav` format using with a standardised file naming convention.)
+   * `bat-array` ([**WIP**](https://github.com/aidanjohnson/dt7816/projects/1#card-10768858): this is the custom built ADC recording program for the DAQ; samples recorded in the `.aiff` format using with a standardised file naming convention.)
 
 3. For an unknown reason, the example C-language code applications contains an include header for a differently named directories. To remedy this, create a link like so:
    ```

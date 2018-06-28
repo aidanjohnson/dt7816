@@ -1,7 +1,7 @@
 /* 
 * This is a custom application for DT7816 bat array asynchronous I/O sampling
 * that configures the board's analog input 0. The sampled data is read 
-* asynchronously from the input stream and written to a WAV file. See:
+* asynchronously from the input stream and written to a AIFF file. See:
 * https://msdn.microsoft.com/en-us/library/windows/desktop/aa365683(v=vs.85).aspx
 * for additional details on (a)synchronous I/O.
  * 
@@ -32,21 +32,24 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <time.h>
+#include <malloc.h>
+#include <math.h>
 
 #include "dt78xx_ioctl.h"
 #include "dt78xx_aio.h"
 #include "dt78xx_misc.h"
 
-#include "tinywav.h"
+#define LIBAIFF_NOCOMPAT 1 // do not use LibAiff 2 API compatibility
+#include "libaiff.h"
 
 /*****************************************************************************
  * Macros
  */
+#define _WAIT_STREAM_EMPTY_         (1)
 #define DEFAULT_SAMPLE_RATE_HZ      (400000.0f)
-#define DEFAULT_SAMPLES_PER_CHAN    (1024576) // More causes an error? 16384
+#define DEFAULT_SAMPLES_PER_CHAN    (128) // No more than 2^16
 #define DEFAULT_GAIN                (1) // gain 1 => +/- 10 V
 #define DEFAULT_TRIG_LEVEL_V        (0.0f)
-#define NUM_BUFFS                   (1)
 
 #ifdef DT7816
     #define DEV_STREAM_IN           "/dev/dt7816-stream-in"
@@ -61,7 +64,8 @@
 
 #define PATH_TO_STORAGE             "/usr/local/path/to/ssd/"
 #define LEN                         255
-#define NUM_CHANNELS                1
+#define NUM_CHANNELS                1 //8
+#define NUM_BUFFS                   1 //
 #define SAMPLE_RATE                 DEFAULT_SAMPLE_RATE_HZ
 #define BLOCK_SIZE                  DEFAULT_SAMPLES_PER_CHAN
 
@@ -90,15 +94,16 @@ struct buffer_object
 static const char g_usage[]=
 {
 "Samples AIN0 and writes data"
-"to specified file in WAV format;"
-"WAV files saved to path to storage\n"
+"to specified file in AIFF format;"
+"AIFF files saved to path to storage\n"
 "Usage : %s [options] <file or location identifier>\n"
 "Options\n"
 "-s|--samples : number of samples per buffer, default " xstr(DEFAULT_SAMPLES_PER_CHAN) "\n"
 "-c|--clk : sampling rate in Hz, default " xstr(DEFAULT_SAMPLE_RATE_HZ) "\n"
 "-d|--daemon : runs this application as a daemon process\n"
-"-a|--auto : auto trigger acquisition. By default, acquisition is triggered \n" 
-"            when the voltage on AIN0 crosses 0V rising\n"    
+"-t|--trig : when the voltage on either AIN crosses 0V rising (threshold) acquisition "
+"            is triggered. By default, acquisition is triggered when you start \n" 
+"            the analog input operation using the ioct \n"    
 };
 
 /*****************************************************************************
@@ -109,6 +114,19 @@ static void sigint_handler(int i)
 {
     g_quit = -1;
 }
+
+#ifdef _WAIT_STREAM_EMPTY_
+/******************************************************************************
+ * Output stream empty signal handler
+ * @param i   : signal number SIGUSR2
+ */
+static void stream_empty_cb(int i) 
+{
+    fprintf(stdout, "%s\n", __func__);
+    //process queue empty indication; in this case quit the foreground loop
+    g_quit = 1;
+}
+#endif
 
 static void led_indicators(uint8_t status, int streaming) 
 {
@@ -130,13 +148,16 @@ int main (int argc, char** argv)
     uint8_t sysStatus = 0x00;
     int ret = EXIT_SUCCESS;
     int daemonise = 0;
-    int auto_trig = 0;
-//    int fd_stream = 0;  
-//    int fd_ain = 0;
+    int auto_trig = 1;
     int opt;
     int samples_per_chan = BLOCK_SIZE;
-    chan_mask_t chan_mask = chan_mask_ain0;
     
+    chan_mask_t chan_mask = chan_mask_ain0;
+//    chan_mask_t chan_mask = {chan_mask_ain0, chan_mask_ain1, chan_mask_ain2,
+//                             chan_mask_ain3, chan_mask_ain4, chan_mask_ain5
+//                             chan_mask_ain6, chan_mask_ain7};
+    struct aio_struct *aio = NULL;
+
     struct buffer_object buffer_object =
     {
         .sample_rate = SAMPLE_RATE,
@@ -146,17 +167,58 @@ int main (int argc, char** argv)
                                .ext_clk_din=0, 
                                .clk_freq=SAMPLE_RATE
                               };
-    dt78xx_ain_config_t ain_cfg ={.ain=0, //AIN0
+    dt78xx_ain_config_t ain0_cfg ={.ain=0, //AIN0
                                   .gain=1, //Default gain
                                   .ac_coupling=0, //DC coupling
                                   .current_on=0, //Current source off
                                   .differential=0
                                  }; 
-    
-//    struct aio_struct *aio = NULL;
+//    dt78xx_ain_config_t ain1_cfg ={.ain=1, //AIN1
+//                                   .gain=1, //Default gain
+//                                   .ac_coupling=0, //DC coupling
+//                                   .current_on=0, //Current source off
+//                                   .differential=0
+//                                  }; 
+//    dt78xx_ain_config_t ain2_cfg ={.ain=2, //AIN2
+//                                   .gain=1, //Default gain
+//                                   .ac_coupling=0, //DC coupling
+//                                   .current_on=0, //Current source off
+//                                   .differential=0
+//                                  }; 
+//    dt78xx_ain_config_t ain3_cfg ={.ain=3, //AIN3
+//                                   .gain=1, //Default gain
+//                                   .ac_coupling=0, //DC coupling
+//                                   .current_on=0, //Current source off
+//                                   .differential=0
+//                                  }; 
+//    dt78xx_ain_config_t ain4_cfg ={.ain=4, //AIN4
+//                                   .gain=1, //Default gain
+//                                   .ac_coupling=0, //DC coupling
+//                                   .current_on=0, //Current source off
+//                                   .differential=0
+//                                  }; 
+//    dt78xx_ain_config_t ain5_cfg ={.ain=5, //AIN5
+//                                   .gain=1, //Default gain
+//                                   .ac_coupling=0, //DC coupling
+//                                   .current_on=0, //Current source off
+//                                   .differential=0
+//                                  }; 
+//    dt78xx_ain_config_t ain6_cfg ={.ain=6, //AIN6
+//                                   .gain=1, //Default gain
+//                                   .ac_coupling=0, //DC coupling
+//                                   .current_on=0, //Current source off
+//                                   .differential=0
+//                                  }; 
+//    dt78xx_ain_config_t ain7_cfg ={.ain=7, //AIN7
+//                                   .gain=1, //Default gain
+//                                   .ac_coupling=0, //DC coupling
+//                                   .current_on=0, //Current source off
+//                                   .differential=0
+//                                  }; 
+    dt78xx_ain_config_t ain_cfg[NUM_CHANNELS] = {ain0_cfg};
     
     opt = 0;
-    while ((opt = getopt(argc, argv, "s:c:")) != -1) 
+    while ((opt = getopt(argc, argv, "s:c:d:t:")) != -1) 
     {
 
         switch (opt) 
@@ -172,14 +234,15 @@ int main (int argc, char** argv)
                         
             case 'c':
                 clk.clk_freq = atof(optarg);
+                buffer_object.sample_rate = clk.clk_freq;
                 break;
             
             case 'd' :
                 daemonise = 1;
                 break;    
             
-            case 'a' :
-                auto_trig = 1;
+            case 't' :
+                auto_trig = 0;
                 break;
                 
             default :
@@ -188,7 +251,7 @@ int main (int argc, char** argv)
         }
     }  
     
-    if (optind >= argc) //missing WAV file identifier
+    if (optind >= argc) //missing AIFF file identifier
     {
         printf(g_usage, argv[0]);
         return (EXIT_FAILURE);
@@ -201,6 +264,7 @@ int main (int argc, char** argv)
     }
     
     //Run as a daemon if specified in command line. MUST preceed any file I/O
+    fprintf(stderr, "Daemonising...\n");
     if (daemonise)
     {
         if (daemon(1,0) < 0)
@@ -228,7 +292,7 @@ int main (int argc, char** argv)
         return (EXIT_FAILURE);
     }
             
-    //Set up ctrl-C handler to terminate process gracefully
+    //Set up ctrl-c handler to terminate process gracefully
     sigaction_register(SIGINT, sigint_handler);
 
     //Configure sampling rate. The actual rate is returned on success
@@ -251,9 +315,9 @@ int main (int argc, char** argv)
     fprintf(stderr, "Configuring trigger...\n");
     dt78xx_trig_config_t trig_cfg;
     trig_cfg.src_cfg.threshold.ain = 0; //AIN0
-    if (auto_trig) //auto == software trigger
+    if (auto_trig) //default trigger == auto or software trigger
         trig_cfg.src = trig_src_sw;
-    else           //default trigger == threshold trigger
+    else           //threshold trigger
     {
         trig_cfg.src = trig_src_threshold;
         trig_cfg.src_cfg.threshold.edge_rising = 1;
@@ -274,16 +338,23 @@ int main (int argc, char** argv)
     }
     
     //Channel gain, coupling and current source
-    if (ioctl(fd_ain, IOCTL_AIN_CFG_SET, &ain_cfg))
-    {
-        fprintf(stderr, "IOCTL_AIN_CFG_SET ERROR %d \"%s\"\n", 
-                errno, strerror(errno));
-        goto _exit;
+    int ain;
+    for (ain = 0; ain < NUM_CHANNELS; ain++) {
+            if (ioctl(fd_ain, IOCTL_AIN_CFG_SET, &ain_cfg[ain]))
+            {
+                fprintf(stderr, "IOCTL_AIN%d_CFG_SET ERROR %d \"%s\"\n", 
+                        ain, errno, strerror(errno));
+                goto _exit;
+            }
     }
     
     //Create and initialise AIO structures
     fprintf(stderr, "Initialising...\n");
-    struct aio_struct *aio = aio_create(fd_stream, 0, NULL, NULL);
+#ifdef _WAIT_STREAM_EMPTY_
+    aio = aio_create(fd_stream, 0, NULL, stream_empty_cb);
+#else
+    aio = aio_create(fd_stream, 0, NULL, NULL);
+#endif
     if (!aio)
     {
         fprintf(stderr, "ERROR aio_create\n");
@@ -292,8 +363,10 @@ int main (int argc, char** argv)
     
     //Size/allocate a buffer to hold the specified samples for each channel
     fprintf(stderr, "Allocating buffer...\n");
-    int buflen = aio_buff_size(BLOCK_SIZE, chan_mask, 
+    int buflen = aio_buff_size(samples_per_chan, chan_mask, 
                                 &buffer_object.num_samples);
+    fprintf(stdout,"Sampling at %f Hz to buffer of %d samples...\n", 
+                    clk.clk_freq, buflen);
     void **buf_array = aio_buff_alloc(aio, NUM_BUFFS, buflen);
     if (!buf_array)
     {
@@ -301,144 +374,166 @@ int main (int argc, char** argv)
         goto _exit;
     }
     
-    fprintf(stdout,"Sampling at %f Hz to buffer of %d samples...\n", 
-                    clk.clk_freq, samples_per_chan);
+    //Allocate a buffer to hold the raw values converted to Volts
+    buffer_object.vbuf = malloc(sizeof(struct buffer) + sizeof(float) *
+                                buffer_object.num_samples/2 * NUM_BUFFS);
+    if (!buffer_object.vbuf)
+    {
+        fprintf(stderr, "ERROR server_param.vbuf\n");
+        goto _exit;
+    }
     
-//    //Wait for user input to start or abort
-//    fprintf(stdout,"Press s to start, any other key to quit\n");
-//    while (1)
-//    {
-//        sysStatus += 0x02; //LED1 on
-//        led_indicators(sysStatus, fd_stream);
-//        int c = getchar();
-//        if (c == 's')
-//        {
-//            //ARM
-//            if ((ioctl(fd_stream, IOCTL_ARM_SUBSYS, 0)))   
-//            {
-//                fprintf(stderr, "IOCTL_ARM_SUBSYS ERROR %d \"%s\"\n", 
-//                        errno, strerror(errno));
-//                goto _exit;
-//            }
-//            //Issue a software start
-//            if ((ioctl(fd_stream, IOCTL_START_SUBSYS, 0)))
-//            {
-//                fprintf(stderr, "IOCTL_START_SUBSYS ERROR %d \"%s\"\n", 
-//                        errno, strerror(errno));
-//                goto _exit;
-//            }
-//            break;
-//        }
-//        goto _exit;
-//    }
-//    fprintf(stderr, "User input acknowledged...\nTo abort, press ctrl+c...\n");
-//    sysStatus -= 0x02; //LED1 off
-//    led_indicators(sysStatus, fd_stream);
+    //submit the buffers
+    if (aio_start(aio))
+    {
+        fprintf(stderr, "ERROR aio_start\n");
+        goto _exit;
+    }
+    
+    
+    //Wait for user input to start or abort
+    fprintf(stdout,"Press s to start, any other key to quit\n");
+    while (1)
+    {
+        int c = getchar();
+        if (c == 's')
+        {
+            //ARM
+            if ((ioctl(fd_stream, IOCTL_ARM_SUBSYS, 0)))   
+            {
+                fprintf(stderr, "IOCTL_ARM_SUBSYS ERROR %d \"%s\"\n", 
+                        errno, strerror(errno));
+                goto _exit;
+            }
+            
+            /* Issue a software start; this is redundant if trigger source is 
+             * threshold trigger or external trigger */ 
+            if ((ioctl(fd_stream, IOCTL_START_SUBSYS, 0)))
+            {
+                fprintf(stderr, "IOCTL_START_SUBSYS ERROR %d \"%s\"\n", 
+                        errno, strerror(errno));
+                goto _exit;
+            }
+            break;
+        }
+        goto _exit;
+    }
     
     ret = 0;
     int fileNum = 0; //Diagnostic/debugging file counter
+    
     //Infinite loop until aborted by ctrl-C
     while (!g_quit)
     {
         sysStatus += 0x04; //LED2 on
         led_indicators(sysStatus, fd_stream);
         
-        fprintf(stderr, "%d\n", aio_start(aio));
-        
-        //Submit the buffers for asynchronous I/O
-        if (aio_start(aio))
-        {
-            fprintf(stderr, "ERROR aio_start\n");
-            break;
-        }
-
-        //ARM
-        if ((ioctl(fd_stream, IOCTL_ARM_SUBSYS, 0)))   
-        {
-            fprintf(stderr, "IOCTL_ARM_SUBSYS ERROR %d \"%s\"\n", 
-                    errno, strerror(errno));
-            break;
-        }
-
-        /* Issue a software start; this is redundant if trigger source is 
-         * threshold trigger or external trigger */ 
-        if ((ioctl(fd_stream, IOCTL_START_SUBSYS, 0)))
-        {
-            fprintf(stderr, "IOCTL_START_SUBSYS ERROR %d \"%s\"\n", 
-                    errno, strerror(errno));
-            break;
-        }
-        
         //Wait for all buffers to complete
-        fprintf(stderr, "Filling buffer...\n");
         int buff_done = 0;
-        while (!g_quit && (buff_done < NUM_BUFFS))
-        {
-            int ret = aio_wait(aio, 0);
-            if (ret < 0) //error
-                break;
-            buff_done += ret;
-        }
+#ifdef _WAIT_STREAM_EMPTY_
+       while (!g_quit)
+       {
+           if (aio_wait(aio, -1) < 0)
+               break;
+       }
+#else
+       while (!g_quit && (buff_done != NUM_BUFFS))
+       {
+           if (aio_wait(aio, -1) > 0)
+           {
+               ++buff_done;
+               fprintf(stdout, "%d buffers done\n", buff_done);
+           }
+           else
+               break; //error
+       }
+#endif 
 
-        fprintf(stderr, "Buffer Complete...\n");
         //Stop streaming after buffer completion
+        fprintf(stderr, "Buffer Complete...\n");
         ioctl(fd_stream, IOCTL_STOP_SUBSYS, 0);  
         aio_stop(aio);
         
-                //convert the raw values to voltage
+        //convert the raw values to voltage
+        fprintf(stderr, "Converting to voltage...\n");
         float *out = buffer_object.vbuf->values;
+        const int v_length = buffer_object.num_samples * NUM_BUFFS * NUM_CHANNELS;
+        float volts[v_length];
         for (buff_done=0; buff_done < NUM_BUFFS; ++buff_done)
         { 
             //AIN channels are 16-bits
             int16_t *raw = buf_array[buff_done];
             int sample;
             for (sample=0; sample < buffer_object.num_samples; 
-                 ++sample, ++raw, ++out)
+                    ++sample, ++raw, ++out)
             {
-                *out = raw2volts(*raw, DEFAULT_GAIN); 
+                for (ain = 0; ain < NUM_CHANNELS; ain++)
+                {
+                    fprintf(stderr, "Sample %d of channel %d\n", sample, ain);
+                    *out = raw2volts(*raw, ain_cfg[ain].gain);
+                    int sample_ain = sample + buffer_object.num_samples * (buff_done + ain);
+                    volts[sample_ain] = *out;
+                }
             }
         }
         
         //Write acquired data to the specified file
-        fprintf(stderr, "Writing...\n");
+        fprintf(stderr, "Making .aiff...\n");
+        fprintf(stderr, "Getting path... ");
         const char *outputPath = PATH_TO_STORAGE; //A set path to local storage
-        const char *ID = argv[1]; //Physical location/identity: identifier
+        fprintf(stderr, "%s\n", outputPath);
+        fprintf(stderr, "Getting identifier... ");
+        fprintf(stderr, "%s\n", argv[optind]);
+        const char *ID;
+        ID = argv[optind]; //Physical location/identity: identifier
         time_t curTime;
         curTime = time(NULL);
         struct tm *locTime = localtime(&curTime);
+        fprintf(stderr, "Creating timestamp... ");
         char fileTime[LEN];
-        strftime(fileTime, LEN, "_%Y%m%d_%H%M%S.wav", locTime); //YYYYMMDD_HHmmss
+        strftime(fileTime, LEN, "_%Y%m%d_%H%M%S.aiff", locTime); //YYYYMMDD_HHmmss
+        fprintf(stderr, "%s\n", fileTime);
+        fprintf(stderr, "Creating file name... ");
         char fileName[LEN];
         strcpy(fileName, ID); //Identify
         strcat(fileName, fileTime); //Timestamped
+        fprintf(stderr, "%s\n", fileName);
+        fprintf(stderr, "Creating file path... ");
         char filePath[LEN];
         strcpy(filePath, outputPath); //Directory path
         strcat(filePath, fileName); //Full file path: concatenates filename
+        fprintf(stderr, "%s\n", filePath);
 
-        TinyWav tw;
-        tinywav_open_write(&tw, 
-                NUM_CHANNELS, 
-                SAMPLE_RATE, 
-                TW_INT16, //Output samples: 16-bit ints. TW_FLOAT32: 32-bit floats
-                TW_INLINE, //Samples in-line in a single buffer.
-                           //Other options include TW_INTERLEAVED and TW_SPLIT
-                filePath
-        );
-
-        //Writes
-        sysStatus += 0x01; //LED0 on
-        led_indicators(sysStatus, fd_stream);
-        fileNum += 1;
-        fprintf(stderr, "%dth ", fileNum);
-        tinywav_write_f(&tw, out, sizeof(buflen)); //Writes to .wav output file
-        //Stops writing
-        tinywav_close_write(&tw);
-        sysStatus -= 0x01; //LED0 off
-        led_indicators(sysStatus, fd_stream);
-        fprintf(stderr, ".wav Written.\n");
-        
-        sysStatus -= 0x04; //LED2 off
-        led_indicators(sysStatus, fd_stream);
+        AIFF_Ref file;
+        file = AIFF_OpenFile(filePath, F_WRONLY);
+        if (file) {
+            sysStatus += 0x01; //LED0 on
+            led_indicators(sysStatus, fd_stream);
+            fileNum += 1;
+            fprintf(stderr, "Opened .aiff file...\n");
+            
+            //Writes to .aiff output file
+            if (AIFF_SetAudioFormat(file, NUM_CHANNELS, 
+                                    (double) buffer_object.sample_rate, sizeof(float))) {
+                fprintf(stderr, ".aiff format set...\n");
+            } else {
+                AIFF_CloseFile(file);
+                fprintf(stderr, "ERROR audio_format_set");
+                goto _exit;
+            }
+            int start = AIFF_StartWritingSamples(file);
+            int writ = AIFF_WriteSamples32Bit(file, (int32_t*) volts, (int) buffer_object.num_samples);
+            int end = AIFF_EndWritingSamples(file);
+            if (start && writ && end) fprintf(stderr, "%do .aiff file written\n", fileNum);
+            
+            //Stops writing
+            fprintf(stderr, "Closing file... ");
+            if (AIFF_CloseFile(file)) {
+                fprintf(stderr, "Closed\n");
+                sysStatus -= 0x05; //LED0 and LED2 off
+                led_indicators(sysStatus, fd_stream);
+            }
+        }
     }
 
 //Exit protocol and procedure    

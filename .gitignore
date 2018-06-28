@@ -22,6 +22,7 @@
 *.zip
 *.tar.gz
 !INSTALL/INSTALL.tar.gz
+!INSTALL/libaiff-5.0-release.tar.gz
 *.tar.bz2
 *.ubi
 

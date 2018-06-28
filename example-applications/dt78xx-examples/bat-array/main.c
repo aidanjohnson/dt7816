@@ -1,7 +1,7 @@
 /* 
 * This is a custom application for DT7816 bat array asynchronous I/O sampling
 * that configures the board's analog input 0. The sampled data is read 
-* asynchronously from the input stream and written to a WAV file. See:
+* asynchronously from the input stream and written to a AIFF file. See:
 * https://msdn.microsoft.com/en-us/library/windows/desktop/aa365683(v=vs.85).aspx
 * for additional details on (a)synchronous I/O.
  * 
@@ -39,7 +39,8 @@
 #include "dt78xx_aio.h"
 #include "dt78xx_misc.h"
 
-#include "wav_writer.h"
+#define LIBAIFF_NOCOMPAT 1 // do not use LibAiff 2 API compatibility
+#include "libaiff.h"
 
 /*****************************************************************************
  * Macros
@@ -93,14 +94,14 @@ struct buffer_object
 static const char g_usage[]=
 {
 "Samples AIN0 and writes data"
-"to specified file in WAV format;"
-"WAV files saved to path to storage\n"
+"to specified file in AIFF format;"
+"AIFF files saved to path to storage\n"
 "Usage : %s [options] <file or location identifier>\n"
 "Options\n"
 "-s|--samples : number of samples per buffer, default " xstr(DEFAULT_SAMPLES_PER_CHAN) "\n"
 "-c|--clk : sampling rate in Hz, default " xstr(DEFAULT_SAMPLE_RATE_HZ) "\n"
 "-d|--daemon : runs this application as a daemon process\n"
-"-t|--trig : when the voltage on AIN0 crosses 0V rising (threshold) acquisition "
+"-t|--trig : when the voltage on either AIN crosses 0V rising (threshold) acquisition "
 "            is triggered. By default, acquisition is triggered when you start \n" 
 "            the analog input operation using the ioct \n"    
 };
@@ -250,7 +251,7 @@ int main (int argc, char** argv)
         }
     }  
     
-    if (optind >= argc) //missing WAV file identifier
+    if (optind >= argc) //missing AIFF file identifier
     {
         printf(g_usage, argv[0]);
         return (EXIT_FAILURE);
@@ -375,7 +376,7 @@ int main (int argc, char** argv)
     
     //Allocate a buffer to hold the raw values converted to Volts
     buffer_object.vbuf = malloc(sizeof(struct buffer) + sizeof(float) *
-                                ((buffer_object.num_samples/2) + 1) * NUM_BUFFS);
+                                buffer_object.num_samples/2 * NUM_BUFFS);
     if (!buffer_object.vbuf)
     {
         fprintf(stderr, "ERROR server_param.vbuf\n");
@@ -426,30 +427,6 @@ int main (int argc, char** argv)
     {
         sysStatus += 0x04; //LED2 on
         led_indicators(sysStatus, fd_stream);
-                
-//        //Submit the buffers for asynchronous I/O
-//        if (aio_start(aio))
-//        {
-//            fprintf(stderr, "ERROR aio_start\n");
-//            break;
-//        }
-//
-//        //ARM
-//        if ((ioctl(fd_stream, IOCTL_ARM_SUBSYS, 0)))   
-//        {
-//            fprintf(stderr, "IOCTL_ARM_SUBSYS ERROR %d \"%s\"\n", 
-//                    errno, strerror(errno));
-//            break;
-//        }
-//
-//        /* Issue a software start; this is redundant if trigger source is 
-//         * threshold trigger or external trigger */ 
-//        if ((ioctl(fd_stream, IOCTL_START_SUBSYS, 0)))
-//        {
-//            fprintf(stderr, "IOCTL_START_SUBSYS ERROR %d \"%s\"\n", 
-//                    errno, strerror(errno));
-//            break;
-//        }
         
         //Wait for all buffers to complete
         int buff_done = 0;
@@ -480,8 +457,8 @@ int main (int argc, char** argv)
         //convert the raw values to voltage
         fprintf(stderr, "Converting to voltage...\n");
         float *out = buffer_object.vbuf->values;
-        const int v_length = buffer_object.num_samples * NUM_BUFFS;
-        float volts[v_length][NUM_CHANNELS];
+        const int v_length = buffer_object.num_samples * NUM_BUFFS * NUM_CHANNELS;
+        float volts[v_length];
         for (buff_done=0; buff_done < NUM_BUFFS; ++buff_done)
         { 
             //AIN channels are 16-bits
@@ -494,16 +471,14 @@ int main (int argc, char** argv)
                 {
                     fprintf(stderr, "Sample %d of channel %d\n", sample, ain);
                     *out = raw2volts(*raw, ain_cfg[ain].gain);
-                    int sample_ain = sample + buffer_object.num_samples * (buff_done - 1);
-                    volts[sample_ain][ain] = *out;
+                    int sample_ain = sample + buffer_object.num_samples * (buff_done + ain);
+                    volts[sample_ain] = *out;
                 }
             }
         }
-//        fprintf(stderr, "%f\n", volts[buffer_object.num_samples-10][0]);
-//        fprintf(stderr, "%f\n", volts[buffer_object.num_samples-1][0]);
         
         //Write acquired data to the specified file
-        fprintf(stderr, "Making .wav...\n");
+        fprintf(stderr, "Making .aiff...\n");
         fprintf(stderr, "Getting path... ");
         const char *outputPath = PATH_TO_STORAGE; //A set path to local storage
         fprintf(stderr, "%s\n", outputPath);
@@ -511,44 +486,54 @@ int main (int argc, char** argv)
         fprintf(stderr, "%s\n", argv[optind]);
         const char *ID;
         ID = argv[optind]; //Physical location/identity: identifier
-//        fprintf(stderr, "%s\n", ID);
-//        fprintf(stderr, "Getting time...\n");
         time_t curTime;
         curTime = time(NULL);
         struct tm *locTime = localtime(&curTime);
         fprintf(stderr, "Creating timestamp... ");
         char fileTime[LEN];
-        strftime(fileTime, LEN, "_%Y%m%d_%H%M%S.wav", locTime); //YYYYMMDD_HHmmss
+        strftime(fileTime, LEN, "_%Y%m%d_%H%M%S.aiff", locTime); //YYYYMMDD_HHmmss
         fprintf(stderr, "%s\n", fileTime);
-        fprintf(stderr, "Creating file name...\n");
+        fprintf(stderr, "Creating file name... ");
         char fileName[LEN];
         strcpy(fileName, ID); //Identify
         strcat(fileName, fileTime); //Timestamped
+        fprintf(stderr, "%s\n", fileName);
         fprintf(stderr, "Creating file path... ");
         char filePath[LEN];
         strcpy(filePath, outputPath); //Directory path
         strcat(filePath, fileName); //Full file path: concatenates filename
         fprintf(stderr, "%s\n", filePath);
-        fprintf(stderr, "Writing... ");
 
-        wavfile wf;
-        create_open_wavfile(&wf, 
-                SAMPLE_RATE, 
-                NUM_CHANNELS,
-                filePath
-        );
-
-        sysStatus += 0x01; //LED0 on
-        led_indicators(sysStatus, fd_stream);
-        fileNum += 1;
-        //Writes to .wav output file
-        int success = write_file(&wf, v_length, NUM_CHANNELS, volts); 
-        if (success) fprintf(stderr, "%do .wav file written\n", fileNum);
-        //Stops writing
-        fprintf(stderr, "Cleaning up... ");
-        close_wav(&wf);
-        sysStatus -= 0x05; //LED0 and LED2 off
-        led_indicators(sysStatus, fd_stream);
+        AIFF_Ref file;
+        file = AIFF_OpenFile(filePath, F_WRONLY);
+        if (file) {
+            sysStatus += 0x01; //LED0 on
+            led_indicators(sysStatus, fd_stream);
+            fileNum += 1;
+            fprintf(stderr, "Opened .aiff file...\n");
+            
+            //Writes to .aiff output file
+            if (AIFF_SetAudioFormat(file, NUM_CHANNELS, 
+                                    (double) buffer_object.sample_rate, sizeof(float))) {
+                fprintf(stderr, ".aiff format set...\n");
+            } else {
+                AIFF_CloseFile(file);
+                fprintf(stderr, "ERROR audio_format_set");
+                goto _exit;
+            }
+            int start = AIFF_StartWritingSamples(file);
+            int writ = AIFF_WriteSamples32Bit(file, (int32_t*) volts, (int) buffer_object.num_samples);
+            int end = AIFF_EndWritingSamples(file);
+            if (start && writ && end) fprintf(stderr, "%do .aiff file written\n", fileNum);
+            
+            //Stops writing
+            fprintf(stderr, "Closing file... ");
+            if (AIFF_CloseFile(file)) {
+                fprintf(stderr, "Closed\n");
+                sysStatus -= 0x05; //LED0 and LED2 off
+                led_indicators(sysStatus, fd_stream);
+            }
+        }
     }
 
 //Exit protocol and procedure    
