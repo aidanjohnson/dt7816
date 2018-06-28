@@ -63,11 +63,13 @@
 #define str(s) #s
 
 #define PATH_TO_STORAGE             "/usr/local/path/to/ssd/"
-#define LEN                         255
+#define LEN                         512 //Default character array size
 #define NUM_CHANNELS                1 //8
-#define NUM_BUFFS                   1 //
+#define NUM_BUFFS                   1 //Number of buffers per file
 #define SAMPLE_RATE                 DEFAULT_SAMPLE_RATE_HZ
 #define BLOCK_SIZE                  DEFAULT_SAMPLES_PER_CHAN
+
+ // **Note: BLOCK_SIZE*NUM_CHANNELS <= 65536 **
 
 static int g_quit = 0;
 
