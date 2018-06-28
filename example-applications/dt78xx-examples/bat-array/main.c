@@ -376,21 +376,14 @@ int main (int argc, char** argv)
     
     //Allocate a buffer to hold the raw values converted to Volts
     buffer_object.vbuf = malloc(sizeof(struct buffer) + sizeof(float) *
-                                buffer_object.num_samples/2 * NUM_BUFFS);
+                                buffer_object.num_samples * NUM_BUFFS);
     if (!buffer_object.vbuf)
     {
-        fprintf(stderr, "ERROR server_param.vbuf\n");
+        fprintf(stderr, "ERROR buffer_object.vbuf\n");
         goto _exit;
     }
     
-    //submit the buffers
-    if (aio_start(aio))
-    {
-        fprintf(stderr, "ERROR aio_start\n");
-        goto _exit;
-    }
-    
-    
+
     //Wait for user input to start or abort
     fprintf(stdout,"Press s to start, any other key to quit\n");
     while (1)
@@ -398,22 +391,6 @@ int main (int argc, char** argv)
         int c = getchar();
         if (c == 's')
         {
-            //ARM
-            if ((ioctl(fd_stream, IOCTL_ARM_SUBSYS, 0)))   
-            {
-                fprintf(stderr, "IOCTL_ARM_SUBSYS ERROR %d \"%s\"\n", 
-                        errno, strerror(errno));
-                goto _exit;
-            }
-            
-            /* Issue a software start; this is redundant if trigger source is 
-             * threshold trigger or external trigger */ 
-            if ((ioctl(fd_stream, IOCTL_START_SUBSYS, 0)))
-            {
-                fprintf(stderr, "IOCTL_START_SUBSYS ERROR %d \"%s\"\n", 
-                        errno, strerror(errno));
-                goto _exit;
-            }
             break;
         }
         goto _exit;
@@ -427,6 +404,30 @@ int main (int argc, char** argv)
     {
         sysStatus += 0x04; //LED2 on
         led_indicators(sysStatus, fd_stream);
+        
+        //submit the buffers
+        if (aio_start(aio))
+        {
+            fprintf(stderr, "ERROR aio_start\n");
+            goto _exit;
+        }
+    
+        //ARM
+        if ((ioctl(fd_stream, IOCTL_ARM_SUBSYS, 0)))   
+        {
+            fprintf(stderr, "IOCTL_ARM_SUBSYS ERROR %d \"%s\"\n", 
+                    errno, strerror(errno));
+            goto _exit;
+        }
+
+        /* Issue a software start; this is redundant if trigger source is 
+         * threshold trigger or external trigger */ 
+        if ((ioctl(fd_stream, IOCTL_START_SUBSYS, 0)))
+        {
+            fprintf(stderr, "IOCTL_START_SUBSYS ERROR %d \"%s\"\n", 
+                    errno, strerror(errno));
+            goto _exit;
+        }
         
         //Wait for all buffers to complete
         int buff_done = 0;
