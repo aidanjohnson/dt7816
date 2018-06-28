@@ -17,6 +17,8 @@
       <in>main.c</in>
       <in>pascal.c</in>
       <in>private.h</in>
+      <in>ringbuf.c</in>
+      <in>ringbuf.h</in>
     </df>
   </logicalFolder>
   <projectmakefile>Makefile</projectmakefile>
