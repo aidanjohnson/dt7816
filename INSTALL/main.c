@@ -32,6 +32,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <time.h>
+#include <sys/time.h>
 #include <malloc.h>
 #include <math.h>
 
@@ -45,9 +46,8 @@
 /*****************************************************************************
  * Macros
  */
-#define _WAIT_STREAM_EMPTY_         (1)
 #define DEFAULT_SAMPLE_RATE_HZ      (400000.0f)
-#define DEFAULT_SAMPLES_PER_CHAN    (128) // No more than 2^16
+#define DEFAULT_SAMPLES_PER_CHAN    (65536) // No more than 2^16 = 65536
 #define DEFAULT_GAIN                (1) // gain 1 => +/- 10 V
 #define DEFAULT_TRIG_LEVEL_V        (0.0f)
 
@@ -63,11 +63,13 @@
 #define str(s) #s
 
 #define PATH_TO_STORAGE             "/usr/local/path/to/ssd/"
-#define LEN                         255
+#define LEN                         512 //Default character array size
 #define NUM_CHANNELS                1 //8
-#define NUM_BUFFS                   1 //
+#define NUM_BUFFS                   1 //Number of buffers per file
 #define SAMPLE_RATE                 DEFAULT_SAMPLE_RATE_HZ
 #define BLOCK_SIZE                  DEFAULT_SAMPLES_PER_CHAN
+
+ // **Note: BLOCK_SIZE*NUM_CHANNELS <= 65536 **
 
 static int g_quit = 0;
 
@@ -115,19 +117,6 @@ static void sigint_handler(int i)
     g_quit = -1;
 }
 
-#ifdef _WAIT_STREAM_EMPTY_
-/******************************************************************************
- * Output stream empty signal handler
- * @param i   : signal number SIGUSR2
- */
-static void stream_empty_cb(int i) 
-{
-    fprintf(stdout, "%s\n", __func__);
-    //process queue empty indication; in this case quit the foreground loop
-    g_quit = 1;
-}
-#endif
-
 static void led_indicators(uint8_t status, int streaming) 
 {
     // standby := LED0, writing := LED1, recording := LED2, buffering := LED3,
@@ -154,9 +143,8 @@ int main (int argc, char** argv)
     
     chan_mask_t chan_mask = chan_mask_ain0;
 //    chan_mask_t chan_mask = {chan_mask_ain0, chan_mask_ain1, chan_mask_ain2,
-//                             chan_mask_ain3, chan_mask_ain4, chan_mask_ain5
+//                             chan_mask_ain3, chan_mask_ain4, chan_mask_ain5,
 //                             chan_mask_ain6, chan_mask_ain7};
-    struct aio_struct *aio = NULL;
 
     struct buffer_object buffer_object =
     {
@@ -216,6 +204,11 @@ int main (int argc, char** argv)
 //                                   .differential=0
 //                                  }; 
     dt78xx_ain_config_t ain_cfg[NUM_CHANNELS] = {ain0_cfg};
+//    dt78xx_ain_config_t ain_cfg[NUM_CHANNELS] = {ain0_cfg, ain1_cfg, ain2_cfg,
+//                                                 ain3_cfg, ain4_cfg, ain5_cfg,
+//                                                 ain6_cfg, ain7_cfg};
+
+    struct aio_struct *aio = NULL;
     
     opt = 0;
     while ((opt = getopt(argc, argv, "s:c:d:t:")) != -1) 
@@ -350,11 +343,7 @@ int main (int argc, char** argv)
     
     //Create and initialise AIO structures
     fprintf(stderr, "Initialising...\n");
-#ifdef _WAIT_STREAM_EMPTY_
-    aio = aio_create(fd_stream, 0, NULL, stream_empty_cb);
-#else
     aio = aio_create(fd_stream, 0, NULL, NULL);
-#endif
     if (!aio)
     {
         fprintf(stderr, "ERROR aio_create\n");
@@ -362,11 +351,11 @@ int main (int argc, char** argv)
     }
     
     //Size/allocate a buffer to hold the specified samples for each channel
-    fprintf(stderr, "Allocating buffer...\n");
+//    fprintf(stderr, "Allocating buffer...\n");
     int buflen = aio_buff_size(samples_per_chan, chan_mask, 
                                 &buffer_object.num_samples);
     fprintf(stdout,"Sampling at %f Hz to buffer of %d samples...\n", 
-                    clk.clk_freq, buflen);
+                    clk.clk_freq, buffer_object.num_samples);
     void **buf_array = aio_buff_alloc(aio, NUM_BUFFS, buflen);
     if (!buf_array)
     {
@@ -376,20 +365,12 @@ int main (int argc, char** argv)
     
     //Allocate a buffer to hold the raw values converted to Volts
     buffer_object.vbuf = malloc(sizeof(struct buffer) + sizeof(float) *
-                                buffer_object.num_samples/2 * NUM_BUFFS);
+                                buffer_object.num_samples * NUM_BUFFS);
     if (!buffer_object.vbuf)
     {
-        fprintf(stderr, "ERROR server_param.vbuf\n");
+        fprintf(stderr, "ERROR buffer_object.vbuf\n");
         goto _exit;
     }
-    
-    //submit the buffers
-    if (aio_start(aio))
-    {
-        fprintf(stderr, "ERROR aio_start\n");
-        goto _exit;
-    }
-    
     
     //Wait for user input to start or abort
     fprintf(stdout,"Press s to start, any other key to quit\n");
@@ -398,22 +379,6 @@ int main (int argc, char** argv)
         int c = getchar();
         if (c == 's')
         {
-            //ARM
-            if ((ioctl(fd_stream, IOCTL_ARM_SUBSYS, 0)))   
-            {
-                fprintf(stderr, "IOCTL_ARM_SUBSYS ERROR %d \"%s\"\n", 
-                        errno, strerror(errno));
-                goto _exit;
-            }
-            
-            /* Issue a software start; this is redundant if trigger source is 
-             * threshold trigger or external trigger */ 
-            if ((ioctl(fd_stream, IOCTL_START_SUBSYS, 0)))
-            {
-                fprintf(stderr, "IOCTL_START_SUBSYS ERROR %d \"%s\"\n", 
-                        errno, strerror(errno));
-                goto _exit;
-            }
             break;
         }
         goto _exit;
@@ -427,34 +392,68 @@ int main (int argc, char** argv)
     {
         sysStatus += 0x04; //LED2 on
         led_indicators(sysStatus, fd_stream);
-        
+
+        //submit the buffers
+        fprintf(stderr, "\nCommencing buffer...\n");
+        if (aio_start(aio))
+        {
+            fprintf(stderr, "ERROR aio_start\n");
+            goto _exit;
+        }
+
+        //ARM
+        if ((ioctl(fd_stream, IOCTL_ARM_SUBSYS, 0)))   
+        {
+            fprintf(stderr, "IOCTL_ARM_SUBSYS ERROR %d \"%s\"\n", 
+                    errno, strerror(errno));
+            goto _exit;
+        }
+
+        /* Issue a software start; this is redundant if trigger source is 
+         * threshold trigger or external trigger */ 
+        if ((ioctl(fd_stream, IOCTL_START_SUBSYS, 0)))
+        {
+            fprintf(stderr, "IOCTL_START_SUBSYS ERROR %d \"%s\"\n", 
+                    errno, strerror(errno));
+            goto _exit;
+        }
+
         //Wait for all buffers to complete
+        fprintf(stderr, "Buffering in progress...\n");
         int buff_done = 0;
-#ifdef _WAIT_STREAM_EMPTY_
-       while (!g_quit)
-       {
-           if (aio_wait(aio, -1) < 0)
-               break;
-       }
-#else
-       while (!g_quit && (buff_done != NUM_BUFFS))
-       {
-           if (aio_wait(aio, -1) > 0)
-           {
-               ++buff_done;
-               fprintf(stdout, "%d buffers done\n", buff_done);
-           }
-           else
-               break; //error
-       }
-#endif 
+        while (!g_quit && (buff_done < NUM_BUFFS))
+        {
+            int ret = aio_wait(aio, 0);
+            if (ret < 0) //error
+                break;
+            buff_done += ret;
+        }
 
         //Stop streaming after buffer completion
-        fprintf(stderr, "Buffer Complete...\n");
+        fprintf(stderr, "Completing...\n");
         ioctl(fd_stream, IOCTL_STOP_SUBSYS, 0);  
         aio_stop(aio);
         
-        //convert the raw values to voltage
+        //Time corresponding to last sample
+        const char *outputPath = PATH_TO_STORAGE; //A set path to local storage
+        const char *ID;
+        ID = argv[optind]; //Physical location/identity: identifier
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+        struct tm *t_iso = gmtime(&tv.tv_sec); // UTC aka GMT in ISO 8601
+        char fileTime[LEN];
+        //YYYY-MM-DD HH:mm:ss:microseconds
+        sprintf(fileTime, "_%04d-%02d-%02dT%02d:%02d:%02d:%liZ.aiff", 
+                t_iso->tm_year+1900, t_iso->tm_mon, t_iso->tm_mday, 
+                t_iso->tm_hour, t_iso->tm_min, t_iso->tm_sec, (long) tv.tv_usec); 
+        char fileName[LEN];
+        strcpy(fileName, ID); //Identify
+        strcat(fileName, fileTime); //Timestamped
+        char filePath[LEN];
+        strcpy(filePath, outputPath); //Directory path
+        strcat(filePath, fileName); //Full file path: concatenates filename
+
+        //Convert the raw values to voltage
         fprintf(stderr, "Converting to voltage...\n");
         float *out = buffer_object.vbuf->values;
         const int v_length = buffer_object.num_samples * NUM_BUFFS * NUM_CHANNELS;
@@ -469,41 +468,15 @@ int main (int argc, char** argv)
             {
                 for (ain = 0; ain < NUM_CHANNELS; ain++)
                 {
-                    fprintf(stderr, "Sample %d of channel %d\n", sample, ain);
+//                    fprintf(stderr, "Sample %d of channel %d\n", sample, ain);
                     *out = raw2volts(*raw, ain_cfg[ain].gain);
                     int sample_ain = sample + buffer_object.num_samples * (buff_done + ain);
                     volts[sample_ain] = *out;
                 }
             }
         }
-        
-        //Write acquired data to the specified file
-        fprintf(stderr, "Making .aiff...\n");
-        fprintf(stderr, "Getting path... ");
-        const char *outputPath = PATH_TO_STORAGE; //A set path to local storage
-        fprintf(stderr, "%s\n", outputPath);
-        fprintf(stderr, "Getting identifier... ");
-        fprintf(stderr, "%s\n", argv[optind]);
-        const char *ID;
-        ID = argv[optind]; //Physical location/identity: identifier
-        time_t curTime;
-        curTime = time(NULL);
-        struct tm *locTime = localtime(&curTime);
-        fprintf(stderr, "Creating timestamp... ");
-        char fileTime[LEN];
-        strftime(fileTime, LEN, "_%Y%m%d_%H%M%S.aiff", locTime); //YYYYMMDD_HHmmss
-        fprintf(stderr, "%s\n", fileTime);
-        fprintf(stderr, "Creating file name... ");
-        char fileName[LEN];
-        strcpy(fileName, ID); //Identify
-        strcat(fileName, fileTime); //Timestamped
-        fprintf(stderr, "%s\n", fileName);
-        fprintf(stderr, "Creating file path... ");
-        char filePath[LEN];
-        strcpy(filePath, outputPath); //Directory path
-        strcat(filePath, fileName); //Full file path: concatenates filename
-        fprintf(stderr, "%s\n", filePath);
 
+        //Write acquired data to the specified file
         AIFF_Ref file;
         file = AIFF_OpenFile(filePath, F_WRONLY);
         if (file) {
@@ -515,7 +488,6 @@ int main (int argc, char** argv)
             //Writes to .aiff output file
             if (AIFF_SetAudioFormat(file, NUM_CHANNELS, 
                                     (double) buffer_object.sample_rate, sizeof(float))) {
-                fprintf(stderr, ".aiff format set...\n");
             } else {
                 AIFF_CloseFile(file);
                 fprintf(stderr, "ERROR audio_format_set");
@@ -525,14 +497,20 @@ int main (int argc, char** argv)
             int writ = AIFF_WriteSamples32Bit(file, (int32_t*) volts, (int) buffer_object.num_samples);
             int end = AIFF_EndWritingSamples(file);
             if (start && writ && end) fprintf(stderr, "%do .aiff file written\n", fileNum);
-            
+
             //Stops writing
-            fprintf(stderr, "Closing file... ");
             if (AIFF_CloseFile(file)) {
-                fprintf(stderr, "Closed\n");
+                fprintf(stderr, "Closed file...\n");
                 sysStatus -= 0x05; //LED0 and LED2 off
                 led_indicators(sysStatus, fd_stream);
+                fprintf(stderr, "File at %s\n", filePath);
+            } else {
+                fprintf(stderr, "ERROR audio_file_close");
+                goto _exit;
             }
+        } else {
+            fprintf(stderr, "ERROR audio_file_open");
+            goto _exit; 
         }
     }
 

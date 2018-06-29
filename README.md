@@ -1,6 +1,6 @@
 # Work in Progress (WIP)! Bat Array: MCC DT7816
 
-See the [manufacturer guide](https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/DT7816_Getting_Started.htm) for the [DT7816](https://www.mccdaq.com/Products/ARM-DAQ/DT7816) if you want a more thorough guide necessary for manual setup and building. This repository is intended to make the building process easier and faster by automating it through a script. Download the tarball in [`INSTALL`](/INSTALL) to build all the code for this DAQ, which is installed to the directory: `/opt/ti-sdk-am335x-evm-07.00.00.00/`. Note that, if built from scratch, the directory would not contain `INSTALL`, [`UM7816.pdf`](/DT7816/UM7816.pdf), [`DT7816-Programming.pdf`](/DT7816-Programming.pdf) and `libuldaq-1.0.0`; these have been only included for convenience. Follow the instructions below to build it all from scratch.
+See the [manufacturer guide](https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/DT7816_Getting_Started.htm) for the [DT7816](https://www.mccdaq.com/Products/ARM-DAQ/DT7816) if you want a more thorough guide necessary for manual setup and building. This repository is intended to make the building process easier and faster by automating it through a script. Download the tarball in [`INSTALL`](/INSTALL) to build all the code for this DAQ, which is installed to the directory: `/opt/ti-sdk-am335x-evm-07.00.00.00/`. Note that, if built from scratch, the directory would not contain `INSTALL`, [`UM7816.pdf`](/DT7816/UM7816.pdf), and [`DT7816-Programming.pdf`](/DT7816-Programming.pdf); these have been only included for convenience. Follow the instructions below to build it all from scratch.
 
 ## Installation Instructions
 
@@ -8,7 +8,6 @@ See the [manufacturer guide](https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/
    * http://software-dl.ti.com/sitara_linux/esd/AM335xSDK/07_00_00_00/exports/ti-sdk-am335x-evm-07.00.00.00-Linux-x86-Install.bin
    * ftp://ftp.mccdaq.com/downloads/DTSoftware/DT78XX_ARM/DT78XX-setup-3.2.bz2.run
    * http://www.fftw.org/fftw-3.3.4.tar.gz
-   * ftp://xmlsoft.org/libxml2/libxml2-2.9.8.tar.gz
 
 2. Download the compressed directories in `INSTALL`. Uncompress [`INSTALL.tar.gz`](/INSTALL/INSTALL.tar.gz), which is formed with the script `INSTALL_tar.sh`, using the command:
    ```
