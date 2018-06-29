@@ -4,7 +4,7 @@ See the [manufacturer guide](https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/
 
 ## Installation Instructions
 
-1. Download the four following files. Save each in your OS `~/Downloads` directory.
+1. Download the three following files. Save each in your OS `~/Downloads` directory.
    * http://software-dl.ti.com/sitara_linux/esd/AM335xSDK/07_00_00_00/exports/ti-sdk-am335x-evm-07.00.00.00-Linux-x86-Install.bin
    * ftp://ftp.mccdaq.com/downloads/DTSoftware/DT78XX_ARM/DT78XX-setup-3.2.bz2.run
    * http://www.fftw.org/fftw-3.3.4.tar.gz
