@@ -129,18 +129,14 @@ The second and alternative method is to locally network the client and host. Thi
 
 4. In these instructions the superuser `sudo` command program for elevating security privelages has been included for redundancy. Moreover, these instructions will *only* work properly on Linux. These files were developed and tested on a machine running [Ubuntu 18.04 LTS](http://releases.ubuntu.com/18.04/).
 
-5. Consult the following docs for help with `libxml`:
-   * http://xmlsoft.org/html/libxml-lib.html
-   * http://xmlsoft.org/examples/index.html
-
-6. For connecting to the DAQ, consult these for assistance:
+5. For connecting to the DAQ, consult these for assistance:
    * https://askubuntu.com/questions/22835/how-to-network-two-ubuntu-computers-using-ethernet-without-a-router
    * https://www.garron.me/en/linux/add-secondary-ip-linux.html
    * https://access.redhat.com/sites/default/files/attachments/rh_ip_command_cheatsheet_1214_jcs_print.pdf
 
-7. See https://msdn.microsoft.com/en-us/library/windows/desktop/aa365683(v=vs.85).aspx for an explanation of synchronous and asynchronous input/output (I/O) synchronisation.
+6. See https://msdn.microsoft.com/en-us/library/windows/desktop/aa365683(v=vs.85).aspx for an explanation of synchronous and asynchronous input/output (I/O) synchronisation.
 
-8. Not entirely sure why this fixes the 'cannot resolve syscall' warning in NetBeans, but for each NetBeans project, right click to access the 'Properties' menu. Then under 'C Compiler'->'C Standard' set to C11, and under 'C++ compiler'->'C++ Standard' set to C++11. See this Stack Overflow [post](https://stackoverflow.com/questions/30686264/erroneous-unable-to-resolve-identifier-in-netbeans/35025731) for more information and discussion.
+7. Not entirely sure why this fixes the 'cannot resolve syscall' warning in NetBeans, but for each NetBeans project, right click to access the 'Properties' menu. Then under 'C Compiler'->'C Standard' set to C11, and under 'C++ compiler'->'C++ Standard' set to C++11. See this Stack Overflow [post](https://stackoverflow.com/questions/30686264/erroneous-unable-to-resolve-identifier-in-netbeans/35025731) for more information and discussion.
 
 ## Acknowledgements
 Thank you to the [Applied Physics Laboratory](http://www.apl.washington.edu/) at the University of Washington, the [UW Institute for Neuroengineering](http://uwin.washington.edu/), and the [Union Bay Natural Area](https://botanicgardens.uw.edu/center-for-urban-horticulture/visit/union-bay-natural-area/) for funding and support. Contact: [Wu-Jung Lee](https://leewujung.github.io/) at wjlee@apl.washington.edu and [Aidan Johnson](https://aidanjohnson.github.io/) at johnsj96@uw.edu.
