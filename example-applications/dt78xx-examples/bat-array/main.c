@@ -93,14 +93,12 @@ static int g_quit = 0;
  * Data types
  */
 
-struct buffer
-{
+struct buffer {
     int32_t num_samples;
     float values[1];  //variable sized array with num_samples
 };
 
-struct buffer_object
-{
+struct buffer_object {
     float sample_rate;  
     int32_t num_samples;
     struct buffer *vbuf;  //buffer with raw values converted to voltage
@@ -109,8 +107,7 @@ struct buffer_object
 /*
  * Command line arguments
  */
-static const char g_usage[]=
-{
+static const char g_usage[] = {
 "Samples AIN0 and writes data"
 "to specified file in AIFF format;"
 "AIFF files saved to path to storage\n"
@@ -128,13 +125,11 @@ static const char g_usage[]=
  * Signal handler for ctrl-C does nothing. It prevents the process from 
  * terminating abruptly
  */
-static void sigint_handler(int i) 
-{
+static void sigint_handler(int i) {
     g_quit = -1;
 }
 
-static void led_indicators(uint8_t status, int streaming) 
-{
+static void led_indicators(uint8_t status, int streaming) {
     // standby := LED0, writing := LED1, recording := LED2, buffering := LED3,
     // := LED4, := LED5, := LED6, := LED7  
     //update debug leds (8 total): on = 1 = success
@@ -148,8 +143,7 @@ static void led_indicators(uint8_t status, int streaming)
 /******************************************************************************
  * Command line arguments see usage above
  */
-int main (int argc, char** argv)
-{
+int main (int argc, char** argv) {
     uint8_t sysStatus = 0x00;
     int ret = EXIT_SUCCESS;
     int daemonise = 0;
