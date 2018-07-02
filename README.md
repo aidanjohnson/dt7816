@@ -142,7 +142,6 @@ The second and alternative method is to locally network the client and host. Thi
 Thank you to the [Applied Physics Laboratory](http://www.apl.washington.edu/) at the University of Washington, the [UW Institute for Neuroengineering](http://uwin.washington.edu/), and the [Union Bay Natural Area](https://botanicgardens.uw.edu/center-for-urban-horticulture/visit/union-bay-natural-area/) for funding and support. Contact: [Wu-Jung Lee](https://leewujung.github.io/) at wjlee@apl.washington.edu and [Aidan Johnson](https://aidanjohnson.github.io/) at johnsj96@uw.edu.
 
 This project uses the open source libraries from:
-* [LibAiff](http://aifftools.sourceforge.net/libaiff/) by Marco Trillo ([MIT License]
-(https://opensource.org/licenses/mit-license.php))
-* [ArduinoRingBuffer](https://github.com/wizard97/ArduinoRingBuffer) by Aaron Wisner ([](https://opensource.org/licenses/MIT))
-* DT78xx Library by Data Translation Inc ([GPLv2](https://opensource.org/licenses/gpl-2.0.php))
+* [LibAiff](http://aifftools.sourceforge.net/libaiff/) by Marco Trillo ([MIT License](https://opensource.org/licenses/mit-license.php))
+* [ArduinoRingBuffer](https://github.com/wizard97/ArduinoRingBuffer) by Aaron Wisner ([MIT License](https://opensource.org/licenses/MIT))
+* [DT78xx](https://www.mccdaq.com/Products/ARM-DAQ/DT7816) Library by Data Translation Inc ([GPLv2](https://opensource.org/licenses/gpl-2.0.php))
