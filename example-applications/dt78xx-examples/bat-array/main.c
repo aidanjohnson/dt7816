@@ -35,6 +35,7 @@
 #include <sys/time.h>
 #include <malloc.h>
 #include <math.h>
+#include <omp.h>
 
 #include "dt78xx_ioctl.h"
 #include "dt78xx_aio.h"
@@ -51,7 +52,7 @@
 
 //Analog inputs enabled/active/on (1) or disabled/inactive/off (0)
 #define AIN0                1
-#define AIN1                0
+#define AIN1                1
 #define AIN2                0
 #define AIN3                0
 #define AIN4                0
@@ -60,9 +61,9 @@
 #define AIN7                0
 #define PATH_TO_STORAGE     "/usr/local/path/to/ssd/"
 #define SAMPLE_RATE_HZ      400000.0f
- // **Note: BLOCK_SIZE*NUM_BUFFS = SAMPLES_PER_CHAN*NUM_BUFFS <= 65536 **
-#define SAMPLES_PER_CHAN    65536 // No more than 2^16 = 65536: 16 bit per ch.
-#define NUM_BUFFS           1 //Number of buffers per file
+ // **SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS <= 65536 samples = 2^(16 bits)**
+#define SAMPLES_PER_CHAN    100//65536/4
+#define NUM_BUFFS           1 //Number of buffers per file initialised
 
 /*****************************************************************************
  * Do Not Touch These Macros
@@ -93,24 +94,16 @@ static int g_quit = 0;
  * Data types
  */
 
-struct buffer
-{
-    int32_t num_samples;
-    float values[1];  //variable sized array with num_samples
-};
-
-struct buffer_object
-{
+struct circ_buffer {
     float sample_rate;  
     int32_t num_samples;
-    struct buffer *vbuf;  //buffer with raw values converted to voltage
+    RingBuf *vbuf;  //buffer with raw values converted to voltage
 };
 
 /*
  * Command line arguments
  */
-static const char g_usage[]=
-{
+static const char g_usage[] = {
 "Samples AIN0 and writes data"
 "to specified file in AIFF format;"
 "AIFF files saved to path to storage\n"
@@ -128,13 +121,11 @@ static const char g_usage[]=
  * Signal handler for ctrl-C does nothing. It prevents the process from 
  * terminating abruptly
  */
-static void sigint_handler(int i) 
-{
+static void sigint_handler(int i) {
     g_quit = -1;
 }
 
-static void led_indicators(uint8_t status, int streaming) 
-{
+static void led_indicators(uint8_t status, int streaming) {
     // standby := LED0, writing := LED1, recording := LED2, buffering := LED3,
     // := LED4, := LED5, := LED6, := LED7  
     //update debug leds (8 total): on = 1 = success
@@ -148,15 +139,23 @@ static void led_indicators(uint8_t status, int streaming)
 /******************************************************************************
  * Command line arguments see usage above
  */
-int main (int argc, char** argv)
-{
+int main (int argc, char** argv) {
+    double gross_samples = ((double)BLOCK_SIZE) * ((double)NUM_BUFFS) *
+                           ((double)NUM_CHANNELS);
+    if(gross_samples > 65536) {
+        fprintf(stderr, "Fatal Error: exceeded 16-bits!\n");
+        fprintf(stderr, "SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS = %.0f > 65536\n", 
+                gross_samples);
+        return (EXIT_FAILURE);
+    }
+    
     uint8_t sysStatus = 0x00;
     int ret = EXIT_SUCCESS;
     int daemonise = 0;
     int auto_trig = 1;
     int samples_per_chan = BLOCK_SIZE;
     
-    struct buffer_object buffer_object = {.sample_rate = SAMPLE_RATE,
+    struct circ_buffer buffer_object = {.sample_rate = SAMPLE_RATE,
                                           .vbuf = NULL, //TODO: make circular buffer
                                          };
     
@@ -393,7 +392,8 @@ int main (int argc, char** argv)
     }
     
     //Size/allocate a buffer to hold the specified samples for each channel
-//    fprintf(stderr, "Allocating buffer...\n");
+    //buflen = 16*samples_per_chan*NUM_CHANNELS/8 
+    //(in bytes; assuming samples_per_chan multiple of 32)
     int buflen = aio_buff_size(samples_per_chan, chan_mask, 
                                 &buffer_object.num_samples);
     fprintf(stdout,"Sampling at %f Hz to buffer of %d samples...\n", 
@@ -404,9 +404,11 @@ int main (int argc, char** argv)
         goto _exit;
     }
     
+    
+    //TODO: replace with circular buffer
     //Allocate a buffer to hold the raw values converted to Volts
-    buffer_object.vbuf = malloc(sizeof(struct buffer) + sizeof(float) *
-                                buffer_object.num_samples * NUM_BUFFS);
+    const int vbuf_len = samples_per_chan * NUM_CHANNELS;
+    buffer_object.vbuf = RingBuf_new(sizeof(float), vbuf_len);
     if (!buffer_object.vbuf) {
         fprintf(stderr, "ERROR buffer_object.vbuf\n");
         goto _exit;
@@ -428,10 +430,13 @@ int main (int argc, char** argv)
     
     //Infinite loop until aborted by ctrl-C
     while (!g_quit) {
+        struct timeval tv;
+        gettimeofday(&tv, NULL); //Gets current time
+        
         sysStatus += 0x04; //LED2 on
         led_indicators(sysStatus, fd_stream);
-
-        //submit the buffers
+       
+        //Submit the buffers
         fprintf(stderr, "\nCommencing buffer...\n");
         if (aio_start(aio)) {
             fprintf(stderr, "ERROR aio_start\n");
@@ -468,12 +473,10 @@ int main (int argc, char** argv)
         ioctl(fd_stream, IOCTL_STOP_SUBSYS, 0);  
         aio_stop(aio);
         
-        //Time corresponding to last sample
+        //Time corresponding to first sample (see start of while loop)
         const char *outputPath = PATH_TO_STORAGE; //A set path to local storage
         const char *ID;
         ID = argv[optind]; //Physical location/identity: identifier
-        struct timeval tv;
-        gettimeofday(&tv, NULL);
         struct tm *t_iso = gmtime(&tv.tv_sec); // UTC aka GMT in ISO 8601
         char fileTime[LEN];
         
@@ -487,30 +490,8 @@ int main (int argc, char** argv)
         char filePath[LEN];
         strcpy(filePath, outputPath); //Directory path
         strcat(filePath, fileName); //Full file path: concatenates filename
-
-        //Convert the raw values to voltage
-        fprintf(stderr, "Converting to voltage...\n");
-        float *out = buffer_object.vbuf->values;
-        const int v_length = buffer_object.num_samples * NUM_BUFFS * NUM_CHANNELS;
-        float volts[v_length];
-        for (buff_done=0; buff_done < NUM_BUFFS; ++buff_done) { 
-            
-            //AIN channels are 16-bits
-            int16_t *raw = buf_array[buff_done];
-            int sample;
-            for (sample=0; sample < buffer_object.num_samples; 
-                    ++sample, ++raw, ++out) {
-                for (i = 0; i < NUM_CHANNELS; i++) {
-                    int ain = ch_on[i];
-//                    fprintf(stderr, "Sample %d of channel %d\n", sample, ain);
-                    *out = raw2volts(*raw, ain_cfg[ain].gain);
-                    int sample_ain = sample + buffer_object.num_samples * (buff_done + i);
-                    volts[sample_ain] = *out;
-                }
-            }
-        }
-
-        //Write acquired data to the specified file
+        
+         //Write acquired data to the specified .aiff output file
         AIFF_Ref file;
         file = AIFF_OpenFile(filePath, F_WRONLY);
         if (file) {
@@ -527,31 +508,78 @@ int main (int argc, char** argv)
                 fprintf(stderr, "ERROR audio_format_set");
                 goto _exit;
             }
-            
-            //Writes to .aiff output file
-            int start = AIFF_StartWritingSamples(file);
-            int writ = AIFF_WriteSamples32Bit(file, (int32_t*) volts, (int) buffer_object.num_samples);
-            int end = AIFF_EndWritingSamples(file);
-            if (start && writ && end) fprintf(stderr, "%do .aiff file written\n", fileNum);
-
-            //Stops writing
-            if (AIFF_CloseFile(file)) {
-                fprintf(stderr, "Closed file...\n");
-                sysStatus -= 0x05; //LED0 and LED2 off
-                led_indicators(sysStatus, fd_stream);
-                fprintf(stderr, "File at %s\n", filePath);
-            } else {
-                fprintf(stderr, "ERROR audio_file_close");
-                goto _exit;
-            }
         } else {
             fprintf(stderr, "ERROR audio_file_open");
             goto _exit; 
+        }
+        
+        int start, writ, end;
+        start = AIFF_StartWritingSamples(file);
+
+        //Convert the raw values to voltage
+        for (buff_done=0; buff_done < NUM_BUFFS; ++buff_done) { 
+            fprintf(stderr, "Reading buffer and writing file %d...\n", buff_done);
+            
+            //The order of the data in the input (AIN) buffer is as follows,
+            //assuming that all channels are enabled in the input stream:
+            //Analog input channels 0 through 7. Each analog input sample is a
+            //16-bit, two’s complement value.
+            int16_t *raw = buf_array[buff_done];
+            
+            int queue, ch;
+            //With spacer between read and write pointer equal to NUM_CHANNELS
+            for (queue = 0; queue < buffer_object.num_samples + 1; queue++) {  
+                for (ch = 0; ch < NUM_CHANNELS; ch++, ++raw) {
+                    int ain = ch_on[ch];
+                    fprintf(stderr, "%d and %d\n", queue, ch);
+                    if (queue < buffer_object.num_samples) {
+//                        fprintf(stderr, "Converting to voltage...\n");
+                        float sample_volt = raw2volts(*raw, ain_cfg[ain].gain);
+                        float* wptr = &sample_volt; //write pointer
+//                        fprintf(stderr, "Writing to circular buffer...\n");
+                        buffer_object.vbuf->add(buffer_object.vbuf, wptr);
+                    }
+                    if (queue > 0) {
+//                        fprintf(stderr, "Reading from circular buffer...\n");
+                        float* rptr = NULL; //read pointer for writing to file
+                        buffer_object.vbuf->pull(buffer_object.vbuf, &rptr);
+//                        fprintf(stderr, "Writing to file...\n");
+                        //Simultaneously analog input (channel) samples put inline 
+                        //and sequentially like so:
+                        // ___________ ___________ ___________ ___________
+                        //|           |           |           |           |
+                        //| Channel 1 | Channel 2 | Channel 1 | Channel 2 |
+                        //|___________|___________|___________|___________|
+                        // <---------> <---------> <---------> <--------->
+                        //   Segment     Segment     Segment     Segment
+                        // <---------------------> <--------------------->
+                        //     Sample frame 1          Sample frame 2  
+                        writ = AIFF_WriteSamples32Bit(file, (int32_t*) &rptr, 1);
+                    }
+                }
+            }
+        }
+        end = AIFF_EndWritingSamples(file);
+        if (start && writ && end) {
+            fprintf(stderr, "%do .aiff file written\n", fileNum);
+        }
+
+        //Stops writing
+        if (AIFF_CloseFile(file)) {
+            fprintf(stderr, "Closed file...\n");
+            sysStatus -= 0x05; //LED0 and LED2 off
+            led_indicators(sysStatus, fd_stream);
+            fprintf(stderr, "File at %s\n", filePath);
+        } else {
+            fprintf(stderr, "ERROR audio_file_close");
+            goto _exit;
         }
     }
 
 //Exit protocol and procedure    
 _exit :
+    sysStatus = 0x00; //all off
+    led_indicators(sysStatus, fd_stream);
     aio_stop(aio);
     aio_destroy(aio);
     if (fd_ain > 0)
