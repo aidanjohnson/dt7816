@@ -477,11 +477,11 @@ int main (int argc, char** argv) {
         const char *outputPath = PATH_TO_STORAGE; //A set path to local storage
         const char *ID;
         ID = argv[optind]; //Physical location/identity: identifier
-        struct tm *t_iso = gmtime(&tv.tv_sec); // UTC aka GMT in ISO 8601
+        struct tm *t_iso = gmtime(&tv.tv_sec); // UTC aka GMT in ISO 8601: Zulu
         char fileTime[LEN];
         
         //YYYY-MM-DD HH:mm:ss:microseconds
-        sprintf(fileTime, "_%04d-%02d-%02dT%02d:%02d:%02d:%liZ.aiff", 
+        sprintf(fileTime, "_%04d%02d%02dT%02d%02d%02d%liZ.aiff", 
                 t_iso->tm_year+1900, t_iso->tm_mon, t_iso->tm_mday, 
                 t_iso->tm_hour, t_iso->tm_min, t_iso->tm_sec, (long) tv.tv_usec); 
         char fileName[LEN];
