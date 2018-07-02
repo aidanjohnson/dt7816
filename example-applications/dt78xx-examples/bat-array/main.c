@@ -475,7 +475,7 @@ int main (int argc, char** argv) {
         
         //Time corresponding to first sample (see start of while loop)
         const char *outputPath = PATH_TO_STORAGE; //A set path to local storage
-        const char *ID;
+        const char *ID; //Identification prefix
         ID = argv[optind]; //Physical location/identity: identifier
         struct tm *t_iso = gmtime(&tv.tv_sec); // UTC aka GMT in ISO 8601: Zulu
         char fileTime[LEN];
