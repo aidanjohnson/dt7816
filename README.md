@@ -1,4 +1,6 @@
-# Work in Progress (WIP)! Bat Array: MCC DT7816
+# Bat Array: MCC DT7816
+
+***—Work in Progress (WIP)—***
 
 See the [manufacturer guide](https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/DT7816_Getting_Started.htm) for the [DT7816](https://www.mccdaq.com/Products/ARM-DAQ/DT7816) if you want a more thorough guide necessary for manual setup and building. This repository is intended to make the building process easier and faster by automating it through a script. Download the tarball in [`INSTALL`](/INSTALL) to build all the code for this DAQ, which is installed to the directory: `/opt/ti-sdk-am335x-evm-07.00.00.00/`. Note that, if built from scratch, the directory would not contain `INSTALL`, [`UM7816.pdf`](/DT7816/UM7816.pdf), and [`DT7816-Programming.pdf`](/DT7816-Programming.pdf); these have been only included for convenience. Follow the instructions below to build it all from scratch.
 
@@ -141,7 +143,7 @@ The second and alternative method is to locally network the client and host. Thi
 ## Acknowledgements
 Thank you to the [Applied Physics Laboratory](http://www.apl.washington.edu/) at the University of Washington, the [UW Institute for Neuroengineering](http://uwin.washington.edu/), and the [Union Bay Natural Area](https://botanicgardens.uw.edu/center-for-urban-horticulture/visit/union-bay-natural-area/) for funding and support. Contact: [Wu-Jung Lee](https://leewujung.github.io/) at wjlee@apl.washington.edu and [Aidan Johnson](https://aidanjohnson.github.io/) at johnsj96@uw.edu.
 
-This project uses the open source libraries from:
+This project uses the open source libraries:
 * [LibAiff](http://aifftools.sourceforge.net/libaiff/) by Marco Trillo ([MIT License](https://opensource.org/licenses/mit-license.php))
 * [ArduinoRingBuffer](https://github.com/wizard97/ArduinoRingBuffer) by Aaron Wisner ([MIT License](https://opensource.org/licenses/MIT))
-* [DT78xx](https://www.mccdaq.com/Products/ARM-DAQ/DT7816) Library by Data Translation Inc ([GPLv2](https://opensource.org/licenses/gpl-2.0.php))
+* [DT78xx software](https://www.mccdaq.com/Products/ARM-DAQ/DT7816) by Data Translation Inc ([GPLv2](https://opensource.org/licenses/gpl-2.0.php))
