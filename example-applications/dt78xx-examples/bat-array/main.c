@@ -61,8 +61,8 @@
 #define AIN7                0
 #define PATH_TO_STORAGE     "/usr/local/path/to/ssd/"
 #define SAMPLE_RATE_HZ      400000.0f
- // **SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS <= 65536 samples = 2^(16 bits)**
-#define SAMPLES_PER_CHAN    100//65536/4
+ //!! SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS <= 65536 samples = 2^(16 bits) !!
+#define SAMPLES_PER_CHAN    65536/2
 #define NUM_BUFFS           1 //Number of buffers per file initialised
 
 /*****************************************************************************
@@ -126,13 +126,18 @@ static void sigint_handler(int i) {
 }
 
 static void led_indicators(uint8_t status, int streaming) {
-    // standby := LED0, writing := LED1, recording := LED2, buffering := LED3,
-    // := LED4, := LED5, := LED6, := LED7  
-    //update debug leds (8 total): on = 1 = success
+    // Updates debug LEDs (8 in total), LED ON = 1 = READING/WRITING
+    // Viewing the board such that the debug pin row is above the user LEDs:
+    //
+    // | PIN1 | PIN2 | PIN3 | PIN4 | PIN5 | PIN6 | PIN7 | PIN8 | PIN9 | PIN10 |
+    // ***** LED7 ** LED6 ** LED5 ** LED4 ** LED3 ** LED2 ** LED1 ** LED0 *****
+    //
+    // LED0 := AIN0, LED1 := AIN1, LED2 := AIN2, LED3 := AIN3,
+    // LED4 := AIN4, LED5 := AIN5, LED6 := AIN6, LED7 := AIN7
+    
     dt78xx_led_t led;
-    led.mask = 0xff;    // all bits are enabled (8 LEDs, L-R)
+    led.mask = 0xff;    // all bits are enabled (8 LEDs allowed)
     led.state = (status & 0xff);
-//    fprintf(stderr, "%d\n", status);
     ioctl(streaming, IOCTL_LED_SET, &led);    
 }
 
@@ -432,10 +437,7 @@ int main (int argc, char** argv) {
     while (!g_quit) {
         struct timeval tv;
         gettimeofday(&tv, NULL); //Gets current time
-        
-        sysStatus += 0x04; //LED2 on
-        led_indicators(sysStatus, fd_stream);
-       
+               
         //Submit the buffers
         fprintf(stderr, "\nCommencing buffer...\n");
         if (aio_start(aio)) {
@@ -467,6 +469,17 @@ int main (int argc, char** argv) {
                 break;
             buff_done += ret;
         }
+        
+        //Gets current active channels, indicating status on LEDs
+        //AIN0 = 0x01, AIN1 = 0x02, AIN2 = 0x04, AIN3 = 0x08
+        //AIN4 = 0x10, AIN5 = 0x20, AIN6 = 0x40, AIN7 = 0x80
+        chan_mask_t activeCH;
+        if (ioctl(fd_stream, IOCTL_CHAN_MASK_GET, &activeCH)) {
+            perror("IOCTL_CHAN_MASK_GET");    
+            goto _exit;
+        }
+        sysStatus = activeCH;
+        led_indicators(sysStatus, fd_stream);
 
         //Stop streaming after buffer completion
         fprintf(stderr, "Completing...\n");
@@ -495,8 +508,6 @@ int main (int argc, char** argv) {
         AIFF_Ref file;
         file = AIFF_OpenFile(filePath, F_WRONLY);
         if (file) {
-            sysStatus += 0x01; //LED0 on
-            led_indicators(sysStatus, fd_stream);
             fileNum += 1;
             fprintf(stderr, "Opened .aiff file...\n");
             
@@ -518,7 +529,7 @@ int main (int argc, char** argv) {
 
         //Convert the raw values to voltage
         for (buff_done=0; buff_done < NUM_BUFFS; ++buff_done) { 
-            fprintf(stderr, "Reading buffer and writing file %d...\n", buff_done);
+            fprintf(stderr, "Reading buffer and writing file...\n");
             
             //The order of the data in the input (AIN) buffer is as follows,
             //assuming that all channels are enabled in the input stream:
@@ -527,23 +538,19 @@ int main (int argc, char** argv) {
             int16_t *raw = buf_array[buff_done];
             
             int queue, ch;
-            //With spacer between read and write pointer equal to NUM_CHANNELS
+            //Read pointer lags write pointer by NUM_CHANNELS
             for (queue = 0; queue < buffer_object.num_samples + 1; queue++) {  
                 for (ch = 0; ch < NUM_CHANNELS; ch++, ++raw) {
                     int ain = ch_on[ch];
-                    fprintf(stderr, "%d and %d\n", queue, ch);
                     if (queue < buffer_object.num_samples) {
-//                        fprintf(stderr, "Converting to voltage...\n");
                         float sample_volt = raw2volts(*raw, ain_cfg[ain].gain);
                         float* wptr = &sample_volt; //write pointer
-//                        fprintf(stderr, "Writing to circular buffer...\n");
                         buffer_object.vbuf->add(buffer_object.vbuf, wptr);
                     }
                     if (queue > 0) {
-//                        fprintf(stderr, "Reading from circular buffer...\n");
                         float* rptr = NULL; //read pointer for writing to file
                         buffer_object.vbuf->pull(buffer_object.vbuf, &rptr);
-//                        fprintf(stderr, "Writing to file...\n");
+                        
                         //Simultaneously analog input (channel) samples put inline 
                         //and sequentially like so:
                         // ___________ ___________ ___________ ___________
@@ -554,6 +561,7 @@ int main (int argc, char** argv) {
                         //   Segment     Segment     Segment     Segment
                         // <---------------------> <--------------------->
                         //     Sample frame 1          Sample frame 2  
+                        
                         writ = AIFF_WriteSamples32Bit(file, (int32_t*) &rptr, 1);
                     }
                 }
@@ -567,7 +575,7 @@ int main (int argc, char** argv) {
         //Stops writing
         if (AIFF_CloseFile(file)) {
             fprintf(stderr, "Closed file...\n");
-            sysStatus -= 0x05; //LED0 and LED2 off
+            sysStatus = 0x00; //All off
             led_indicators(sysStatus, fd_stream);
             fprintf(stderr, "File at %s\n", filePath);
         } else {
@@ -578,7 +586,7 @@ int main (int argc, char** argv) {
 
 //Exit protocol and procedure    
 _exit :
-    sysStatus = 0x00; //all off
+    sysStatus = 0x00;
     led_indicators(sysStatus, fd_stream);
     aio_stop(aio);
     aio_destroy(aio);
