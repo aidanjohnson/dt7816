@@ -68,7 +68,7 @@
 #define PATH_TO_STORAGE     "/usr/local/path/to/ssd/"
 #define SAMPLE_RATE_HZ      400000.0
  //!! SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS <= 65536 samples = 2^(16 bits) !!
-#define SAMPLES_PER_CHAN    65536 //
+#define SAMPLES_PER_FILE    65536 // SAMPLES_PER_CHAN = SAMPLES_PER_FILE / NUM_CHANNELS
 #define NUM_BUFFS           1 //Number of buffers per file initialised
 
 /*****************************************************************************
@@ -92,7 +92,6 @@
 #define LEN                 512 //Default character array size
 #define NUM_CHANNELS        AIN0+AIN1+AIN2+AIN3+AIN4+AIN5+AIN6+AIN7 //max ch: 8
 #define SAMPLE_RATE         SAMPLE_RATE_HZ
-#define BLOCK_SIZE          SAMPLES_PER_CHAN
 
 static int g_quit = 0;
 
@@ -122,9 +121,9 @@ static const char g_usage[] = {
 "               positions 0/1/2/3/4/5/6/7 correspond to channels AIN0/1/2/3/4/5/6/7.\n"
 "               For example, 10101001 enables AIN0/2/4/7 and disables AIN1/3/5/6.\n"
 "               By default, on channels AIN0 is enabled (i.e., 10000000).\n"        
-"-s|--samples : number of samples per channel, default " xstr(SAMPLES_PER_CHAN) ".\n"
-"               Note that you are limited to 2^(16-bits) = 65536 samples >=\n"
-"               (samples per channel)(channels per buffer)(buffers)\n"
+"-s|--samples : number of samples per file, default " xstr(SAMPLES_PER_FILE) ".\n"
+"               Note that you are limited to 2^(16-bits) = 65536 samples combined\n"
+"               for all channels >= (samples/channel)(channels/buffer)(buffers)\n"
 "-c|--clk     : sampling rate in Hz, default " xstr(SAMPLE_RATE_HZ) ".\n"
 "-b|--buffers : number of buffers per file written, default " xstr(NUM_BUFFS) ".\n"
 "-d|--daemon  : runs this application as a daemon process.\n"
@@ -167,7 +166,7 @@ int main (int argc, char** argv) {
     int ret = EXIT_SUCCESS;
     int daemonise = 0;
     int auto_trig = 1;
-    int samples_per_chan = BLOCK_SIZE;
+    int samples_per_file = SAMPLES_PER_FILE;
     int num_buffers = NUM_BUFFS;
     int num_channels = NUM_CHANNELS;
     
@@ -180,13 +179,13 @@ int main (int argc, char** argv) {
    
     struct aio_struct *aio = NULL;
     int ain[8] = {AIN0, AIN1, AIN2, AIN3, AIN4, AIN5, AIN6, AIN7};
-    int ch; //8 bit binary; channel on := 1, channel off := 0
+    int ch_code;//8 bit binary; channel on := 1, channel off := 0
     int opt = 0;
     while ((opt = getopt(argc, argv, "s:c:d:t:i:b:")) != -1) {
         switch (opt) {
             case 's':
-                samples_per_chan = strtoul(optarg, NULL, 10);
-                if (samples_per_chan <= 0)
+                samples_per_file = strtoul(optarg, NULL, 10);
+                if (samples_per_file <= 0)
                 {
                     printf(g_usage, argv[0]);
                     return (EXIT_FAILURE);
@@ -206,62 +205,68 @@ int main (int argc, char** argv) {
                 auto_trig = 0;
                 break;
             case 'i' :
-                ch = atoi(optarg);
-                int ch_i;
-                for (ch_i = 0; ch_i < 8; ch_i++) {
-                    ain[ch_i] = ch % (int) pow(10, ch_i);
+                ch_code = atoi(optarg);
+                int d;
+                num_channels = 0;
+                for (d = 0; d < 8; d++) {
+                    int digit = ch_code % 10;
+                    ain[7-d] = digit;
+                    if (digit) num_channels++;
+                    ch_code /= 10;
                 }
                 break;
             default :
                 printf(g_usage, argv[0]);
                 return EXIT_FAILURE;
         }
-    }  
+    }
     
-    int gross_samples = samples_per_chan * num_buffers * num_channels;
+    const int channels_per_file = num_channels; //aka Block Size
+    chan_mask_t chan_mask = 0x0;
+    int *ch_on = malloc(sizeof(int)*channels_per_file);
+    int ch_index = 0;
+    if (ain[0]) {
+        chan_mask |= chan_mask_ain0;
+        ch_on[ch_index++] = 0;
+    }
+    if (ain[1]) {
+        chan_mask |= chan_mask_ain1;
+        ch_on[ch_index++] = 1;    
+    }
+    if (ain[2]) {
+        chan_mask |= chan_mask_ain2;
+        ch_on[ch_index++] = 2;
+    }
+    if (ain[3]) {
+        chan_mask |= chan_mask_ain3;
+        ch_on[ch_index++] = 3;
+    }
+    if (ain[4]) {
+        chan_mask |= chan_mask_ain4;
+        ch_on[ch_index++] = 4;
+    }
+    if (ain[5]) {
+        chan_mask |= chan_mask_ain5;
+        ch_on[ch_index++] = 5;
+    }
+    if (ain[6]) {
+        chan_mask |= chan_mask_ain6;
+        ch_on[ch_index++] = 6;
+    }
+    if (ain[7]) {
+        chan_mask |= chan_mask_ain7;
+        ch_on[ch_index++] = 7;
+    }
+    
+    int samples_per_chan = samples_per_file / channels_per_file;
+    int gross_samples = samples_per_file * num_buffers;
     if(gross_samples > 65536) {
         fprintf(stderr, "Fatal Error: exceeded 16-bits!\n");
         fprintf(stderr, "SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS = %.0f > 65536\n", 
                 gross_samples);
         return (EXIT_FAILURE);
     }
-        
-    chan_mask_t chan_mask = 0x0;
-    int ch_on[NUM_CHANNELS] = {0};
-    num_channels = 0;
-    if (ain[0]) {
-        chan_mask |= chan_mask_ain0;
-        ch_on[num_channels++] = 0;
-    }
-    if (ain[1]) {
-        chan_mask |= chan_mask_ain1;
-        ch_on[num_channels++] = 1;    
-    }
-    if (ain[2]) {
-        chan_mask |= chan_mask_ain2;
-        ch_on[num_channels++] = 2;
-    }
-    if (ain[3]) {
-        chan_mask |= chan_mask_ain3;
-        ch_on[num_channels++] = 3;
-    }
-    if (ain[4]) {
-        chan_mask |= chan_mask_ain4;
-        ch_on[num_channels++] = 4;
-    }
-    if (ain[5]) {
-        chan_mask |= chan_mask_ain5;
-        ch_on[num_channels++] = 5;
-    }
-    if (ain[6]) {
-        chan_mask |= chan_mask_ain6;
-        ch_on[num_channels++] = 6;
-    }
-    if (ain[7]) {
-        chan_mask |= chan_mask_ain7;
-        ch_on[num_channels++] = 7;
-}
-
+    
     dt78xx_trig_config_t trig0_cfg;
     dt78xx_ain_config_t ain0_cfg ={.ain=0, //AIN0
                                   .gain=1, //Default gain
@@ -384,7 +389,7 @@ int main (int argc, char** argv) {
     //Configure for software trigger
     fprintf(stderr, "Configuring trigger...\n");
     int i;
-    for (i = 0; i < NUM_CHANNELS; i++) {
+    for (i = 0; i < channels_per_file; i++) {
         dt78xx_trig_config_t trig_cfg = trig_cfg_ai[ch_on[i]];
         trig_cfg.src_cfg.threshold.ain = ch_on[i]; //AIN(ch on)
         if (auto_trig) //default trigger == auto or software trigger
@@ -408,7 +413,7 @@ int main (int argc, char** argv) {
     }
     
     //Channel gain, coupling and current source 
-    for (i = 0; i < NUM_CHANNELS; i++) {
+    for (i = 0; i < channels_per_file; i++) {
         int ain_i = ch_on[i];
         if (ioctl(fd_ain, IOCTL_AIN_CFG_SET, &ain_cfg[ain_i])) {
             fprintf(stderr, "IOCTL_AIN%d_CFG_SET ERROR %d \"%s\"\n", 
@@ -426,12 +431,12 @@ int main (int argc, char** argv) {
     }
     
     //Size/allocate a buffer to hold the specified samples for each channel
-    //buflen = 16*samples_per_chan*NUM_CHANNELS/8 
+    //buflen = 16*samples_per_chan*channels_per_file/8 
     //(in bytes; assuming samples_per_chan multiple of 32)
     int buflen = aio_buff_size(samples_per_chan, chan_mask, 
                                 &buffer_object.num_samples);
-    fprintf(stdout,"Sampling at %f Hz to buffer of %d samples...\n", 
-                    clk.clk_freq, buffer_object.num_samples);
+    fprintf(stdout,"Sampling at %f Hz to buffer of %d samples for %d channels...\n", 
+                    clk.clk_freq, buffer_object.num_samples, channels_per_file);
     void **buf_array = aio_buff_alloc(aio, num_buffers, buflen);
     if (!buf_array) {
         fprintf(stderr, "ERROR aio_buff_alloc\n");
@@ -440,7 +445,7 @@ int main (int argc, char** argv) {
     
     
     //Allocate a buffer to hold the raw values converted to Volts
-    const int vbuf_len = samples_per_chan * NUM_CHANNELS;
+    const int vbuf_len = samples_per_chan * channels_per_file;
     buffer_object.vbuf = RingBuf_new(sizeof(float), vbuf_len);
     if (!buffer_object.vbuf) {
         fprintf(stderr, "ERROR buffer_object.vbuf\n");
@@ -540,7 +545,7 @@ int main (int argc, char** argv) {
             fprintf(stderr, "Opened .aiff file...\n");
             
             //Sets formatting
-            if (!AIFF_SetAudioFormat(file, NUM_CHANNELS, 
+            if (!AIFF_SetAudioFormat(file, channels_per_file, 
                                     (double) buffer_object.sample_rate, 
                                     sizeof(float))) {
                 AIFF_CloseFile(file);
@@ -566,9 +571,9 @@ int main (int argc, char** argv) {
             int16_t *raw = buf_array[buff_done];
             
             int queue, ch;
-            //Read pointer lags write pointer by NUM_CHANNELS
+            //Read pointer lags write pointer by channels_per_file
             for (queue = 0; queue < buffer_object.num_samples + 1; queue++) {  
-                for (ch = 0; ch < NUM_CHANNELS; ch++, ++raw) {
+                for (ch = 0; ch < channels_per_file; ch++, ++raw) {
                     int ain_i = ch_on[ch];
                     if (queue < buffer_object.num_samples) {
                         float sample_volt = raw2volts(*raw, ain_cfg[ain_i].gain);
