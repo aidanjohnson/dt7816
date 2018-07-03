@@ -50,9 +50,12 @@
  * Customisable Macros
  */
 
+// The sample rate, active channels, number of buffers, and samples per channel  
+// can be set with command line flags in a terminal shell used to run this program.
+
 //Analog inputs enabled/active/on (1) or disabled/inactive/off (0)
 #define AIN0                1
-#define AIN1                1
+#define AIN1                0
 #define AIN2                0
 #define AIN3                0
 #define AIN4                0
@@ -60,9 +63,9 @@
 #define AIN6                0
 #define AIN7                0
 #define PATH_TO_STORAGE     "/usr/local/path/to/ssd/"
-#define SAMPLE_RATE_HZ      400000.0f
+#define SAMPLE_RATE_HZ      400000.0
  //!! SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS <= 65536 samples = 2^(16 bits) !!
-#define SAMPLES_PER_CHAN    65536/2
+#define SAMPLES_PER_CHAN    65536 //
 #define NUM_BUFFS           1 //Number of buffers per file initialised
 
 /*****************************************************************************
@@ -81,7 +84,7 @@
 #define xstr(s) str(s)
 #define str(s) #s
 
-#define TRIG_LEVEL_V        0.0f
+#define TRIG_LEVEL_V        0.0
 #define DEFAULT_GAIN        1 // gain 1 => +/- 10 V; must be 1 for DT7816
 #define LEN                 512 //Default character array size
 #define NUM_CHANNELS        AIN0+AIN1+AIN2+AIN3+AIN4+AIN5+AIN6+AIN7 //max ch: 8
@@ -104,17 +107,28 @@ struct circ_buffer {
  * Command line arguments
  */
 static const char g_usage[] = {
-"Samples AIN0 and writes data"
-"to specified file in AIFF format;"
-"AIFF files saved to path to storage\n"
-"Usage : %s [options] <file or location identifier>\n"
+"\n--------------------Autonomous Microphone Array for the DT7816 DAQ------------------\n"
+"Samples channels AINx (at most 8 simultaneous channels) and writes data to\n"
+"a timestamped file in AIFF format, saving it following a predefined path to\n"
+"storage. The files are saved to <path>/<prefix>_<YYYY-DD-MMTHHmmssuuuuuuZ>.aiff\n"
+"Usage        : %s <identifier prefix> [options] \n"
+"Required     : a file or location identifier prefix, such as NORTH or 1.\n" 
 "Options\n"
-"-s|--samples : number of samples per buffer, default " xstr(SAMPLES_PER_CHAN) "\n"
-"-c|--clk : sampling rate in Hz, default " xstr(SAMPLE_RATE_HZ) "\n"
-"-d|--daemon : runs this application as a daemon process\n"
-"-t|--trig : when the voltage on either AIN crosses 0V rising (threshold) acquisition "
-"            is triggered. By default, acquisition is triggered when you start \n" 
-"            the analog input operation using the ioct \n"    
+"-i|--inputs  : 8-bit binary string to enable and disable analog input channels.\n"
+"               A channel is on if its bit is 1 and off if its bit is 0. Bit \n"
+"               positions 0/1/2/3/4/5/6/7 correspond to channels AIN0/1/2/3/4/5/6/7.\n"
+"               For example, 10101001 enables AIN0/2/4/7 and disables AIN1/3/5/6.\n"
+"               By default, on channels AIN0 is enabled (i.e., 10000000).\n"        
+"-s|--samples : number of samples per channel, default " xstr(SAMPLES_PER_CHAN) ".\n"
+"               Note that you are limited to 2^(16-bits) = 65536 samples >=\n"
+"               (samples per channel)(channels per buffer)(buffers)\n"
+"-c|--clk     : sampling rate in Hz, default " xstr(SAMPLE_RATE_HZ) ".\n"
+"-b|--buffers : number of buffers per file written, default " xstr(NUM_BUFFS) ".\n"
+"-d|--daemon  : runs this application as a daemon process.\n"
+"-t|--trig    : when the voltage on either AIN crosses " xstr(TRIG_LEVEL_V) "V rising (threshold)\n"
+"               acquisition is triggered. By default, acquisition is triggered\n"
+"               when you start the analog input operation using the ioct.\n"   
+"\n"
 };
 
 /*****************************************************************************
@@ -145,20 +159,14 @@ static void led_indicators(uint8_t status, int streaming) {
  * Command line arguments see usage above
  */
 int main (int argc, char** argv) {
-    double gross_samples = ((double)BLOCK_SIZE) * ((double)NUM_BUFFS) *
-                           ((double)NUM_CHANNELS);
-    if(gross_samples > 65536) {
-        fprintf(stderr, "Fatal Error: exceeded 16-bits!\n");
-        fprintf(stderr, "SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS = %.0f > 65536\n", 
-                gross_samples);
-        return (EXIT_FAILURE);
-    }
     
     uint8_t sysStatus = 0x00;
     int ret = EXIT_SUCCESS;
     int daemonise = 0;
     int auto_trig = 1;
     int samples_per_chan = BLOCK_SIZE;
+    int num_buffers = NUM_BUFFS;
+    int num_channels = NUM_CHANNELS;
     
     struct circ_buffer buffer_object = {.sample_rate = SAMPLE_RATE,
                                           .vbuf = NULL, //TODO: make circular buffer
@@ -169,41 +177,89 @@ int main (int argc, char** argv) {
                                .clk_freq=SAMPLE_RATE
                               };
    
+    struct aio_struct *aio = NULL;
+    int ain[8] = {AIN0, AIN1, AIN2, AIN3, AIN4, AIN5, AIN6, AIN7};
+    int ch; //8 bit binary; channel on := 1, channel off := 0
+    int opt = 0;
+    while ((opt = getopt(argc, argv, "s:c:d:t:i:b:")) != -1) {
+        switch (opt) {
+            case 's':
+                samples_per_chan = strtoul(optarg, NULL, 10);
+                if (samples_per_chan <= 0)
+                {
+                    printf(g_usage, argv[0]);
+                    return (EXIT_FAILURE);
+                }
+                break;
+            case 'c':
+                clk.clk_freq = atof(optarg);
+                buffer_object.sample_rate = clk.clk_freq;
+                break;
+            case 'd' :
+                daemonise = 1;
+                break; 
+            case 'b' :
+                num_buffers = atoi(optarg);
+                break;
+            case 't' :
+                auto_trig = 0;
+                break;
+            case 'i' :
+                ch = atoi(optarg);
+                int ch_i;
+                for (ch_i = 0; ch_i < 8; ch_i++) {
+                    ain[ch_i] = ch % (int) pow(10, ch_i);
+                }
+                break;
+            default :
+                printf(g_usage, argv[0]);
+                return EXIT_FAILURE;
+        }
+    }  
+    
+    int gross_samples = samples_per_chan * num_buffers * num_channels;
+    if(gross_samples > 65536) {
+        fprintf(stderr, "Fatal Error: exceeded 16-bits!\n");
+        fprintf(stderr, "SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS = %.0f > 65536\n", 
+                gross_samples);
+        return (EXIT_FAILURE);
+    }
+        
     chan_mask_t chan_mask = 0x0;
     int ch_on[NUM_CHANNELS] = {0};
-    int i = 0;
-#if AIN0
-    chan_mask |= chan_mask_ain0;
-    ch_on[i++] = 0;
-#endif
-#if AIN1
-    chan_mask |= chan_mask_ain1;
-    ch_on[i++] = 1;    
-#endif
-#if AIN2
-    chan_mask |= chan_mask_ain2;
-    ch_on[i++] = 2;
-#endif
-#if AIN3
-    chan_mask |= chan_mask_ain3;
-    ch_on[i++] = 3;
-#endif
-#if AIN4
-    chan_mask |= chan_mask_ain4;
-    ch_on[i++] = 4;
-#endif
-#if AIN5
-    chan_mask |= chan_mask_ain5;
-    ch_on[i++] = 5;
-#endif
-#if AIN6
-    chan_mask |= chan_mask_ain6;
-    ch_on[i++] = 6;
-#endif
-#if AIN7
-    chan_mask |= chan_mask_ain7;
-    ch_on[i++] = 7;
-#endif
+    num_channels = 0;
+    if (ain[0]) {
+        chan_mask |= chan_mask_ain0;
+        ch_on[num_channels++] = 0;
+    }
+    if (ain[1]) {
+        chan_mask |= chan_mask_ain1;
+        ch_on[num_channels++] = 1;    
+    }
+    if (ain[2]) {
+        chan_mask |= chan_mask_ain2;
+        ch_on[num_channels++] = 2;
+    }
+    if (ain[3]) {
+        chan_mask |= chan_mask_ain3;
+        ch_on[num_channels++] = 3;
+    }
+    if (ain[4]) {
+        chan_mask |= chan_mask_ain4;
+        ch_on[num_channels++] = 4;
+    }
+    if (ain[5]) {
+        chan_mask |= chan_mask_ain5;
+        ch_on[num_channels++] = 5;
+    }
+    if (ain[6]) {
+        chan_mask |= chan_mask_ain6;
+        ch_on[num_channels++] = 6;
+    }
+    if (ain[7]) {
+        chan_mask |= chan_mask_ain7;
+        ch_on[num_channels++] = 7;
+}
 
     dt78xx_trig_config_t trig0_cfg;
     dt78xx_ain_config_t ain0_cfg ={.ain=0, //AIN0
@@ -269,35 +325,6 @@ int main (int argc, char** argv) {
                                            trig2_cfg, trig3_cfg, 
                                            trig4_cfg, trig5_cfg,
                                            trig6_cfg, trig7_cfg};
-
-    struct aio_struct *aio = NULL;
-    
-    int opt = 0;
-    while ((opt = getopt(argc, argv, "s:c:d:t:")) != -1) {
-        switch (opt) {
-            case 's':
-                samples_per_chan = strtoul(optarg, NULL, 10);
-                if (samples_per_chan <= 0)
-                {
-                    printf(g_usage, argv[0]);
-                    return (EXIT_FAILURE);
-                }
-                break;
-            case 'c':
-                clk.clk_freq = atof(optarg);
-                buffer_object.sample_rate = clk.clk_freq;
-                break;
-            case 'd' :
-                daemonise = 1;
-                break;    
-            case 't' :
-                auto_trig = 0;
-                break;
-            default :
-                printf(g_usage, argv[0]);
-                return EXIT_FAILURE;
-        }
-    }  
     
     //Missing AIFF file identifier
     if (optind >= argc) {
@@ -311,8 +338,8 @@ int main (int argc, char** argv) {
     }
     
     //Run as a daemon if specified in command line. MUST preceed any file I/O
-    fprintf(stderr, "Daemonising...\n");
     if (daemonise) {
+        fprintf(stderr, "Daemonising...\n");
         if (daemon(1,0) < 0)
             perror("daemon");
     }
@@ -355,6 +382,7 @@ int main (int argc, char** argv) {
     
     //Configure for software trigger
     fprintf(stderr, "Configuring trigger...\n");
+    int i;
     for (i = 0; i < NUM_CHANNELS; i++) {
         dt78xx_trig_config_t trig_cfg = trig_cfg_ai[ch_on[i]];
         trig_cfg.src_cfg.threshold.ain = ch_on[i]; //AIN(ch on)
@@ -380,10 +408,10 @@ int main (int argc, char** argv) {
     
     //Channel gain, coupling and current source 
     for (i = 0; i < NUM_CHANNELS; i++) {
-        int ain = ch_on[i];
-        if (ioctl(fd_ain, IOCTL_AIN_CFG_SET, &ain_cfg[ain])) {
+        int ain_i = ch_on[i];
+        if (ioctl(fd_ain, IOCTL_AIN_CFG_SET, &ain_cfg[ain_i])) {
             fprintf(stderr, "IOCTL_AIN%d_CFG_SET ERROR %d \"%s\"\n", 
-                    ain, errno, strerror(errno));
+                    ain_i, errno, strerror(errno));
             goto _exit;
         }
     }
@@ -403,7 +431,7 @@ int main (int argc, char** argv) {
                                 &buffer_object.num_samples);
     fprintf(stdout,"Sampling at %f Hz to buffer of %d samples...\n", 
                     clk.clk_freq, buffer_object.num_samples);
-    void **buf_array = aio_buff_alloc(aio, NUM_BUFFS, buflen);
+    void **buf_array = aio_buff_alloc(aio, num_buffers, buflen);
     if (!buf_array) {
         fprintf(stderr, "ERROR aio_buff_alloc\n");
         goto _exit;
@@ -463,7 +491,7 @@ int main (int argc, char** argv) {
         //Wait for all buffers to complete
         fprintf(stderr, "Buffering in progress...\n");
         int buff_done = 0;
-        while (!g_quit && (buff_done < NUM_BUFFS)) {
+        while (!g_quit && (buff_done < num_buffers)) {
             int ret = aio_wait(aio, 0);
             if (ret < 0) //error
                 break;
@@ -493,7 +521,7 @@ int main (int argc, char** argv) {
         struct tm *t_iso = gmtime(&tv.tv_sec); // UTC aka GMT in ISO 8601: Zulu
         char fileTime[LEN];
         
-        //YYYY-MM-DD HH:mm:ss:microseconds
+        //YYYY-MM-DD HH:mm:ss:uuuuuu (u=microseconds)
         sprintf(fileTime, "_%04d%02d%02dT%02d%02d%02d%liZ.aiff", 
                 t_iso->tm_year+1900, t_iso->tm_mon, t_iso->tm_mday, 
                 t_iso->tm_hour, t_iso->tm_min, t_iso->tm_sec, (long) tv.tv_usec); 
@@ -528,7 +556,7 @@ int main (int argc, char** argv) {
         start = AIFF_StartWritingSamples(file);
 
         //Convert the raw values to voltage
-        for (buff_done=0; buff_done < NUM_BUFFS; ++buff_done) { 
+        for (buff_done=0; buff_done < num_buffers; ++buff_done) { 
             fprintf(stderr, "Reading buffer and writing file...\n");
             
             //The order of the data in the input (AIN) buffer is as follows,
@@ -541,9 +569,9 @@ int main (int argc, char** argv) {
             //Read pointer lags write pointer by NUM_CHANNELS
             for (queue = 0; queue < buffer_object.num_samples + 1; queue++) {  
                 for (ch = 0; ch < NUM_CHANNELS; ch++, ++raw) {
-                    int ain = ch_on[ch];
+                    int ain_i = ch_on[ch];
                     if (queue < buffer_object.num_samples) {
-                        float sample_volt = raw2volts(*raw, ain_cfg[ain].gain);
+                        float sample_volt = raw2volts(*raw, ain_cfg[ain_i].gain);
                         float* wptr = &sample_volt; //write pointer
                         buffer_object.vbuf->add(buffer_object.vbuf, wptr);
                     }
