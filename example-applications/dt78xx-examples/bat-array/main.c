@@ -5,6 +5,9 @@
 * https://msdn.microsoft.com/en-us/library/windows/desktop/aa365683(v=vs.85).aspx
 * for additional details on (a)synchronous I/O.
  * 
+ * (c) Aidan Johnson (johnsj96@uw.edu)
+ * 29 June 2018
+ * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -168,9 +171,7 @@ int main (int argc, char** argv) {
     int num_buffers = NUM_BUFFS;
     int num_channels = NUM_CHANNELS;
     
-    struct circ_buffer buffer_object = {.sample_rate = SAMPLE_RATE,
-                                          .vbuf = NULL, //TODO: make circular buffer
-                                         };
+    struct circ_buffer buffer_object = {.sample_rate = SAMPLE_RATE, .vbuf = NULL};
     
     dt78xx_clk_config_t clk = {.ext_clk=0, //Internal clock
                                .ext_clk_din=0, 
@@ -438,7 +439,6 @@ int main (int argc, char** argv) {
     }
     
     
-    //TODO: replace with circular buffer
     //Allocate a buffer to hold the raw values converted to Volts
     const int vbuf_len = samples_per_chan * NUM_CHANNELS;
     buffer_object.vbuf = RingBuf_new(sizeof(float), vbuf_len);
