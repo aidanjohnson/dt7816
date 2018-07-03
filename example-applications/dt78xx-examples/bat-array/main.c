@@ -1,6 +1,6 @@
 /* 
 * This is a custom application for DT7816 bat array asynchronous I/O sampling
-* that configures the board's analog input 0. The sampled data is read 
+* that configures the board's analog inputs. The sampled data is read 
 * asynchronously from the input stream and written to a AIFF file. See:
 * https://msdn.microsoft.com/en-us/library/windows/desktop/aa365683(v=vs.85).aspx
 * for additional details on (a)synchronous I/O.
