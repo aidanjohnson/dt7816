@@ -157,6 +157,28 @@ static void led_indicators(uint8_t status, int streaming) {
     ioctl(streaming, IOCTL_LED_SET, &led);    
 }
 
+static void timestamp(char* filePath, char** argv) {
+    struct timeval tv;
+    gettimeofday(&tv, NULL); //Gets current time
+    
+     //Time corresponding to first sample (see start of while loop)
+    const char *outputPath = PATH_TO_STORAGE; //A set path to local storage
+    const char *ID; //Identification prefix
+    ID = argv[optind]; //Physical location/identity: identifier
+    struct tm *t_iso = gmtime(&tv.tv_sec); // UTC aka GMT in ISO 8601: Zulu
+    char fileTime[LEN];
+
+    //YYYY-MM-DD HH:mm:ss:uuuuuu (u=microseconds)
+    sprintf(fileTime, "_%04d%02d%02dT%02d%02d%02d%liZ.aiff", 
+            t_iso->tm_year+1900, t_iso->tm_mon, t_iso->tm_mday, 
+            t_iso->tm_hour, t_iso->tm_min, t_iso->tm_sec, (long) tv.tv_usec); 
+    char fileName[LEN];
+    strcpy(fileName, ID); //Identify
+    strcat(fileName, fileTime); //Timestamped
+    strcpy(filePath, outputPath); //Directory path
+    strcat(filePath, fileName); //Full file path: concatenates filename
+}
+
 /******************************************************************************
  * Command line arguments see usage above
  */
@@ -468,8 +490,9 @@ int main (int argc, char** argv) {
     
     //Infinite loop until aborted by ctrl-C
     while (!g_quit) {
-        struct timeval tv;
-        gettimeofday(&tv, NULL); //Gets current time
+  
+        char filePath[LEN];
+        timestamp(filePath, argv);
                
         //Submit the buffers
         fprintf(stderr, "\nCommencing buffer...\n");
@@ -518,24 +541,6 @@ int main (int argc, char** argv) {
         fprintf(stderr, "Completing...\n");
         ioctl(fd_stream, IOCTL_STOP_SUBSYS, 0);  
         aio_stop(aio);
-        
-        //Time corresponding to first sample (see start of while loop)
-        const char *outputPath = PATH_TO_STORAGE; //A set path to local storage
-        const char *ID; //Identification prefix
-        ID = argv[optind]; //Physical location/identity: identifier
-        struct tm *t_iso = gmtime(&tv.tv_sec); // UTC aka GMT in ISO 8601: Zulu
-        char fileTime[LEN];
-        
-        //YYYY-MM-DD HH:mm:ss:uuuuuu (u=microseconds)
-        sprintf(fileTime, "_%04d%02d%02dT%02d%02d%02d%liZ.aiff", 
-                t_iso->tm_year+1900, t_iso->tm_mon, t_iso->tm_mday, 
-                t_iso->tm_hour, t_iso->tm_min, t_iso->tm_sec, (long) tv.tv_usec); 
-        char fileName[LEN];
-        strcpy(fileName, ID); //Identify
-        strcat(fileName, fileTime); //Timestamped
-        char filePath[LEN];
-        strcpy(filePath, outputPath); //Directory path
-        strcat(filePath, fileName); //Full file path: concatenates filename
         
          //Write acquired data to the specified .aiff output file
         AIFF_Ref file;
