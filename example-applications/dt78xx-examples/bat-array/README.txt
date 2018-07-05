@@ -11,19 +11,14 @@ saved to a predefined storage path. All options below are not required, only
 the file identifier is required. The files are saved to 
 <path>/<prefix>_<YYYY-DD-MMTHHmmssuuuuuuZ>.aiff
 
-Usage        : %s <identifier prefix> [options]
-
-Options
-Usage 
-
-./release/bat-array <identifier prefix> [options]
+Usage        : ./release/bat-array <identifier prefix> [options]
 
 Required     : a file or location identifier prefix, such as NORTH or 1.
 
 Options
 -i|--inputs  : 8-bit binary string to enable and disable analog input channels
                A channel is on if its bit is 1 and off if its bit is 0. Bit
-              positions 0/1/2/3/4/5/6/7 correspond to channels AIN0/1/2/3/4/5/6/7.
+               positions 0/1/2/3/4/5/6/7 correspond to channels AIN0/1/2/3/4/5/6/7.
                For example, 10101001 enables AIN0/2/4/7 and disables AIN1/3/5/6.
                By default, only channel AIN0 is enabled (i.e., 10000000).  
 -s|--samples : number of samples per channel, default 65536.
