@@ -111,78 +111,70 @@ The second and alternative method is to locally network the client and host. Thi
 6. Since we want to run the `bat-array` program without the PC connected to the board, we will need to copy the program over to local, on-board memory. To do so, run the command `cp -r /usr/local/dt7816-nfs/example-applications/dt78xx-examples/bat-array/ /usr/local/`. Then change directories to that location with `cd /usr/local/bat-array`.
 
 7. Now we can run the program. To do so, run the command `./release/bat-array <identifier> [options]` on the serial console (via Terminal) where `<identifier>` is a identifier of your choosing for the board's recordings (e.g., N for North), and `[options]` is the set of optional command line parameters (note that the board will run with the default values predefined in the source C code). The "help" display describes the options available. It is reproduced below for convenience.
-
-`Samples AIN* (where AINx is a combination of AIN0/1/2/3/4/5/6/7 and at most 8
+```shell
+Samples AIN* (where AINx is a combination of AIN0/1/2/3/4/5/6/7 and at most 8
 simultaneous channels) and writes data to timestamped file in AIFF format files 
 saved to a predefined storage path. All options below are not required, only 
 the file identifier is required. The files are saved to 
 <path>/<prefix>_<YYYY-DD-MMTHHmmssuuuuuuZ>.aiff
 
-Usage        : %s <identifier prefix> [options]
-
-Options
-Usage 
-
-./release/bat-array <identifier prefix> [options]
+Usage        : ./release/bat-array <identifier prefix> [options]
 
 Required     : a file or location identifier prefix, such as NORTH or 1.
 
 Options
--i|--inputs  : 8-bit binary string to enable and disable analog input channels
-               A channel is on if its bit is 1 and off if its bit is 0. Bit
-              positions 0/1/2/3/4/5/6/7 correspond to channels AIN0/1/2/3/4/5/6/7.
-               For example, 10101001 enables AIN0/2/4/7 and disables AIN1/3/5/6.
-               By default, only channel AIN0 is enabled (i.e., 10000000).  
--s|--samples : number of samples per channel, default 65536.
-               Note that you are limited to 2^(16-bits) = 65536 samples >=
-               (samples per channel)(channels per buffer)(buffers)
+-i|--inputs  : 8-bit binary string to enable and disable analog input channels. A channel is on if its bit is 1 and off if its bit is 0. Bit positions 0/1/2/3/4/5/6/7 correspond to channels AIN0/1/2/3/4/5/6/7. For example, 10101001 enables AIN0/2/4/7 and disables AIN1/3/5/6. By default, only channel AIN0 is enabled (i.e., 10000000).  
+
+-s|--samples : number of samples per channel, default 65536. Note that you are limited to 2^(16-bits) = 65536 samples >= (samples per channel)(channels per buffer)(buffers)
+
 -c|--clk     : sampling rate in Hz, default SAMPLE_RATE_HZ.
+
 -b|--buffers : number of buffers per file written, default 1.
+
 -d|--daemon  : runs this application as a daemon process.
+
 -t|--trig    : when the voltage on either AIN crosses 0.0 V rising 
                (threshold) acquisition is triggered. By default, acquisition
                is triggered when you start the analog input operation using 
-               the ioct.`
-
+               the ioct.
+```
 If all user input parameters are okay, a console message will appear waiting for the user to start data recording. At the console message, type 's' and then press 'return' key. The program will now automatically run saving the recordings to the local storage directory as `.aiff` files. The console will print information about the written files as it records and saves to the storage directory predefined in the C code `main.c`. The LEDs on the board below the debug pins will light up to indicate whether the channels are being read and recorded (written).
 
-*Debug LEDs*
-* 8 in total
-* LED ON (1) := CHANNEL is READING/WRITING
-
-_Indicator LED Locations_
-
-Viewing the DT7816 such that the debug pin row is above the user LEDs, i.e. the DC in, USB, Ethernet, etc. are at the bottom), the LEDs are located and orientated like so:
-______ ______ ______ ______ ______ ______ ______ ______ ______ _______
-| PIN1 | PIN2 | PIN3 | PIN4 | PIN5 | PIN6 | PIN7 | PIN8 | PIN9 | PIN10 |
-***** LED7 ** LED6 ** LED5 ** LED4 ** LED3 ** LED2 ** LED1 ** LED0 *****
-
-where each LED is defined by its respective analog input:
-
-LED0 := AIN0, LED1 := AIN1, LED2 := AIN2, LED3 := AIN3,
-LED4 := AIN4, LED5 := AIN5, LED6 := AIN6, LED7 := AIN7
-
-The analog input channels have the following coding returned by `IOCTL_CHAN_MASK_GET`, which enables/disables the LEDs debug indicators:
-
-AIN0 = 0x01, AIN1 = 0x02, AIN2 = 0x04, AIN3 = 0x08
-AIN4 = 0x10, AIN5 = 0x20, AIN6 = 0x40, AIN7 = 0x80
-
-_Analog Inputs Locations_
-
-For the input header pins (J16), i.e. the right header at the top of the board when viewed from the same perspective as before, is grouped like this where the topmost row is the topmost row of the header:
-___________________________________________________
-||  2 |  4 |  6 |  8 | 10 | 12 | 14 | 16 | 18 | 20 ||
-||  1 |  3 |  5 |  7 |  9 | 11 | 13 | 15 | 17 | 19 ||
-
-The analog inputs (AINs) are defined as:
-
-PIN5 := AIN0, PIN7 := AIN1, PIN9 := AIN2, PIN11 := AIN3 
-PIN13 := AIN4, PIN15 := AIN5, PIN17 := AIN6, PIN19 := AIN7
-
-and their corresponding analog grounds (AGRDs) are defined as:
-
-PIN6 := AGRD0, PIN8 := AGRD1, PIN10 := AGRD2, PIN12 := AGRD3 
-PIN14 := AGRD4, PIN16 := AGRD5, PIN18 := AGRD6, PIN20 := AGRD7`
+> **Debug LEDs**
+> * 8 in total
+> * LED ON (1) := CHANNEL is READING/WRITING
+>
+> *Indicator LED Locations*
+>
+> Viewing the DT7816 such that the debug pin row is above the user LEDs, i.e. the DC in, USB, Ethernet, etc. are at the bottom), the LEDs are located and orientated like so:
+>
+> |  **PIN1** |  **PIN2** |  **PIN3** |  **PIN4** |  **PIN5** |  **PIN6** |  **PIN7** |  **PIN8** |  **PIN9** | **PIN10** |
+> |-----------|-----------|-----------|-----------|-----------|-----------|-----------|-----------|-----------|-----------|
+> |           |  **LED7** |  **LED6** |  **LED5** |  **LED4** |  **LED3** |  **LED2** |  **LED1** |  **LED0** |           |
+>
+> where each LED is defined by its respective analog input:
+>
+> LED0 := AIN0, LED1 := AIN1, LED2 := AIN2, LED3 := AIN3, LED4 := AIN4, LED5 := AIN5, LED6 := AIN6, LED7 := AIN7
+>
+> The analog input channels have the following coding returned by `IOCTL_CHAN_MASK_GET`, which enables/disables the LEDs debug indicators:
+>
+> AIN0 = 0x01, AIN1 = 0x02, AIN2 = 0x04, AIN3 = 0x08, AIN4 = 0x10, AIN5 = 0x20, AIN6 = 0x40, AIN7 = 0x80
+>
+> *Analog Inputs Locations*
+>
+> For the input header pins (J16), i.e. the right header at the top of the board when viewed from the same perspective as before, is grouped like this where the topmost row is the topmost row of the header:
+>
+> |  **2** |  **4** |  **6** |  **8** | **10** | **12** | **14** | **16** | **18** | **20** |
+> |--------|--------|--------|--------|--------|--------|--------|--------|--------|--------|
+> |  **1** |  **3** |  **5** |  **7** |  **9** | **11** | **13** | **15** | **17** | **19** |
+>
+> The analog inputs (AINs) are defined as:
+>
+> PIN5 := AIN0, PIN7 := AIN1, PIN9 := AIN2, PIN11 := AIN3, PIN13 := AIN4, PIN15 := AIN5, PIN17 := AIN6, PIN19 := AIN7
+>
+> and their corresponding analog grounds (AGRDs) are defined as:
+>
+> PIN6 := AGRD0, PIN8 := AGRD1, PIN10 := AGRD2, PIN12 := AGRD3, PIN14 := AGRD4, PIN16 := AGRD5, PIN18 := AGRD6, PIN20 := AGRD7
 
 ## Troubleshooting
 
