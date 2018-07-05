@@ -145,9 +145,9 @@ The second and alternative method is to locally network the client and host. Thi
 
    **Debug LEDs**
    
-   The LEDs on the board below the debug pins will light up to indicate whether the channels are being read and recorded (written).
-   * 8 in total
-   * LED ON (1) := CHANNEL is READING/WRITING (R/W)
+   The LEDs (LEDx) on the board below the debug pins will light up to indicate whether the channels are being read and recorded (written).
+   * 8 LEDs in total.
+   * LEDx ON (1) := channel (AINx) is currently reading/writing (R/W) the input.
 
    **Indicator LED Locations**
 
@@ -185,7 +185,7 @@ The second and alternative method is to locally network the client and host. Thi
    |--------|--------|--------|--------|--------|--------|--------|--------|--------|--------|
    |  **1** |  **3** |  **5** |  **7** |  **9** | **11** | **13** | **15** | **17** | **19** |
 
-   The analog inputs (AINs) are defined as:
+   The analog inputs (AINs, or AINx) are defined as:
    * PIN5 := AIN0
    * PIN7 := AIN1
    * PIN9 := AIN2
@@ -195,7 +195,7 @@ The second and alternative method is to locally network the client and host. Thi
    * PIN17 := AIN6
    * PIN19 := AIN7
 
-   and their corresponding analog grounds (AGRDs) are defined as:
+   and their corresponding analog grounds (AGRDs, AGRDx) are defined as:
    * PIN6 := AGRD0
    * PIN8 := AGRD1
    * PIN10 := AGRD2
