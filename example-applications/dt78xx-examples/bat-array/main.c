@@ -1,12 +1,12 @@
 /* 
-* This is a custom application for DT7816 bat array asynchronous I/O sampling
+* This is a custom application for DT7816 autonomous asynchronous I/O sampling
 * that configures the board's analog inputs. The sampled data is read 
 * asynchronously from the input stream and written to a AIFF file. See:
 * https://msdn.microsoft.com/en-us/library/windows/desktop/aa365683(v=vs.85).aspx
 * for additional details on (a)synchronous I/O.
  * 
  * (c) Aidan Johnson (johnsj96@uw.edu)
- * 29 June 2018
+ * 05 July 2018
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -56,7 +56,7 @@
 // The sample rate, active channels, number of buffers, and samples per channel  
 // can be set with command line flags in a terminal shell used to run this program.
 
-//Analog inputs enabled/active/on (1) or disabled/inactive/off (0)
+//Default analog inputs (AINx) enabled/active/on (1) or disabled/inactive/off (0)
 #define AIN0                1
 #define AIN1                0
 #define AIN2                0
@@ -65,9 +65,9 @@
 #define AIN5                0
 #define AIN6                0
 #define AIN7                0
-#define PATH_TO_STORAGE     "/usr/local/path/to/ssd/"
+#define PATH_TO_STORAGE     "/usr/local/path/to/ssd/" //Predefined write path
 #define SAMPLE_RATE_HZ      400000.0
- //!! SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS <= 65536 samples = 2^(16 bits) !!
+ //Constraint: SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS <= 65536 samples = 2^(16 bits)
 #define SAMPLES_PER_FILE    65536 // SAMPLES_PER_CHAN = SAMPLES_PER_FILE / NUM_CHANNELS
 #define NUM_BUFFS           1 //Number of buffers per file initialised
 
@@ -105,9 +105,10 @@ struct circ_buffer {
     RingBuf *vbuf;  //buffer with raw values converted to voltage
 };
 
-/*
- * Command line arguments
+/*****************************************************************************
+ * Command line arguments with help
  */
+
 static const char g_usage[] = {
 "\n--------------------Autonomous Microphone Array for the DT7816 DAQ------------------\n"
 "Samples channels AINx (at most 8 simultaneous channels) and writes data to\n"
@@ -134,25 +135,47 @@ static const char g_usage[] = {
 };
 
 /*****************************************************************************
- * Signal handler for ctrl-C does nothing. It prevents the process from 
- * terminating abruptly
+ * Helper functions
  */
+
 static void sigint_handler(int i) {
+    //Signal handler for ctrl-c prevents the abrupt termination of processes
     g_quit = -1;
 }
 
 static void led_indicators(uint8_t status, int streaming) {
-    // Updates debug LEDs (8 in total), LED ON = 1 = READING/WRITING
-    // Viewing the board such that the debug pin row is above the user LEDs:
-    //
+    // Updates debug LEDs (8 in total), LED ON (1) := CHANNEL is READING/WRITING
+    // Viewing the DT7816 such that the debug pin row is above the user LEDs:
+    //  ______ ______ ______ ______ ______ ______ ______ ______ ______ _______
     // | PIN1 | PIN2 | PIN3 | PIN4 | PIN5 | PIN6 | PIN7 | PIN8 | PIN9 | PIN10 |
     // ***** LED7 ** LED6 ** LED5 ** LED4 ** LED3 ** LED2 ** LED1 ** LED0 *****
     //
     // LED0 := AIN0, LED1 := AIN1, LED2 := AIN2, LED3 := AIN3,
     // LED4 := AIN4, LED5 := AIN5, LED6 := AIN6, LED7 := AIN7
+    //
+    // where the analog input channels have the following coding returned by
+    // IOCTL_CHAN_MASK_GET:
+    //
+    // AIN0 = 0x01, AIN1 = 0x02, AIN2 = 0x04, AIN3 = 0x08
+    // AIN4 = 0x10, AIN5 = 0x20, AIN6 = 0x40, AIN7 = 0x80
+    //
+    // and for input header pins (J16):
+    //  ___________________________________________________
+    // ||  2 |  4 |  6 |  8 | 10 | 12 | 14 | 16 | 18 | 20 ||
+    // ||  1 |  3 |  5 |  7 |  9 | 11 | 13 | 15 | 17 | 19 ||
+    // 
+    // Analog Inputs (AINs):
+    //
+    // PIN5 := AIN0, PIN7 := AIN1, PIN9 := AIN2, PIN11 := AIN3 
+    // PIN13 := AIN4, PIN15 := AIN5, PIN17 := AIN6, PIN19 := AIN7
+    //
+    // Analog Grounds (AGRDs):
+    //
+    // PIN6 := AGRD0, PIN8 := AGRD1, PIN10 := AGRD2, PIN12 := AGRD3 
+    // PIN14 := AGRD4, PIN16 := AGRD5, PIN18 := AGRD6, PIN20 := AGRD7
     
     dt78xx_led_t led;
-    led.mask = 0xff;    // all bits are enabled (8 LEDs allowed)
+    led.mask = 0xff;    // all bits are enabled (8 LEDs capable of being lit)
     led.state = (status & 0xff);
     ioctl(streaming, IOCTL_LED_SET, &led);    
 }
@@ -180,8 +203,9 @@ static void timestamp(char* filePath, char** argv) {
 }
 
 /******************************************************************************
- * Command line arguments see usage above
+ * Simultaneous 8-channel analog input signal AIFF recorder
  */
+
 int main (int argc, char** argv) {
     
     uint8_t sysStatus = 0x00;
@@ -207,8 +231,7 @@ int main (int argc, char** argv) {
         switch (opt) {
             case 's':
                 samples_per_file = strtoul(optarg, NULL, 10);
-                if (samples_per_file <= 0)
-                {
+                if (samples_per_file <= 0) {
                     printf(g_usage, argv[0]);
                     return (EXIT_FAILURE);
                 }
@@ -243,6 +266,7 @@ int main (int argc, char** argv) {
         }
     }
     
+    //Creates mask for enabled channels
     const int channels_per_file = num_channels; //aka Block Size
     chan_mask_t chan_mask = 0x0;
     int *ch_on = malloc(sizeof(int)*channels_per_file);
@@ -280,15 +304,17 @@ int main (int argc, char** argv) {
         ch_on[ch_index++] = 7;
     }
     
+    //SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS <= 65536 samples = 2^(16 bits)
     int samples_per_chan = samples_per_file / channels_per_file;
     int gross_samples = samples_per_file * num_buffers;
     if(gross_samples > 65536) {
         fprintf(stderr, "Fatal Error: exceeded 16-bits!\n");
-        fprintf(stderr, "SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS = %.0f > 65536\n", 
+        fprintf(stderr, "SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS = %d > 65536\n", 
                 gross_samples);
         return (EXIT_FAILURE);
     }
     
+    //Configures all channels even if not enabled and used
     dt78xx_trig_config_t trig0_cfg;
     dt78xx_ain_config_t ain0_cfg ={.ain=0, //AIN0
                                   .gain=1, //Default gain
@@ -401,19 +427,13 @@ int main (int argc, char** argv) {
         goto _exit;
     }
     buffer_object.sample_rate = clk.clk_freq; //Actual rate
-    
-    //Redundant, but shows how to get sample rate
-    if (ioctl(fd_stream, IOCTL_SAMPLE_CLK_GET, &clk)) {
-        perror("IOCTL_SAMPLE_CLK_GET");    
-        goto _exit;
-    }
-    
-    //Configure for software trigger
+       
+    //Configure for software trigger for all enabled channels
     fprintf(stderr, "Configuring trigger...\n");
     int i;
     for (i = 0; i < channels_per_file; i++) {
         dt78xx_trig_config_t trig_cfg = trig_cfg_ai[ch_on[i]];
-        trig_cfg.src_cfg.threshold.ain = ch_on[i]; //AIN(ch on)
+        trig_cfg.src_cfg.threshold.ain = ch_on[i]; //AINx(ch on)
         if (auto_trig) //default trigger == auto or software trigger
             trig_cfg.src = trig_src_sw;
         else { //threshold trigger
@@ -427,7 +447,7 @@ int main (int argc, char** argv) {
         }
     }
     
-    //Write channel mask
+    //Write channel mask for selected/enabled channels
     if (ioctl(fd_stream, IOCTL_CHAN_MASK_SET, &chan_mask)) {
         fprintf(stderr, "IOCTL_CHAN_MASK_SET ERROR %d \"%s\"\n", 
                 errno, strerror(errno));
@@ -453,8 +473,8 @@ int main (int argc, char** argv) {
     }
     
     //Size/allocate a buffer to hold the specified samples for each channel
-    //buflen = 16*samples_per_chan*channels_per_file/8 
-    //(in bytes; assuming samples_per_chan multiple of 32)
+    //where: buflen = 16*samples_per_chan*channels_per_file/8 
+    //(in bytes, assuming samples_per_chan multiple of 32)
     int buflen = aio_buff_size(samples_per_chan, chan_mask, 
                                 &buffer_object.num_samples);
     fprintf(stdout,"Sampling at %f Hz to buffer of %d samples for %d channels...\n", 
@@ -466,7 +486,7 @@ int main (int argc, char** argv) {
     }
     
     
-    //Allocate a buffer to hold the raw values converted to Volts
+    //Allocate a circular/ring buffer/queue to hold the recorded values in Volts
     const int vbuf_len = samples_per_chan * channels_per_file;
     buffer_object.vbuf = RingBuf_new(sizeof(float), vbuf_len);
     if (!buffer_object.vbuf) {
@@ -490,7 +510,7 @@ int main (int argc, char** argv) {
     
     //Infinite loop until aborted by ctrl-C
     while (!g_quit) {
-  
+        //Gets time of first sample recording for timestamp
         char filePath[LEN];
         timestamp(filePath, argv);
                
@@ -508,8 +528,8 @@ int main (int argc, char** argv) {
             goto _exit;
         }
 
-        /* Issue a software start; this is redundant if trigger source is 
-         * threshold trigger or external trigger */ 
+        //Issue a software start; this is redundant if trigger source is 
+        //threshold trigger or external trigger 
         if ((ioctl(fd_stream, IOCTL_START_SUBSYS, 0))) {
             fprintf(stderr, "IOCTL_START_SUBSYS ERROR %d \"%s\"\n", 
                     errno, strerror(errno));
@@ -527,8 +547,6 @@ int main (int argc, char** argv) {
         }
         
         //Gets current active channels, indicating status on LEDs
-        //AIN0 = 0x01, AIN1 = 0x02, AIN2 = 0x04, AIN3 = 0x08
-        //AIN4 = 0x10, AIN5 = 0x20, AIN6 = 0x40, AIN7 = 0x80
         chan_mask_t activeCH;
         if (ioctl(fd_stream, IOCTL_CHAN_MASK_GET, &activeCH)) {
             perror("IOCTL_CHAN_MASK_GET");    
@@ -576,28 +594,31 @@ int main (int argc, char** argv) {
             int16_t *raw = buf_array[buff_done];
             
             int queue, ch;
-            //Read pointer lags write pointer by channels_per_file
+            //Circular buffer write and read pointers lead and follow
             for (queue = 0; queue < buffer_object.num_samples + 1; queue++) {  
                 for (ch = 0; ch < channels_per_file; ch++, ++raw) {
+                    //Decouples input from output with circular buffer
                     int ain_i = ch_on[ch];
-                    if (queue < buffer_object.num_samples) {
+                    //Write pointer leads read pointer by channels_per_file
+                    if (queue < buffer_object.num_samples) { 
                         float sample_volt = raw2volts(*raw, ain_cfg[ain_i].gain);
-                        float* wptr = &sample_volt; //write pointer
+                        float* wptr = &sample_volt; //write pointer for input
                         buffer_object.vbuf->add(buffer_object.vbuf, wptr);
                     }
+                    //Read pointer lags write pointer by channels_per_file
                     if (queue > 0) {
                         float* rptr = NULL; //read pointer for writing to file
                         buffer_object.vbuf->pull(buffer_object.vbuf, &rptr);
                         
-                        //Simultaneously analog input (channel) samples put inline 
-                        //and sequentially like so:
+                        //Simultaneously analog input (channel) samples put 
+                        //inline and sequentially for AIFF recording like so:
                         // ___________ ___________ ___________ ___________
                         //|           |           |           |           |
-                        //| Channel 1 | Channel 2 | Channel 1 | Channel 2 |
+                        //| Channel 1 | Channel 2 | Channel 1 | Channel 2 | ...
                         //|___________|___________|___________|___________|
-                        // <---------> <---------> <---------> <--------->
+                        // <---------> <---------> <---------> <--------->  ...
                         //   Segment     Segment     Segment     Segment
-                        // <---------------------> <--------------------->
+                        // <---------------------> <--------------------->  ...
                         //     Sample frame 1          Sample frame 2  
                         
                         writ = AIFF_WriteSamples32Bit(file, (int32_t*) &rptr, 1);
@@ -606,6 +627,8 @@ int main (int argc, char** argv) {
             }
         }
         end = AIFF_EndWritingSamples(file);
+        
+        //Checks for successful file writing
         if (start && writ && end) {
             fprintf(stderr, "%do .aiff file written\n", fileNum);
         }
