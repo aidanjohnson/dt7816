@@ -2,6 +2,8 @@
 
 ***—Work in Progress (WIP)—***
 
+This is a custom application for DT7816 autonomous asynchronous I/O sampling that configures the board's analog inputs. The sampled data is read [asynchronously](https://msdn.microsoft.com/en-us/library/windows/desktop/aa365683(v=vs.85).aspx) from the input stream and written to a AIFF file. The following documentation provides a step-by-step guide to using this software.
+
 See the [manufacturer guide](https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/DT7816_Getting_Started.htm) for the [DT7816](https://www.mccdaq.com/Products/ARM-DAQ/DT7816) if you want a more thorough guide necessary for manual setup and building. This repository is intended to make the building process easier and faster by automating it through a script. Download the tarball in [`INSTALL`](/INSTALL) to build all the code for this DAQ, which is installed to the directory: `/opt/ti-sdk-am335x-evm-07.00.00.00/`. Note that, if built from scratch, the directory would not contain `INSTALL`, [`UM7816.pdf`](/DT7816/UM7816.pdf), and [`DT7816-Programming.pdf`](/DT7816-Programming.pdf); these have been only included for convenience. Follow the instructions below to build it all from scratch.
 
 ## Installation Instructions
@@ -112,7 +114,7 @@ The second and alternative method is to locally network the client and host. Thi
 
 7. Now we can run the program. To do so, run the command `./release/bat-array <identifier> [options]` on the serial console (via Terminal) where `<identifier>` is a identifier of your choosing for the board's recordings (e.g., N for North), and `[options]` is the set of optional command line parameters (note that the board will run with the default values predefined in the source C code). The "help" display describes the options available. It is reproduced below for convenience.
    ```text
-   Samples AIN* (where AINx is a combination of AIN0/1/2/3/4/5/6/7 and at most 8
+   Samples AINx (where AINx is a combination of AIN0/1/2/3/4/5/6/7 and at most 8
    simultaneous channels) and writes data to timestamped file in AIFF format files 
    saved to a predefined storage path. All options below are not required, only 
    the file identifier is required. The files are saved to 
@@ -227,7 +229,7 @@ The second and alternative method is to locally network the client and host. Thi
    * https://www.garron.me/en/linux/add-secondary-ip-linux.html
    * https://access.redhat.com/sites/default/files/attachments/rh_ip_command_cheatsheet_1214_jcs_print.pdf
 
-6. See https://msdn.microsoft.com/en-us/library/windows/desktop/aa365683(v=vs.85).aspx for an explanation of synchronous and asynchronous input/output (I/O) synchronisation.
+6. Reset the board by pressing the reset button (a soft reset) or by unpluging DC power (a hard reset).
 
 7. Not entirely sure why this fixes the 'cannot resolve syscall' warning in NetBeans, but for each NetBeans project, right click to access the 'Properties' menu. Then under 'C Compiler'->'C Standard' set to C11, and under 'C++ compiler'->'C++ Standard' set to C++11. See this Stack Overflow [post](https://stackoverflow.com/questions/30686264/erroneous-unable-to-resolve-identifier-in-netbeans/35025731) for more information and discussion.
 
