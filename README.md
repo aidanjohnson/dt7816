@@ -11,9 +11,9 @@ See the [manufacturer guide](https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/
 1. Download the three following files. Save each in your OS `~/Downloads` directory.
    * http://software-dl.ti.com/sitara_linux/esd/AM335xSDK/07_00_00_00/exports/ti-sdk-am335x-evm-07.00.00.00-Linux-x86-Install.bin
    * ftp://ftp.mccdaq.com/downloads/DTSoftware/DT78XX_ARM/DT78XX-setup-3.2.bz2.run
-   * http://www.fftw.org/fftw-3.3.4.tar.gz
+   * https://cfhcable.dl.sourceforge.net/project/aifftools/libaiff/LibAiff%205.0/libaiff-5.0-release.tar.gz
 
-2. Download the compressed directories in `INSTALL`. Uncompress [`INSTALL.tar.gz`](/INSTALL/INSTALL.tar.gz), which is formed with the script `INSTALL_tar.sh`, using the command:
+2. Download the compressed directories in `INSTALL`. Uncompress each [`INSTALL.tar.gz`](/INSTALL/INSTALL.tar.gz), which is formed with the script `INSTALL_tar.sh`, using the command:
    ```
    tar -xzvf INSTALL.tar.gz
    ```

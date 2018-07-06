@@ -31,7 +31,6 @@ DT78xx_DIR = ../../../board-support/extra-drivers/dt78xx/
 COMN_DIR = ../common
 # Board type
 BOARD_TYPE = DT7837
-FFTW_DIR = ../../fftw-3.3.4
 #----------------------------------------------------------------------------
 include $(RULES_DIR)/Rules.make
 VPATH = $(COMN_DIR)
@@ -75,13 +74,13 @@ OBJDIR := release
 EXTRA_FLAGS := -O4 -Wall 
 endif
 BINDIR := $(OBJDIR)
-LIBS := $(LIBS) -lpthread -lm -lfftw3f
+LIBS := $(LIBS) -lpthread -lm
 OBJS := $(SRCS:%.c=$(OBJDIR)/%.o)
 
 #   ----------------------------------------------------------------------------
 #   Compiler include directories 
 #   ----------------------------------------------------------------------------
-INCLUDES := -I$(COMN_DIR) -I$(DT78xx_DIR) -I$(FFTW_DIR)/api
+INCLUDES := -I$(COMN_DIR) -I$(DT78xx_DIR)
 
 #   ----------------------------------------------------------------------------
 #   Compiler symbol definitions 
@@ -94,8 +93,7 @@ DEFS := -std=gnu99  $(FPU_FLAGS) -D$(BOARD_TYPE)
 ALL_CFLAGS := -c $(INCLUDES) $(CFLAGS) $(EXTRA_FLAGS) $(DEFS)
 
 LDFLAGS :=    -Wl,--hash-style=gnu         \
-              -Wl,-O1                      \
-	      -L$(FFTW_DIR)/.libs/
+              -Wl,-O1                      
 
 #   ----------------------------------------------------------------------------
 #   Compiler and Linker procedure
