@@ -105,7 +105,7 @@ The second and alternative method is to locally network the client and host. Thi
 
 4. Now that we are confident that the preliminary steps are functioning correctly, we can then access the programs or applications that we've written in C. For our purposes we will be running the `bat-array` program such that the board will autonomously sample and record the soundscape. ***—more to be added later on mounting a local storage device (e.g., HDD for lower cost per GB or SSD for lower Watt consumption) at a predefined file structure location—***
 
-5. Inconveniently, the board's local time clock needs to be set and synchronised to a common time so the `aiff` files can be properly time-stamped in their file name. We can synchronise the board's clock to a local clock that *must* be used for both boards—I would use my digital wristwatch or computer's time when the time was exactly zero seconds (HH:MM:00). Specifically run the commands (following ISO 8601 standards):
+5. Inconveniently, the board's local time clock needs to be set and synchronised to a common time so the `aiff` files can be properly time-stamped in their file name. We can synchronise the board's clock to a local clock that *must* be used for both boards—I would use my digital wristwatch or computer's time when the time was exactly zero seconds (HH:MM:00). Specifically run the commands (following [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) standards):
    * `date --set YYYY-MM-DD` where YYYY is the year, MM is the month and DD is the day.
    * `date --set HH:mm:ss` where HH is hours in 24-hour time, mm is minutes and ss is seconds.
    * ` hwclock --systohc` to set current time to the hardware clock in order for the time to be recoverable after reboots.
@@ -126,15 +126,28 @@ The second and alternative method is to locally network the client and host. Thi
 
    Options
    -i|--inputs  : 8-bit binary string to enable and disable analog input channels
-                  A channel is on if its bit is 1 and off if its bit is 0. Bit positions 0/1/2/3/4/5/6/7 correspond to channels AIN0/1/2/3/4/5/6/7. For example, 10101001 enables AIN0/2/4/7 and disables AIN1/3/5/6. By default, only channel AIN0 is enabled (i.e., 10000000).  
-   -s|--samples : number of samples per channel, defaults 65536. Note that you are                limited to 2^(16-bits) = 65536 samples >= (samples per channel)                 (channels per buffer)(buffers)
+                  A channel is on if its bit is 1 and off if its bit is 0. Bit 
+                  positions 0/1/2/3/4/5/6/7 correspond to channels 
+                  AIN0/1/2/3/4/5/6/7. For example, 10101001 enables AIN0/2/4/7 
+                  and disables AIN1/3/5/6. By default, only channel AIN0 is 
+                  enabled (i.e., 10000000).  
+   -s|--samples : number of samples per channel, defaults 65536. Note that you are
+                  limited to 2^(16-bits) = 65536 samples >= (samples per channel)
+                  (channels per buffer)(buffers)
    -c|--clk     : sampling rate in Hz, defaults 400000 Hz.
    -b|--buffers : number of buffers per file written, defaults 1.
-   -d|--dur     : fixed duration of sampling period in days at night as                           determined by sunset and sunrise times, defaults 7 days.
+   -d|--dur     : fixed duration of sampling period in days at night as
+                  determined by sunset and sunrise times, defaults 7 days.
    -r|--run     : runs this application as a daemon process, defaults off.
-   -t|--trig    : when the voltage on either AIN crosses 0.0 V rising (threshold)                 acquisition is triggered. By default, acquisition is triggered                  when you start the analog input operation using the ioct.
+   -t|--trig    : when the voltage on either AIN crosses 0.0 V rising (threshold)
+                  acquisition is triggered. By default, acquisition is triggered
+                  when you start the analog input operation using the ioct.
    ```
    If all user input parameters are okay, a console message will appear waiting for the user to start data recording. At the console message, type 's' and then press 'return' key. The program will now automatically run saving the recordings to the local storage directory as `.aiff` files. The console will print information about the written files as it records and saves to the storage directory predefined in the C code `main.c`.
+
+   **Sunrise and Sunset Times**
+
+   Restraining from making a *Fiddler on the Roof* reference, the program is fed a `.txt` file coining the sunset times interleaved with the sunrise times of a location determined by its latitude and longitude coordinates. The [US Naval Observatory](http://aa.usno.navy.mil/data/docs/RS_OneDay.php) has a database of these times accesible using a [JSON API](http://aa.usno.navy.mil/data/docs/api.php). The Jupyter Notebook [`navy_json_sunsight_sunclipse.ipynb`](/navy_json_sunsight_sunclipse.ipynb) contains a script that writes the sunset and sunrise times (indicating the time of dusk and dawn) for given range of days to the file [`sunup_sundown.txt`](/sunup_sundown.txt) in ISO 8601 format. These dates and times are read by the `bat-array` program so that the data sampling and recording only occurs when the bats are out foraging (i.e., at night).
 
    **Debug LEDs**
    
