@@ -66,10 +66,12 @@
 #define AIN6                0
 #define AIN7                0
 #define PATH_TO_STORAGE     "/usr/local/path/to/ssd/" //Predefined write path
+#define PATH_TO_SUN_CYCLE   "/usr/local/sunup_sundown.txt"
 #define SAMPLE_RATE_HZ      400000.0
  //Constraint: SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS <= 65536 samples = 2^(16 bits)
 #define SAMPLES_PER_FILE    65536 // SAMPLES_PER_CHAN = SAMPLES_PER_FILE / NUM_CHANNELS
 #define NUM_BUFFS           1 //Number of buffers per file initialised
+#define DURATION_DAYS       7 //Default number of days of sampling
 
 /*****************************************************************************
  * Do Not Touch These Macros
@@ -162,7 +164,7 @@ static void led_indicators(uint8_t status, int streaming) {
     // and for input header pins (J16):
     //  ___________________________________________________
     // ||  2 |  4 |  6 |  8 | 10 | 12 | 14 | 16 | 18 | 20 ||
-    // ||  1 |  3 |  5 |  7 |  9 | 11 | 13 | 15 | 17 | 19 ||
+    // ||  1 |  3 |  5 |  7 |  9 | 11 | 13 | 15 | 17 | 19 ||7; //Defaults to 7 days
     // 
     // Analog Inputs (AINs):
     //
@@ -180,15 +182,57 @@ static void led_indicators(uint8_t status, int streaming) {
     ioctl(streaming, IOCTL_LED_SET, &led);    
 }
 
+static void getSunTime(struct tm* time, char* date_time) {
+    char year[4];
+    int k;
+    for (k = 0; k < 4; k++) {
+        year[k] = date_time[k];
+    }
+    time->tm_year = atol(year) - 1900;
+    char month[2];
+    for (k = 0; k < 2; k++) {
+        month[k] = date_time[k + 5];
+    }
+    time->tm_mon = atoi(month);
+    char day[2];
+    for (k = 0; k < 2; k++) {
+        day[k] = date_time[k + 8];
+    }
+    time->tm_mday = atoi(day);
+    char hour[2];
+    for (k = 0; k < 2; k++) {
+        hour[k] = date_time[k + 11];
+    }
+    time->tm_hour = atoi(hour);
+    char minute[2];
+    for (k = 0; k < 2; k++) {
+        minute[k] = date_time[k + 14];
+    }
+    time->tm_min = atoi(minute);
+    char second[2];
+    for (k = 0; k < 2; k++) {
+        second[k] = date_time[k + 17];
+    }
+    time->tm_sec = atoi(second);
+}
+
+static void getTime(struct tm** curTime, struct timeval* clockTime) {
+    gettimeofday(&(*clockTime), NULL); //Gets current time
+    *curTime = gmtime(&(*clockTime).tv_sec); // UTC aka GMT in ISO 8601: Zulu
+}
+
+static long getTimeEpoch(struct tm* readableTime) {
+    return (long) mktime(&(*readableTime));
+}
+
 static void timestamp(char* filePath, char** argv) {
     struct timeval tv;
-    gettimeofday(&tv, NULL); //Gets current time
-    
+    struct tm *t_iso; //Time in accordance to ISO 8601
+    getTime(&t_iso, &tv); //Gets current time in UTC (aka GMT or Zulu) 
      //Time corresponding to first sample (see start of while loop)
     const char *outputPath = PATH_TO_STORAGE; //A set path to local storage
     const char *ID; //Identification prefix
     ID = argv[optind]; //Physical location/identity: identifier
-    struct tm *t_iso = gmtime(&tv.tv_sec); // UTC aka GMT in ISO 8601: Zulu
     char fileTime[LEN];
 
     //YYYY-MM-DD HH:mm:ss:uuuuuu (u=microseconds)
@@ -200,6 +244,44 @@ static void timestamp(char* filePath, char** argv) {
     strcat(fileName, fileTime); //Timestamped
     strcpy(filePath, outputPath); //Directory path
     strcat(filePath, fileName); //Full file path: concatenates filename
+}
+
+static int findElapsedDays(struct tm** sunsets, struct tm** sunrises, int totalDays) {
+    int elapsedDays = 0;
+    int riseIndex = totalDays - 1;
+    int setIndex = 0;
+    struct timeval sysTime;
+    struct tm* sysDate;
+    getTime(&sysDate, &sysTime);
+    long sysEpoch = (long) sysTime.tv_sec;
+//    sysEpoch += 146000000;
+//    fprintf(stdout, "%ld, %ld, %ld\n", sysEpoch, getTimeEpoch(&(*sunsets)[setIndex]), getTimeEpoch(&(*sunrises)[riseIndex]));
+
+    if (sysEpoch <= getTimeEpoch(&(*sunsets)[setIndex])) { //First sunset in epoch time
+        elapsedDays = 0;
+    } else if (sysEpoch >= getTimeEpoch(&(*sunrises)[riseIndex])) { //Last sunrise in epoch time
+        elapsedDays = totalDays;
+    } else {
+        //Find where current system time is (relative to) sun up/down cycle
+        while (sysEpoch < getTimeEpoch(&(*sunrises)[riseIndex]) && 
+               sysEpoch > getTimeEpoch(&(*sunsets)[setIndex])) {
+            riseIndex--;
+            setIndex++;
+        }
+        if (sysEpoch >= getTimeEpoch(&(*sunrises)[riseIndex])) {
+            elapsedDays = setIndex + 1;
+        } else { //sysEpoch <= getTimeEpoch(&(*sunsets)[setIndex])
+            elapsedDays = riseIndex;
+        }
+    }
+    return elapsedDays;
+}
+
+static long getPresentTime() {
+    struct tm* isoTime;
+    struct timeval epochTime;
+    getTime(&isoTime, &epochTime);
+    return (long) getTimeEpoch(&(*isoTime));
 }
 
 /******************************************************************************
@@ -215,6 +297,7 @@ int main (int argc, char** argv) {
     int samples_per_file = SAMPLES_PER_FILE;
     int num_buffers = NUM_BUFFS;
     int num_channels = NUM_CHANNELS;
+    int durationDays = DURATION_DAYS;
     
     struct circ_buffer buffer_object = {.sample_rate = SAMPLE_RATE, .vbuf = NULL};
     
@@ -393,13 +476,13 @@ int main (int argc, char** argv) {
     
     //Run as a daemon if specified in command line. MUST preceed any file I/O
     if (daemonise) {
-        fprintf(stderr, "Daemonising...\n");
+        fprintf(stdout, "Daemonising...\n");
         if (daemon(1,0) < 0)
             perror("daemon");
     }
     
     //Open input stream
-    fprintf(stderr, "Opening stream...\n");
+    fprintf(stdout, "Opening stream...\n");
     int fd_stream = open(DEV_STREAM_IN, O_RDONLY);
     if (fd_stream < 0) {
         fprintf(stderr, "ERROR %d \"%s\" open %s\n", 
@@ -408,7 +491,7 @@ int main (int argc, char** argv) {
     }
     
     //Open analog input
-    fprintf(stderr, "Opening analog input...\n");
+    fprintf(stdout, "Opening analog input...\n");
     int fd_ain = open(DEV_AIN, O_RDONLY);
     if (fd_ain < 0) {
         fprintf(stderr, "ERROR %d \"%s\" open %s\n", 
@@ -429,7 +512,7 @@ int main (int argc, char** argv) {
     buffer_object.sample_rate = clk.clk_freq; //Actual rate
        
     //Configure for software trigger for all enabled channels
-    fprintf(stderr, "Configuring trigger...\n");
+    fprintf(stdout, "Configuring trigger...\n");
     int i;
     for (i = 0; i < channels_per_file; i++) {
         dt78xx_trig_config_t trig_cfg = trig_cfg_ai[ch_on[i]];
@@ -465,7 +548,7 @@ int main (int argc, char** argv) {
     }
     
     //Create and initialise AIO structures
-    fprintf(stderr, "Initialising...\n");
+    fprintf(stdout, "Initialising...\n");
     aio = aio_create(fd_stream, 0, NULL, NULL);
     if (!aio) {
         fprintf(stderr, "ERROR aio_create\n");
@@ -485,7 +568,6 @@ int main (int argc, char** argv) {
         goto _exit;
     }
     
-    
     //Allocate a circular/ring buffer/queue to hold the recorded values in Volts
     const int vbuf_len = samples_per_chan * channels_per_file;
     buffer_object.vbuf = RingBuf_new(sizeof(float), vbuf_len);
@@ -494,12 +576,51 @@ int main (int argc, char** argv) {
         goto _exit;
     }
     
+    FILE *sunUpDown;
+    sunUpDown = fopen(PATH_TO_SUN_CYCLE, "r");
+    if (sunUpDown == NULL) {
+        fprintf(stderr, "ERROR cannot open sun up and down cycle .txt file\n");
+        goto _exit;
+    }
+    
+    int elapsedDays = 0;
+    struct tm *sunsets = malloc(sizeof(struct tm)*durationDays);
+    struct tm *sunrises = malloc(sizeof(struct tm)*durationDays);
+    char line_sunset[26];
+    char line_sunrise[26];
+    for (elapsedDays = 0; elapsedDays < durationDays; elapsedDays++) {
+        if (fscanf(sunUpDown, "%s", line_sunset) != 1) { // sunset 
+            if (elapsedDays == 0) {
+                fprintf(stderr, "ERROR insufficient number of sunsets\n");
+                goto _exit;
+            }
+            fprintf(stderr, "ERROR insufficient number of sunsets (< %d); "
+                    "using last day's sunset time\n", durationDays);
+            sunsets[elapsedDays] = sunsets[elapsedDays - 1];
+        } else {
+            getSunTime(&(sunsets[elapsedDays]), line_sunset);   
+        }
+        if (fscanf(sunUpDown, "%s", line_sunrise) != 1) { // sunrise 
+            if (elapsedDays == 0) {
+                fprintf(stderr, "ERROR insufficient number of sunrises\n");
+                goto _exit;
+            }            
+            fprintf(stderr, "ERROR insufficient number of sunrises (< %d); "
+                    "using last day's sunrise time\n", durationDays);
+            sunrises[elapsedDays] = sunrises[elapsedDays - 1];
+        } else {
+            getSunTime(&(sunrises[elapsedDays]), line_sunrise); 
+        }
+    }
+//    fprintf(stdout, "Getting elapsed time...\n");
+    elapsedDays = findElapsedDays(&sunsets, &sunrises, durationDays);
+//    fprintf(stdout, "%d\n", elapsedDays);
+    
     //Wait for user input to start or abort
     fprintf(stdout,"Press s to start, any other key to quit\n");
     while (1) {
         int c = getchar();
-        if (c == 's')
-        {
+        if (c == 's') {
             break;
         }
         goto _exit;
@@ -510,139 +631,150 @@ int main (int argc, char** argv) {
     
     //Infinite loop until aborted by ctrl-C
     while (!g_quit) {
-        //Gets time of first sample recording for timestamp
-        char filePath[LEN];
-        timestamp(filePath, argv);
-               
-        //Submit the buffers
-        fprintf(stderr, "\nCommencing buffer...\n");
-        if (aio_start(aio)) {
-            fprintf(stderr, "ERROR aio_start\n");
-            goto _exit;
-        }
-
-        //ARM
-        if ((ioctl(fd_stream, IOCTL_ARM_SUBSYS, 0))) {
-            fprintf(stderr, "IOCTL_ARM_SUBSYS ERROR %d \"%s\"\n", 
-                    errno, strerror(errno));
-            goto _exit;
-        }
-
-        //Issue a software start; this is redundant if trigger source is 
-        //threshold trigger or external trigger 
-        if ((ioctl(fd_stream, IOCTL_START_SUBSYS, 0))) {
-            fprintf(stderr, "IOCTL_START_SUBSYS ERROR %d \"%s\"\n", 
-                    errno, strerror(errno));
-            goto _exit;
-        }
-
-        //Wait for all buffers to complete
-        fprintf(stderr, "Buffering in progress...\n");
-        int buff_done = 0;
-        while (!g_quit && (buff_done < num_buffers)) {
-            int ret = aio_wait(aio, 0);
-            if (ret < 0) //error
-                break;
-            buff_done += ret;
-        }
+        long presentTime = getPresentTime();
+        long sunsetTime = getTimeEpoch(&sunsets[elapsedDays]);
+        long sunriseTime = getTimeEpoch(&sunrises[elapsedDays]);
+        int night = 0;
         
-        //Gets current active channels, indicating status on LEDs
-        chan_mask_t activeCH;
-        if (ioctl(fd_stream, IOCTL_CHAN_MASK_GET, &activeCH)) {
-            perror("IOCTL_CHAN_MASK_GET");    
-            goto _exit;
-        }
-        sysStatus = activeCH;
-        led_indicators(sysStatus, fd_stream);
+        //If after dusk and before dawn (entering night)
+        while (presentTime < sunriseTime && presentTime >= sunsetTime) {
+            night = 1;
+            //Gets time of first sample recording for timestamp
+            char filePath[LEN];
+            timestamp(filePath, argv);
 
-        //Stop streaming after buffer completion
-        fprintf(stderr, "Completing...\n");
-        ioctl(fd_stream, IOCTL_STOP_SUBSYS, 0);  
-        aio_stop(aio);
-        
-         //Write acquired data to the specified .aiff output file
-        AIFF_Ref file;
-        file = AIFF_OpenFile(filePath, F_WRONLY);
-        if (file) {
-            fileNum += 1;
-            fprintf(stderr, "Opened .aiff file...\n");
-            
-            //Sets formatting
-            if (!AIFF_SetAudioFormat(file, channels_per_file, 
-                                    (double) buffer_object.sample_rate, 
-                                    sizeof(float))) {
-                AIFF_CloseFile(file);
-                fprintf(stderr, "ERROR audio_format_set");
+            //Submit the buffers
+            fprintf(stdout, "\nCommencing buffer...\n");
+            if (aio_start(aio)) {
+                fprintf(stderr, "ERROR aio_start\n");
                 goto _exit;
             }
-        } else {
-            fprintf(stderr, "ERROR audio_file_open");
-            goto _exit; 
-        }
-        
-        int start, writ, end;
-        start = AIFF_StartWritingSamples(file);
 
-        //Convert the raw values to voltage
-        for (buff_done=0; buff_done < num_buffers; ++buff_done) { 
-            fprintf(stderr, "Reading buffer and writing file...\n");
-            
-            //The order of the data in the input (AIN) buffer is as follows,
-            //assuming that all channels are enabled in the input stream:
-            //Analog input channels 0 through 7. Each analog input sample is a
-            //16-bit, two’s complement value.
-            int16_t *raw = buf_array[buff_done];
-            
-            int queue, ch;
-            //Circular buffer write and read pointers lead and follow
-            for (queue = 0; queue < buffer_object.num_samples + 1; queue++) {  
-                for (ch = 0; ch < channels_per_file; ch++, ++raw) {
-                    //Decouples input from output with circular buffer
-                    int ain_i = ch_on[ch];
-                    //Write pointer leads read pointer by channels_per_file
-                    if (queue < buffer_object.num_samples) { 
-                        float sample_volt = raw2volts(*raw, ain_cfg[ain_i].gain);
-                        float* wptr = &sample_volt; //write pointer for input
-                        buffer_object.vbuf->add(buffer_object.vbuf, wptr);
-                    }
-                    //Read pointer lags write pointer by channels_per_file
-                    if (queue > 0) {
-                        float* rptr = NULL; //read pointer for writing to file
-                        buffer_object.vbuf->pull(buffer_object.vbuf, &rptr);
-                        
-                        //Simultaneously analog input (channel) samples put 
-                        //inline and sequentially for AIFF recording like so:
-                        // ___________ ___________ ___________ ___________
-                        //|           |           |           |           |
-                        //| Channel 1 | Channel 2 | Channel 1 | Channel 2 | ...
-                        //|___________|___________|___________|___________|
-                        // <---------> <---------> <---------> <--------->  ...
-                        //   Segment     Segment     Segment     Segment
-                        // <---------------------> <--------------------->  ...
-                        //     Sample frame 1          Sample frame 2  
-                        
-                        writ = AIFF_WriteSamples32Bit(file, (int32_t*) &rptr, 1);
+            //ARM
+            if ((ioctl(fd_stream, IOCTL_ARM_SUBSYS, 0))) {
+                fprintf(stderr, "IOCTL_ARM_SUBSYS ERROR %d \"%s\"\n", 
+                        errno, strerror(errno));
+                goto _exit;
+            }
+
+            //Issue a software start; this is redundant if trigger source is 
+            //threshold trigger or external trigger 
+            if ((ioctl(fd_stream, IOCTL_START_SUBSYS, 0))) {
+                fprintf(stderr, "IOCTL_START_SUBSYS ERROR %d \"%s\"\n", 
+                        errno, strerror(errno));
+                goto _exit;
+            }
+
+            //Wait for all buffers to complete
+            fprintf(stdout, "Buffering in progress...\n");
+            int buff_done = 0;
+            while (!g_quit && (buff_done < num_buffers)) {
+                int ret = aio_wait(aio, 0);
+                if (ret < 0) //error
+                    break;
+                buff_done += ret;
+            }
+
+            //Gets current active channels, indicating status on LEDs
+            chan_mask_t activeCH;
+            if (ioctl(fd_stream, IOCTL_CHAN_MASK_GET, &activeCH)) {
+                perror("IOCTL_CHAN_MASK_GET");    
+                goto _exit;
+            }
+            sysStatus = activeCH;
+            led_indicators(sysStatus, fd_stream);
+
+            //Stop streaming after buffer completion
+            fprintf(stdout, "Completing...\n");
+            ioctl(fd_stream, IOCTL_STOP_SUBSYS, 0);  
+            aio_stop(aio);
+
+             //Write acquired data to the specified .aiff output file
+            AIFF_Ref file;
+            file = AIFF_OpenFile(filePath, F_WRONLY);
+            if (file) {
+                fileNum += 1;
+                fprintf(stdout, "Opened .aiff file...\n");
+
+                //Sets formatting
+                if (!AIFF_SetAudioFormat(file, channels_per_file, 
+                                        (double) buffer_object.sample_rate, 
+                                        sizeof(float))) {
+                    AIFF_CloseFile(file);
+                    fprintf(stderr, "ERROR audio_format_set");
+                    goto _exit;
+                }
+            } else {
+                fprintf(stderr, "ERROR audio_file_open");
+                goto _exit; 
+            }
+
+            int start, writ, end;
+            start = AIFF_StartWritingSamples(file);
+
+            //Convert the raw values to voltage
+            for (buff_done=0; buff_done < num_buffers; ++buff_done) { 
+                fprintf(stdout, "Reading buffer and writing file...\n");
+
+                //The order of the data in the input (AIN) buffer is as follows,
+                //assuming that all channels are enabled in the input stream:
+                //Analog input channels 0 through 7. Each analog input sample is a
+                //16-bit, two’s complement value.
+                int16_t *raw = buf_array[buff_done];
+
+                int queue, ch;
+                //Circular buffer write and read pointers lead and follow
+                for (queue = 0; queue < buffer_object.num_samples + 1; queue++) {  
+                    for (ch = 0; ch < channels_per_file; ch++, ++raw) {
+                        //Decouples input from output with circular buffer
+                        int ain_i = ch_on[ch];
+                        //Write pointer leads read pointer by channels_per_file
+                        if (queue < buffer_object.num_samples) { 
+                            float sample_volt = raw2volts(*raw, ain_cfg[ain_i].gain);
+                            float* wptr = &sample_volt; //write pointer for input
+                            buffer_object.vbuf->add(buffer_object.vbuf, wptr);
+                        }
+                        //Read pointer lags write pointer by channels_per_file
+                        if (queue > 0) {
+                            float* rptr = NULL; //read pointer for writing to file
+                            buffer_object.vbuf->pull(buffer_object.vbuf, &rptr);
+
+                            //Simultaneously analog input (channel) samples put 
+                            //inline and sequentially for AIFF recording like so:
+                            // ___________ ___________ ___________ ___________
+                            //|           |           |           |           |
+                            //| Channel 1 | Channel 2 | Channel 1 | Channel 2 | ...
+                            //|___________|___________|___________|___________|
+                            // <---------> <---------> <---------> <--------->  ...
+                            //   Segment     Segment     Segment     Segment
+                            // <---------------------> <--------------------->  ...
+                            //     Sample frame 1          Sample frame 2  
+
+                            writ = AIFF_WriteSamples32Bit(file, (int32_t*) &rptr, 1);
+                        }
                     }
                 }
             }
-        }
-        end = AIFF_EndWritingSamples(file);
-        
-        //Checks for successful file writing
-        if (start && writ && end) {
-            fprintf(stderr, "%do .aiff file written\n", fileNum);
-        }
+            end = AIFF_EndWritingSamples(file);
 
-        //Stops writing
-        if (AIFF_CloseFile(file)) {
-            fprintf(stderr, "Closed file...\n");
-            sysStatus = 0x00; //All off
-            led_indicators(sysStatus, fd_stream);
-            fprintf(stderr, "File at %s\n", filePath);
-        } else {
-            fprintf(stderr, "ERROR audio_file_close");
-            goto _exit;
+            //Checks for successful file writing
+            if (start && writ && end) {
+                fprintf(stderr, "%do .aiff file written\n", fileNum);
+            }
+
+            //Stops writing
+            if (AIFF_CloseFile(file)) {
+                fprintf(stdout, "Closed file...\n");
+                sysStatus = 0x00; //All off
+                led_indicators(sysStatus, fd_stream);
+                fprintf(stdout, "File at %s\n", filePath);
+            } else {
+                fprintf(stderr, "ERROR audio_file_close");
+                goto _exit;
+            }
         }
+        
+        if (night) elapsedDays++; //If after dawn (leaving night), 1 day elapsed
     }
 
 //Exit protocol and procedure    
