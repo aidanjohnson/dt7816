@@ -124,13 +124,15 @@ static const char g_usage[] = {
 "               positions 0/1/2/3/4/5/6/7 correspond to channels AIN0/1/2/3/4/5/6/7.\n"
 "               For example, 10101001 enables AIN0/2/4/7 and disables AIN1/3/5/6.\n"
 "               By default, on channels AIN0 is enabled (i.e., 10000000).\n"        
-"-s|--samples : number of samples per file, default " xstr(SAMPLES_PER_FILE) ".\n"
+"-s|--samples : number of samples per file, defaults " xstr(SAMPLES_PER_FILE) ".\n"
 "               Note that you are limited to 2^(16-bits) = 65536 samples combined\n"
 "               for all channels >= (samples/channel)(channels/buffer)(buffers)\n"
-"-c|--clk     : sampling rate in Hz, default " xstr(SAMPLE_RATE_HZ) ".\n"
-"-b|--buffers : number of buffers per file written, default " xstr(NUM_BUFFS) ".\n"
-"-d|--daemon  : runs this application as a daemon process.\n"
-"-t|--trig    : when the voltage on either AIN crosses " xstr(TRIG_LEVEL_V) "V rising (threshold)\n"
+"-c|--clk     : sampling rate in Hz, defaults " xstr(SAMPLE_RATE_HZ) ".\n"
+"-b|--buffers : number of buffers per file written, defaults " xstr(NUM_BUFFS) ".\n"
+"-d|--dur     : fixed duration of sampling period in days at night as determined "
+"               by sunset and sunrise times, defaults " xstr(DURATION_DAYS) " days.\n"
+"-r|--run     : runs this application as a daemon process, defaults off.\n"
+"-t|--trig    : when the voltage on either AIN crosses " xstr(TRIG_LEVEL_V) " V rising (threshold)\n"
 "               acquisition is triggered. By default, acquisition is triggered\n"
 "               when you start the analog input operation using the ioct.\n"   
 "\n"
@@ -297,7 +299,7 @@ int main (int argc, char** argv) {
     int samples_per_file = SAMPLES_PER_FILE;
     int num_buffers = NUM_BUFFS;
     int num_channels = NUM_CHANNELS;
-    int durationDays = DURATION_DAYS;
+    int duration_days = DURATION_DAYS;
     
     struct circ_buffer buffer_object = {.sample_rate = SAMPLE_RATE, .vbuf = NULL};
     
@@ -324,8 +326,11 @@ int main (int argc, char** argv) {
                 buffer_object.sample_rate = clk.clk_freq;
                 break;
             case 'd' :
-                daemonise = 1;
+                duration_days = atoi(optarg);
                 break; 
+            case 'r' :
+                daemonise = 1;
+                break;
             case 'b' :
                 num_buffers = atoi(optarg);
                 break;
@@ -583,38 +588,38 @@ int main (int argc, char** argv) {
         goto _exit;
     }
     
-    int elapsedDays = 0;
-    struct tm *sunsets = malloc(sizeof(struct tm)*durationDays);
-    struct tm *sunrises = malloc(sizeof(struct tm)*durationDays);
+    int elapsed_days = 0;
+    struct tm *sunsets = malloc(sizeof(struct tm)*duration_days);
+    struct tm *sunrises = malloc(sizeof(struct tm)*duration_days);
     char line_sunset[26];
     char line_sunrise[26];
-    for (elapsedDays = 0; elapsedDays < durationDays; elapsedDays++) {
+    for (elapsed_days = 0; elapsed_days < duration_days; elapsed_days++) {
         if (fscanf(sunUpDown, "%s", line_sunset) != 1) { // sunset 
-            if (elapsedDays == 0) {
+            if (elapsed_days == 0) {
                 fprintf(stderr, "ERROR insufficient number of sunsets\n");
                 goto _exit;
             }
             fprintf(stderr, "ERROR insufficient number of sunsets (< %d); "
-                    "using last day's sunset time\n", durationDays);
-            sunsets[elapsedDays] = sunsets[elapsedDays - 1];
+                    "using last day's sunset time\n", duration_days);
+            sunsets[elapsed_days] = sunsets[elapsed_days - 1];
         } else {
-            getSunTime(&(sunsets[elapsedDays]), line_sunset);   
+            getSunTime(&(sunsets[elapsed_days]), line_sunset);   
         }
         if (fscanf(sunUpDown, "%s", line_sunrise) != 1) { // sunrise 
-            if (elapsedDays == 0) {
+            if (elapsed_days == 0) {
                 fprintf(stderr, "ERROR insufficient number of sunrises\n");
                 goto _exit;
             }            
             fprintf(stderr, "ERROR insufficient number of sunrises (< %d); "
-                    "using last day's sunrise time\n", durationDays);
-            sunrises[elapsedDays] = sunrises[elapsedDays - 1];
+                    "using last day's sunrise time\n", duration_days);
+            sunrises[elapsed_days] = sunrises[elapsed_days - 1];
         } else {
-            getSunTime(&(sunrises[elapsedDays]), line_sunrise); 
+            getSunTime(&(sunrises[elapsed_days]), line_sunrise); 
         }
     }
 //    fprintf(stdout, "Getting elapsed time...\n");
-    elapsedDays = findElapsedDays(&sunsets, &sunrises, durationDays);
-//    fprintf(stdout, "%d\n", elapsedDays);
+    elapsed_days = findElapsedDays(&sunsets, &sunrises, duration_days);
+//    fprintf(stdout, "%d\n", elapsed_days);
     
     //Wait for user input to start or abort
     fprintf(stdout,"Press s to start, any other key to quit\n");
@@ -631,13 +636,13 @@ int main (int argc, char** argv) {
     
     //Infinite loop until aborted by ctrl-C
     while (!g_quit) {
-        long presentTime = getPresentTime();
-        long sunsetTime = getTimeEpoch(&sunsets[elapsedDays]);
-        long sunriseTime = getTimeEpoch(&sunrises[elapsedDays]);
+        long present = getPresentTime();
+        long sunset = getTimeEpoch(&sunsets[elapsed_days]);
+        long sunrise = getTimeEpoch(&sunrises[elapsed_days]);
         int night = 0;
         
         //If after dusk and before dawn (entering night)
-        while (presentTime < sunriseTime && presentTime >= sunsetTime) {
+        while (present < sunrise && present >= sunset) {
             night = 1;
             //Gets time of first sample recording for timestamp
             char filePath[LEN];
@@ -774,7 +779,7 @@ int main (int argc, char** argv) {
             }
         }
         
-        if (night) elapsedDays++; //If after dawn (leaving night), 1 day elapsed
+        if (night) elapsed_days++; //If after dawn (leaving night), 1 day elapsed
     }
 
 //Exit protocol and procedure    

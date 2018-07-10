@@ -126,20 +126,13 @@ The second and alternative method is to locally network the client and host. Thi
 
    Options
    -i|--inputs  : 8-bit binary string to enable and disable analog input channels
-                  A channel is on if its bit is 1 and off if its bit is 0. Bit
-                  positions 0/1/2/3/4/5/6/7 correspond to channels AIN0/1/2/3/4/5/6/7.
-                  For example, 10101001 enables AIN0/2/4/7 and disables AIN1/3/5/6.
-                  By default, only channel AIN0 is enabled (i.e., 10000000).  
-   -s|--samples : number of samples per channel, default 65536.
-                  Note that you are limited to 2^(16-bits) = 65536 samples >=
-                  (samples per channel)(channels per buffer)(buffers)
-   -c|--clk     : sampling rate in Hz, default SAMPLE_RATE_HZ.
-   -b|--buffers : number of buffers per file written, default 1.
-   -d|--daemon  : runs this application as a daemon process.
-   -t|--trig    : when the voltage on either AIN crosses 0.0 V rising 
-                  (threshold) acquisition is triggered. By default, acquisition
-                  is triggered when you start the analog input operation using 
-                  the ioct.
+                  A channel is on if its bit is 1 and off if its bit is 0. Bit positions 0/1/2/3/4/5/6/7 correspond to channels AIN0/1/2/3/4/5/6/7. For example, 10101001 enables AIN0/2/4/7 and disables AIN1/3/5/6. By default, only channel AIN0 is enabled (i.e., 10000000).  
+   -s|--samples : number of samples per channel, defaults 65536. Note that you are                limited to 2^(16-bits) = 65536 samples >= (samples per channel)                 (channels per buffer)(buffers)
+   -c|--clk     : sampling rate in Hz, defaults 400000 Hz.
+   -b|--buffers : number of buffers per file written, defaults 1.
+   -d|--dur     : fixed duration of sampling period in days at night as                           determined by sunset and sunrise times, defaults 7 days.
+   -r|--run     : runs this application as a daemon process, defaults off.
+   -t|--trig    : when the voltage on either AIN crosses 0.0 V rising (threshold)                 acquisition is triggered. By default, acquisition is triggered                  when you start the analog input operation using the ioct.
    ```
    If all user input parameters are okay, a console message will appear waiting for the user to start data recording. At the console message, type 's' and then press 'return' key. The program will now automatically run saving the recordings to the local storage directory as `.aiff` files. The console will print information about the written files as it records and saves to the storage directory predefined in the C code `main.c`.
 
