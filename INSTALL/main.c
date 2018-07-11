@@ -189,6 +189,7 @@ static void led_indicators(uint8_t status, int streaming) {
 }
 
 static void getSunTime(struct tm* time, char* date_time) {
+    //Assumes UTC time given
     char year[4];
     char month[2];
     char day[2];
@@ -268,7 +269,7 @@ static long getPresentTime() {
     struct tm* isoTime;
     struct timeval epochTime;
     getTime(&isoTime, &epochTime);
-    return (long) getTimeEpoch(&(*isoTime));
+    return (long) epochTime.tv_sec;
 }
 
 /******************************************************************************
