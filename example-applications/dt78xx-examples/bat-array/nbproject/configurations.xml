@@ -11,6 +11,8 @@
       <in>lpcm.c</in>
       <in>main.c</in>
       <in>pascal.c</in>
+      <in>sunriset.c</in>
+      <in>sunriset.h</in>
     </df>
     <logicalFolder name="libaiff-5.0"
                    displayName="libaiff-5.0"
@@ -191,6 +193,10 @@
             <pElem>.</pElem>
           </incDir>
         </cTool>
+      </item>
+      <item path="sunriset.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="sunriset.h" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
   </confs>

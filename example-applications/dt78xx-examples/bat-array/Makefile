@@ -46,7 +46,7 @@ CC := $(CROSS_COMPILE)gcc
 #   General options, sources and libraries
 #   ----------------------------------------------------------------------------
 NAME := bat-array
-SRCS := main.c dt78xx_aio.c dt78xx_misc.c libaiff.c aifx.c extended.c float32.c g711.c iff.c lpcm.c pascal.c RingBuf.c
+SRCS := main.c dt78xx_aio.c dt78xx_misc.c libaiff.c aifx.c extended.c float32.c g711.c iff.c lpcm.c pascal.c RingBuf.c sunriset.c
 HDRS := 
 OBJS :=
 DEBUG :=

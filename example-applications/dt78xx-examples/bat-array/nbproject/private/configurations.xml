@@ -19,6 +19,8 @@
       <in>main.c</in>
       <in>pascal.c</in>
       <in>private.h</in>
+      <in>sunriset.c</in>
+      <in>sunriset.h</in>
     </df>
   </logicalFolder>
   <projectmakefile>Makefile</projectmakefile>

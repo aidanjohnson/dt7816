@@ -49,6 +49,8 @@
 
 #include "RingBuf.h"
 
+#include "sunriset.h"
+
 /*****************************************************************************
  * Customisable Macros
  */
@@ -67,13 +69,15 @@
 #define AIN7                0
 #define PATH_TO_STORAGE     "/usr/local/path/to/ssd/" //Predefined write path
 #define PATH_TO_SUN_CYCLE   "/usr/local/sunup_sundown.txt"
-#define SAMPLE_RATE_HZ      400000.0
+#define SAMPLE_RATE_HZ      400000.0f
  //Constraint: SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS <= 65536 samples = 2^(16 bits)
 #define SAMPLES_PER_FILE    65536 // SAMPLES_PER_CHAN = SAMPLES_PER_FILE / NUM_CHANNELS
 #define NUM_BUFFS           1 //Number of buffers per file initialised
 #define DURATION_DAYS       21 //Default number of days of sampling
 #define SAFETY_MARGIN       3600l //Buffers in seconds before sunset and after sunrise
 #define NIGHT_CYCLE         1 //Cycles recording on at night and off at day
+#define DEFAULT_LATITUDE    47.655083 //Latitude (N := +, S := -)
+#define DEFAULT_LONGITUDE   -122.293194 //Longitude (E := +, W := -)
 
 /*****************************************************************************
  * Do Not Touch These Macros
@@ -188,40 +192,21 @@ static void led_indicators(uint8_t status, int streaming) {
     ioctl(streaming, IOCTL_LED_SET, &led);    
 }
 
-static void getSunTime(struct tm* time, char* date_time) {
-    //Assumes UTC time given
-    char year[4];
-    char month[2];
-    char day[2];
-    char hour[2];
-    char minute[2];
-    char second[2];
-    int k;
-    for (k = 0; k < 4; k++) {
-        year[k] = date_time[k];
-        if (k < 2) {
-            month[k] = date_time[k + 5];
-            day[k] = date_time[k + 8];
-            hour[k] = date_time[k + 11];
-            minute[k] = date_time[k + 14];
-            second[k] = date_time[k + 17];
-        }
-    }
-    time->tm_year = atol(year) - 1900;
-    time->tm_mon = atoi(month) - 1;
-    time->tm_mday = atoi(day);
-    time->tm_hour = atoi(hour);
-    time->tm_min = atoi(minute);
-    time->tm_sec = atoi(second);
-}
-
 static void getTime(struct tm** curTime, struct timeval* clockTime) {
     gettimeofday(&(*clockTime), NULL); //Gets current time
     *curTime = gmtime(&(*clockTime).tv_sec); // UTC aka GMT in ISO 8601: Zulu
 }
 
-static long getTimeEpoch(struct tm* readableTime) {
-    return (long) mktime(&(*readableTime));
+static long getTimeEpoch(long year, int month, int day, int hour, int minute, int second) {
+    //Assumes UTC time given
+    struct tm *time = malloc(sizeof(struct tm));
+    time->tm_year = year - 1900;
+    time->tm_mon = month - 1;
+    time->tm_mday = day;
+    time->tm_hour = hour;
+    time->tm_min = minute;
+    time->tm_sec = second;
+    return (long) mktime(&(*time));
 }
 
 static void timestamp(char* filePath, char** argv) {
@@ -245,26 +230,6 @@ static void timestamp(char* filePath, char** argv) {
     strcat(filePath, fileName); //Full file path: concatenates filename
 }
 
-static int findElapsedDays(struct tm** sunsets, struct tm** sunrises, int totalDays) {
-    int elapsedDays = 0;
-    struct timeval sysTime;
-    struct tm* sysDate;
-    getTime(&sysDate, &sysTime);
-    long sysEpoch = (long) sysTime.tv_sec;
-
-    if (sysEpoch <= getTimeEpoch(&(*sunsets)[0])) { //First sunset in epoch time
-        elapsedDays = 0;
-    } else if (sysEpoch >= getTimeEpoch(&(*sunrises)[totalDays - 1])) { //Last sunrise in epoch time
-        elapsedDays = totalDays;
-    } else {
-        //Find where current system time is (relative to) sun up/down cycle
-        while (sysEpoch > getTimeEpoch(&(*sunrises)[elapsedDays])) {
-            elapsedDays++;
-        }
-    }
-    return elapsedDays;
-}
-
 static long getPresentTime() {
     struct tm* isoTime;
     struct timeval epochTime;
@@ -286,6 +251,8 @@ int main (int argc, char** argv) {
     int num_buffers = NUM_BUFFS;
     int num_channels = NUM_CHANNELS;
     int duration_days = DURATION_DAYS;
+    double lat = DEFAULT_LATITUDE;
+    double lon = DEFAULT_LONGITUDE;
     
 #if NIGHT_CYCLE
     long safety_margin = SAFETY_MARGIN;
@@ -302,7 +269,7 @@ int main (int argc, char** argv) {
     int ain[8] = {AIN0, AIN1, AIN2, AIN3, AIN4, AIN5, AIN6, AIN7};
     int ch_code;//8 bit binary; channel on := 1, channel off := 0
     int opt = 0;
-    while ((opt = getopt(argc, argv, "s:c:d:r:b:t:i:m:")) != -1) {
+    while ((opt = getopt(argc, argv, "s:c:d:r:b:t:i:m:l:")) != -1) {
         switch (opt) {
             case 's':
                 samples_per_file = strtoul(optarg, NULL, 10);
@@ -573,46 +540,6 @@ int main (int argc, char** argv) {
         fprintf(stderr, "ERROR buffer_object.vbuf\n");
         goto _exit;
     }
-
-#if NIGHT_CYCLE    
-    FILE *sunUpDown;
-    sunUpDown = fopen(PATH_TO_SUN_CYCLE, "r");
-    if (sunUpDown == NULL) {
-        fprintf(stderr, "ERROR cannot open sun up and down cycle .txt file\n");
-        goto _exit;
-    }
-    
-    int elapsed_days = 0;
-    struct tm *sunsets = malloc(sizeof(struct tm)*duration_days);
-    struct tm *sunrises = malloc(sizeof(struct tm)*duration_days);
-    char line_sunset[26];
-    char line_sunrise[26];
-    for (elapsed_days = 0; elapsed_days < duration_days; elapsed_days++) {
-        if (fscanf(sunUpDown, "%s", line_sunset) != 1) { // sunset 
-            if (elapsed_days == 0) {
-                fprintf(stderr, "ERROR insufficient number of sunsets\n");
-                goto _exit;
-            }
-            fprintf(stderr, "ERROR insufficient number of sunsets (< %d); "
-                    "using last day's sunset time\n", duration_days);
-            sunsets[elapsed_days] = sunsets[elapsed_days - 1];
-        } else {
-            getSunTime(&(sunsets[elapsed_days]), line_sunset);   
-        }
-        if (fscanf(sunUpDown, "%s", line_sunrise) != 1) { // sunrise 
-            if (elapsed_days == 0) {
-                fprintf(stderr, "ERROR insufficient number of sunrises\n");
-                goto _exit;
-            }            
-            fprintf(stderr, "ERROR insufficient number of sunrises (< %d); "
-                    "using last day's sunrise time\n", duration_days);
-            sunrises[elapsed_days] = sunrises[elapsed_days - 1];
-        } else {
-            getSunTime(&(sunrises[elapsed_days]), line_sunrise); 
-        }
-    }
-    elapsed_days = findElapsedDays(&sunsets, &sunrises, duration_days);
-#endif
     
     //Wait for user input to start or abort
     fprintf(stdout,"Press s to start, any other key to quit\n");
@@ -624,6 +551,52 @@ int main (int argc, char** argv) {
         goto _exit;
     }
     
+#if NIGHT_CYCLE
+    //Calculates sunset (sunsclipse) and sunrise (sunsight) times based on:
+    //(1) Date and (2) Latitude and Longitude coordinates
+    long *sunsets = malloc(sizeof(long)*duration_days);
+    long *sunrises = malloc(sizeof(long)*duration_days);
+    int year, month, day;
+    double rise, set;
+    
+    struct timeval epoch_present;  //Seconds UTC relative to 1 Jan 1970 (epoch)
+    struct tm *t_present = malloc(sizeof(struct tm)); //Time in accordance to ISO 8601
+    gettimeofday(&epoch_present, NULL); //Gets current system time
+    
+    int elapsed_days;
+    for (elapsed_days = 0; elapsed_days < duration_days; elapsed_days++) {
+        t_present = gmtime(&epoch_present.tv_sec); //Gets current time in UTC (aka GMT or Zulu)
+        year = 1900 + (int) t_present->tm_year;
+        month = t_present->tm_mon;
+        day = t_present->tm_mday;
+        
+        int rs = sun_rise_set(year, month, day, lon, lat, &rise, &set);
+        if (rs == 0) {
+            int min_dec_set = (int) fmod(set, 1.0);
+            int minute_set = min_dec_set*60;
+            int hour_set = set - min_dec_set;
+            int second_set = 0;
+            long epoch_set = getTimeEpoch(year, month, day, hour_set, minute_set, second_set);
+            sunsets[elapsed_days] = epoch_set - safety_margin;
+
+            int min_dec_rise = (int) fmod(rise, 1.0);
+            int minute_rise = min_dec_rise*60;
+            int hour_rise = rise - 24 - min_dec_rise; //always 1 day after sunset
+            int second_rise = 0;
+            long epoch_rise = getTimeEpoch(year, month, day, hour_rise, minute_rise, second_rise);
+            sunrises[elapsed_days] = epoch_rise + safety_margin;
+            
+            fprintf(stdout, "day %d; sunset %5.2fh; sunrise %5.2fh\n", elapsed_days, set, rise);
+        } else {
+            fprintf(stderr, "ERROR sun above(+1)/below horizon(-1) for 24 h: %d", rs);
+        }
+        time_t day_sec = 86400; //Length of 1 day in seconds
+        epoch_present.tv_sec += day_sec;
+        fprintf(stdout, "%ld\n", epoch_present.tv_sec);
+    }
+    elapsed_days = 0; //Resets counter
+#endif
+    
     ret = 0;
     int fileNum = 0; //Diagnostic/debugging file counter
     
@@ -631,8 +604,8 @@ int main (int argc, char** argv) {
     while (!g_quit) {
 #if NIGHT_CYCLE
         long present = getPresentTime();
-        long sunset = getTimeEpoch(&sunsets[elapsed_days]) - safety_margin;
-        long sunrise = getTimeEpoch(&sunrises[elapsed_days]) + safety_margin;
+        long sunset = sunsets[elapsed_days];
+        long sunrise = sunrises[elapsed_days];
         int night = 0;
 
         //If after dusk and before dawn (entering night)
