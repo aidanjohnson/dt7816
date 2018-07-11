@@ -248,3 +248,4 @@ This project uses the open source libraries:
 * [LibAiff](http://aifftools.sourceforge.net/libaiff/) by Marco Trillo ([MIT License](https://opensource.org/licenses/mit-license.php))
 * [ArduinoRingBuffer](https://github.com/wizard97/ArduinoRingBuffer) by Aaron Wisner ([MIT License](https://opensource.org/licenses/MIT))
 * [DT78xx software](https://www.mccdaq.com/Products/ARM-DAQ/DT7816) by Data Translation Inc ([GPLv2](https://opensource.org/licenses/gpl-2.0.php))
+* [Free C source for computing sunrise/set times](http://stjarnhimlen.se/english.html) by Paul Schlyter ([Public Domain](http://stjarnhimlen.se/snippets/snippets.(c)))
