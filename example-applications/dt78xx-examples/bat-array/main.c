@@ -633,7 +633,6 @@ int main (int argc, char** argv) {
         long sunset = getTimeEpoch(&sunsets[elapsed_days]) - safety_margin;
         long sunrise = getTimeEpoch(&sunrises[elapsed_days]) + safety_margin;
         int night = 0;
-        fprintf(stdout, "%d, %ld, %ld, %ld, %ld\n", elapsed_days, present, sunset, sunrise, safety_margin);
 
         //If after dusk and before dawn (entering night)
         while (present < sunrise && present >= sunset && !g_quit) {
