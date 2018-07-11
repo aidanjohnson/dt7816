@@ -71,7 +71,9 @@
  //Constraint: SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS <= 65536 samples = 2^(16 bits)
 #define SAMPLES_PER_FILE    65536 // SAMPLES_PER_CHAN = SAMPLES_PER_FILE / NUM_CHANNELS
 #define NUM_BUFFS           1 //Number of buffers per file initialised
-#define DURATION_DAYS       7 //Default number of days of sampling
+#define DURATION_DAYS       21 //Default number of days of sampling
+#define SAFETY_MARGIN       3600l //Buffers in seconds before sunset and after sunrise
+#define NIGHT_CYCLE         1 //Cycles recording on at night and off at day
 
 /*****************************************************************************
  * Do Not Touch These Macros
@@ -134,7 +136,9 @@ static const char g_usage[] = {
 "-r|--run     : runs this application as a daemon process, defaults off.\n"
 "-t|--trig    : when the voltage on either AIN crosses " xstr(TRIG_LEVEL_V) " V rising (threshold)\n"
 "               acquisition is triggered. By default, acquisition is triggered\n"
-"               when you start the analog input operation using the ioct.\n"   
+"               when you start the analog input operation using the ioct.\n"
+"-m|--margin  : margin of safety before the time of sunset and after the time of "
+"               sunrise in seconds (hours*3600), defaults " xstr(SAFETY_MARGIN) " s."
 "\n"
 };
 
@@ -186,35 +190,27 @@ static void led_indicators(uint8_t status, int streaming) {
 
 static void getSunTime(struct tm* time, char* date_time) {
     char year[4];
+    char month[2];
+    char day[2];
+    char hour[2];
+    char minute[2];
+    char second[2];
     int k;
     for (k = 0; k < 4; k++) {
         year[k] = date_time[k];
+        if (k < 2) {
+            month[k] = date_time[k + 5];
+            day[k] = date_time[k + 8];
+            hour[k] = date_time[k + 11];
+            minute[k] = date_time[k + 14];
+            second[k] = date_time[k + 17];
+        }
     }
     time->tm_year = atol(year) - 1900;
-    char month[2];
-    for (k = 0; k < 2; k++) {
-        month[k] = date_time[k + 5];
-    }
-    time->tm_mon = atoi(month);
-    char day[2];
-    for (k = 0; k < 2; k++) {
-        day[k] = date_time[k + 8];
-    }
+    time->tm_mon = atoi(month) - 1;
     time->tm_mday = atoi(day);
-    char hour[2];
-    for (k = 0; k < 2; k++) {
-        hour[k] = date_time[k + 11];
-    }
     time->tm_hour = atoi(hour);
-    char minute[2];
-    for (k = 0; k < 2; k++) {
-        minute[k] = date_time[k + 14];
-    }
     time->tm_min = atoi(minute);
-    char second[2];
-    for (k = 0; k < 2; k++) {
-        second[k] = date_time[k + 17];
-    }
     time->tm_sec = atoi(second);
 }
 
@@ -239,7 +235,7 @@ static void timestamp(char* filePath, char** argv) {
 
     //YYYY-MM-DD HH:mm:ss:uuuuuu (u=microseconds)
     sprintf(fileTime, "_%04d%02d%02dT%02d%02d%02d%liZ.aiff", 
-            t_iso->tm_year+1900, t_iso->tm_mon, t_iso->tm_mday, 
+            t_iso->tm_year+1900, t_iso->tm_mon + 1, t_iso->tm_mday, 
             t_iso->tm_hour, t_iso->tm_min, t_iso->tm_sec, (long) tv.tv_usec); 
     char fileName[LEN];
     strcpy(fileName, ID); //Identify
@@ -250,30 +246,19 @@ static void timestamp(char* filePath, char** argv) {
 
 static int findElapsedDays(struct tm** sunsets, struct tm** sunrises, int totalDays) {
     int elapsedDays = 0;
-    int riseIndex = totalDays - 1;
-    int setIndex = 0;
     struct timeval sysTime;
     struct tm* sysDate;
     getTime(&sysDate, &sysTime);
     long sysEpoch = (long) sysTime.tv_sec;
-//    sysEpoch += 146000000;
-//    fprintf(stdout, "%ld, %ld, %ld\n", sysEpoch, getTimeEpoch(&(*sunsets)[setIndex]), getTimeEpoch(&(*sunrises)[riseIndex]));
 
-    if (sysEpoch <= getTimeEpoch(&(*sunsets)[setIndex])) { //First sunset in epoch time
+    if (sysEpoch <= getTimeEpoch(&(*sunsets)[0])) { //First sunset in epoch time
         elapsedDays = 0;
-    } else if (sysEpoch >= getTimeEpoch(&(*sunrises)[riseIndex])) { //Last sunrise in epoch time
+    } else if (sysEpoch >= getTimeEpoch(&(*sunrises)[totalDays - 1])) { //Last sunrise in epoch time
         elapsedDays = totalDays;
     } else {
         //Find where current system time is (relative to) sun up/down cycle
-        while (sysEpoch < getTimeEpoch(&(*sunrises)[riseIndex]) && 
-               sysEpoch > getTimeEpoch(&(*sunsets)[setIndex])) {
-            riseIndex--;
-            setIndex++;
-        }
-        if (sysEpoch >= getTimeEpoch(&(*sunrises)[riseIndex])) {
-            elapsedDays = setIndex + 1;
-        } else { //sysEpoch <= getTimeEpoch(&(*sunsets)[setIndex])
-            elapsedDays = riseIndex;
+        while (sysEpoch > getTimeEpoch(&(*sunrises)[elapsedDays])) {
+            elapsedDays++;
         }
     }
     return elapsedDays;
@@ -301,6 +286,10 @@ int main (int argc, char** argv) {
     int num_channels = NUM_CHANNELS;
     int duration_days = DURATION_DAYS;
     
+#if NIGHT_CYCLE
+    long safety_margin = SAFETY_MARGIN;
+#endif
+    
     struct circ_buffer buffer_object = {.sample_rate = SAMPLE_RATE, .vbuf = NULL};
     
     dt78xx_clk_config_t clk = {.ext_clk=0, //Internal clock
@@ -312,7 +301,7 @@ int main (int argc, char** argv) {
     int ain[8] = {AIN0, AIN1, AIN2, AIN3, AIN4, AIN5, AIN6, AIN7};
     int ch_code;//8 bit binary; channel on := 1, channel off := 0
     int opt = 0;
-    while ((opt = getopt(argc, argv, "s:c:d:t:i:b:")) != -1) {
+    while ((opt = getopt(argc, argv, "s:c:d:r:b:t:i:m:")) != -1) {
         switch (opt) {
             case 's':
                 samples_per_file = strtoul(optarg, NULL, 10);
@@ -347,6 +336,9 @@ int main (int argc, char** argv) {
                     if (digit) num_channels++;
                     ch_code /= 10;
                 }
+                break;
+            case 'm' :
+                safety_margin = atol(optarg);
                 break;
             default :
                 printf(g_usage, argv[0]);
@@ -580,7 +572,8 @@ int main (int argc, char** argv) {
         fprintf(stderr, "ERROR buffer_object.vbuf\n");
         goto _exit;
     }
-    
+
+#if NIGHT_CYCLE    
     FILE *sunUpDown;
     sunUpDown = fopen(PATH_TO_SUN_CYCLE, "r");
     if (sunUpDown == NULL) {
@@ -617,9 +610,8 @@ int main (int argc, char** argv) {
             getSunTime(&(sunrises[elapsed_days]), line_sunrise); 
         }
     }
-//    fprintf(stdout, "Getting elapsed time...\n");
     elapsed_days = findElapsedDays(&sunsets, &sunrises, duration_days);
-//    fprintf(stdout, "%d\n", elapsed_days);
+#endif
     
     //Wait for user input to start or abort
     fprintf(stdout,"Press s to start, any other key to quit\n");
@@ -636,14 +628,17 @@ int main (int argc, char** argv) {
     
     //Infinite loop until aborted by ctrl-C
     while (!g_quit) {
+#if NIGHT_CYCLE
         long present = getPresentTime();
-        long sunset = getTimeEpoch(&sunsets[elapsed_days]);
-        long sunrise = getTimeEpoch(&sunrises[elapsed_days]);
+        long sunset = getTimeEpoch(&sunsets[elapsed_days]) - safety_margin;
+        long sunrise = getTimeEpoch(&sunrises[elapsed_days]) + safety_margin;
         int night = 0;
-        
+        fprintf(stdout, "%d, %ld, %ld, %ld, %ld\n", elapsed_days, present, sunset, sunrise, safety_margin);
+        break;
         //If after dusk and before dawn (entering night)
-        while (present < sunrise && present >= sunset) {
+        while (present < sunrise && present >= sunset && !g_quit) {
             night = 1;
+#endif            
             //Gets time of first sample recording for timestamp
             char filePath[LEN];
             timestamp(filePath, argv);
@@ -777,9 +772,13 @@ int main (int argc, char** argv) {
                 fprintf(stderr, "ERROR audio_file_close");
                 goto _exit;
             }
+            
+#if NIGHT_CYCLE            
+            present = getPresentTime(); //Updates time for while loop check
         }
         
         if (night) elapsed_days++; //If after dawn (leaving night), 1 day elapsed
+#endif
     }
 
 //Exit protocol and procedure    
