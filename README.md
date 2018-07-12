@@ -123,11 +123,10 @@ The second and alternative method is to locally network the client and host. Thi
 
 4. Now that we are confident that the preliminary steps are functioning correctly, we can then access the programs or applications that we've written in C. For our purposes we will be running the `bat-array` program such that the board will autonomously sample and record the soundscape. ***—more to be added later on mounting a local storage device (e.g., HDD for lower cost per GB or SSD for lower Watt consumption) at a predefined file structure location—***
 
-5. Inconveniently, the board's local time clock needs to be set and synchronised to a common time so the `aiff` files can be properly time-stamped in their file name. We can synchronise the board's clock to a local clock that *must* be used for both boards—I would use my digital wristwatch or computer's time when the time was exactly zero seconds (HH:MM:00). Specifically run the commands (following [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) standards):
-   * `date --set YYYY-MM-DD` where YYYY is the year, MM is the month and DD is the day.
-   * `date --set HH:mm:ss` where HH is hours in 24-hour time, mm is minutes and ss is seconds.
-   * ` hwclock --systohc` to set current time to the hardware clock in order for the time to be recoverable after reboots.
-   ***—more on a common external clock that is described in the [User Manual](/UM7816.pdf) on pp. 35-39 and p. 48 as it is implemented—***
+5. Inconveniently, the board's local time clock needs to be set and synchronised to a common time so the `aiff` files can be properly time-stamped in their file name. The naming convention follows the [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) standard so time is in UTC (Coordinated Universal Time), also known as GMT (Greenwich Mean Time). 
+
+   Follow step 13 of the connection instructures to ensure the clocks are synchronised to the host field-laptop. To set current time to the hardware clock in order for the time to be recoverable after reboots, run `hwclock --systohc` command on the board. ***—more on a common external clock that is described in the [User Manual](/UM7816.pdf) on pp. 35-39 and p. 48 as it is implemented—***
+
 6. Since we want to run the `bat-array` program without the PC connected to the board, we will need to copy the program over to local, on-board memory. To do so, run the command `cp -r /usr/local/dt7816-nfs/example-applications/dt78xx-examples/bat-array/ /usr/local/`. Then change directories to that location with `cd /usr/local/bat-array`.
 
 7. Now we can run the program. To do so, run the command `./release/bat-array <identifier> [options]` on the serial console (via Terminal) where `<identifier>` is a identifier of your choosing for the board's recordings (e.g., N for North), and `[options]` is the set of optional command line parameters (note that the board will run with the default values predefined in the source C code). The "help" display describes the options available. It is reproduced below for convenience.
