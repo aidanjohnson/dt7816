@@ -4,7 +4,7 @@
 
 This is a custom application for DT7816 autonomous asynchronous I/O sampling that configures the board's analog inputs. The sampled data is read [asynchronously](https://msdn.microsoft.com/en-us/library/windows/desktop/aa365683(v=vs.85).aspx) from the input stream and written to a AIFF file. The following documentation provides a step-by-step guide to using this software.
 
-See the [manufacturer guide](https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/DT7816_Getting_Started.htm) for the [DT7816](https://www.mccdaq.com/Products/ARM-DAQ/DT7816) if you want a more thorough guide necessary for manual setup and building. This repository is intended to make the building process easier and faster by automating it through a script. Download the tarball in [`INSTALL`](/INSTALL) to build all the code for this DAQ, which is installed to the directory: `/opt/ti-sdk-am335x-evm-07.00.00.00/`. Note that, if built from scratch, the directory would not contain `INSTALL`, [`UM7816.pdf`](/DT7816/UM7816.pdf), and [`DT7816-Programming.pdf`](/DT7816-Programming.pdf); these have been only included for convenience. Follow the instructions below to build it all from scratch.
+See the [manufacturer guide](https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/DT7816_Getting_Started.htm) for the [DT7816](https://www.mccdaq.com/Products/ARM-DAQ/DT7816) if you want a more thorough guide necessary for manual setup and building. This repository is intended to make the building process easier and faster by automating it through a script. Download the tarball in [`INSTALL`](https://github.com/aidanjohnson/dt7816/tree/master/INSTALL) to build all the code for this DAQ, which is installed to the directory: `/opt/ti-sdk-am335x-evm-07.00.00.00/`. Note that, if built from scratch, the directory would not contain `INSTALL`, [`UM7816.pdf`](https://github.com/aidanjohnson/dt7816/tree/master/DT7816/UM7816.pdf), and [`DT7816-Programming.pdf`](https://github.com/aidanjohnson/dt7816/tree/master/DT7816-Programming.pdf); these have been only included for convenience. Follow the instructions below to build it all from scratch.
 
 ## Installation Instructions
 
@@ -13,7 +13,7 @@ See the [manufacturer guide](https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/
    * ftp://ftp.mccdaq.com/downloads/DTSoftware/DT78XX_ARM/DT78XX-setup-3.2.bz2.run
    * https://cfhcable.dl.sourceforge.net/project/aifftools/libaiff/LibAiff%205.0/libaiff-5.0-release.tar.gz
 
-2. Download the compressed directories in `INSTALL`. Uncompress each [`INSTALL.tar.gz`](/INSTALL/INSTALL.tar.gz), which is formed with the script `INSTALL_tar.sh`, using the command:
+2. Download the compressed directories in `INSTALL`. Uncompress each [`INSTALL.tar.gz`](https://github.com/aidanjohnson/dt7816/tree/master/INSTALL/INSTALL.tar.gz), which is formed with the script `INSTALL_tar.sh`, using the command:
    ```
    tar -xzvf INSTALL.tar.gz
    ```
@@ -41,7 +41,7 @@ See the [manufacturer guide](https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/
 
 ## Connection Instructions
 
-There are two ways for a user to connect the host computer (PC) to the client computer (the DT7816). The first, which is documented at length in the Getting Started guide from the manufacturer, relies on using the `web-server` example application. In this method the client and host are connected to the same network and the terminal of the client can be accessed from the host via an serial console application like [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html) or even in the Unix shell (e.g., the GNOME Terminal). However, this is cumbersome in the field and in general, especially when transfering or copying files (e.g., custom programs). 
+There are two ways for a user to connect the host computer (PC) to the client computer (the DT7816). The first, which is documented at length in the Getting Started guide from the manufacturer, relies on using the `web-server` example application. In this method the client and host are connected to the same network and the terminal of the client can be accessed from the host via an serial console application like [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html) or even in the Unix shell (e.g., the GNOME Terminal). However, this is cumbersome in the field and in general, especially when transferring or copying files (e.g., custom programs). 
 
 The second and alternative method is to locally network the client and host. This is achieved by using the host as a NFS server and the client a NFS client. The Serial-USB cable allows the host to connect to the board so the user can access the terminal interface necessary to perform any and all operations on the DT7816 module, again using a serial console terminal. The conduit for the transfer of data is an Ethernet cable that creates the local network (LAN). (Note: older PCs may require a crossover Ethernet cable, although most modern do not.) This section will provide a step-by-step guide to setting up the LAN and NFS mounting.
   
@@ -49,7 +49,7 @@ The second and alternative method is to locally network the client and host. Thi
 
 2. Open up the host computer networking setting and create a new wired connection. Enter a name and the MAC address. Under the IPv4 tab, select manual. Then add the IP address and netmask: 10.0.0.1 and 255.255.255.0. Leave the gateway empty/blank.
 
-3. Differently, for the client computer (the DAQ board) we will set similar settings in its terminal through a serial console (see https://learn.adafruit.com/welcome-to-circuitpython/advanced-serial-console-on-mac-and-linux for instructions how; alternatively, via PuTTY). In short, you can connect to the client terminal via the serial console by running the command `screen /dev/ttyUSB0 115200`. You may have to run `sudo apt-get install screen` first.
+3. Differently, for the client computer (the DAQ board) we will set similar settings in its terminal through a serial console (see this [Adafruit guide](https://learn.adafruit.com/welcome-to-circuitpython/advanced-serial-console-on-mac-and-linux) for instructions how; alternatively, via PuTTY). In short, you can connect to the client terminal via the serial console by running the command `screen /dev/ttyUSB0 115200`. You may have to run `sudo apt-get install screen` first.
 
    Log into the system with `root` as both the username and password. After running the command `ip ad`, we see that the Ethernet port is referred to as `eth0`.  Run the command `ip ad add 10.0.0.20/24 dev eth0 valid_lft forever preferred_lft forever`.
 
@@ -125,7 +125,7 @@ The second and alternative method is to locally network the client and host. Thi
 
 5. Inconveniently, the board's local time clock needs to be set and synchronised to a common time so the `aiff` files can be properly time-stamped in their file name. The naming convention follows the [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) standard so time is in UTC (Coordinated Universal Time), also known as GMT (Greenwich Mean Time). 
 
-   Follow step 13 of the connection instructures to ensure the clocks are synchronised to the host field-laptop. To set current time to the hardware clock in order for the time to be recoverable after reboots, run `hwclock --systohc` command on the board. ***—more on a common external clock that is described in the [User Manual](/UM7816.pdf) on pp. 35-39 and p. 48 as it is implemented—***
+   Follow step 13 of the connection instructures to ensure the clocks are synchronised to the host field-laptop. To set current time to the hardware clock in order for the time to be recoverable after reboots, run `hwclock --systohc` command on the board. ***—more on a common external clock that is described in the [User Manual](https://github.com/aidanjohnson/dt7816/tree/master/UM7816.pdf) on pp. 35-39 and p. 48 as it is implemented—***
 
 6. Since we want to run the `bat-array` program without the PC connected to the board, we will need to copy the program over to local, on-board memory. To do so, run the command `cp -r /usr/local/dt7816-nfs/example-applications/dt78xx-examples/bat-array/ /usr/local/`. Then change directories to that location with `cd /usr/local/bat-array`.
 
@@ -164,7 +164,7 @@ The second and alternative method is to locally network the client and host. Thi
 
    **Sunrise and Sunset Times**
 
-   Failing to restrain from making a *Fiddler on the Roof* [reference](https://en.wikipedia.org/wiki/Sunrise,_Sunset), ~~the program is fed a `.txt` file coining the sunset times interleaved with the sunrise times of a location determined by its latitude and longitude coordinates. The [US Naval Observatory](http://aa.usno.navy.mil/data/docs/RS_OneDay.php) has a database of these times accesible using a [JSON API](http://aa.usno.navy.mil/data/docs/api.php). The Jupyter Notebook [`navy_json_sunsight_sunclipse.ipynb`](/navy_json_sunsight_sunclipse.ipynb) contains a script that writes the sunset and sunrise times (indicating the time of dusk and dawn) for given range of days to the file [`sunup_sundown.txt`](/sunup_sundown.txt) in ISO 8601 format. These dates and times are read by the `bat-array` program so that the data sampling and recording only occurs when the bats are out foraging (i.e., at night).~~ the `bat-array` program is given a latitude and longitude coordinate pair for the location of the recording site in order to calculate the sunset and sunrise times for each day in the set duration in days. The sampling regime begins immediately after starting through the command line. 
+   Failing to restrain from making a *Fiddler on the Roof* [reference](https://en.wikipedia.org/wiki/Sunrise,_Sunset), ~~the program is fed a `.txt` file coining the sunset times interleaved with the sunrise times of a location determined by its latitude and longitude coordinates. The [US Naval Observatory](http://aa.usno.navy.mil/data/docs/RS_OneDay.php) has a database of these times accesible using a [JSON API](http://aa.usno.navy.mil/data/docs/api.php). The Jupyter Notebook [`navy_json_sunsight_sunclipse.ipynb`](https://github.com/aidanjohnson/dt7816/tree/master/navy_json_sunsight_sunclipse.ipynb) contains a script that writes the sunset and sunrise times (indicating the time of dusk and dawn) for given range of days to the file [`sunup_sundown.txt`](https://github.com/aidanjohnson/dt7816/tree/master/sunup_sundown.txt) in ISO 8601 format. These dates and times are read by the `bat-array` program so that the data sampling and recording only occurs when the bats are out foraging (i.e., at night).~~ the `bat-array` program is given a latitude and longitude coordinate pair for the location of the recording site in order to calculate the sunset and sunrise times for each day in the set duration in days. The sampling regime begins immediately after starting through the command line. 
 
    **Debug LEDs**
    
@@ -235,9 +235,9 @@ The second and alternative method is to locally network the client and host. Thi
    sudo mkdir /usr/local/include/libusb-1.0
    sudo ln -s /usr/include/libusb-1.0/libusb.h /usr/local/include/libusb-1.0
    ```
-2. Called by `build_dev.sh`, `build_examples.py` is a Python script that builds each of the [example applications](/example-applications/dt78xx-examples/) according to the manufacturer's instructions. See the installation directory for information on what each of these do. The script also creates a NetBeans project for each. It builds:
+2. Called by `build_dev.sh`, `build_examples.py` is a Python script that builds each of the [example applications](https://github.com/aidanjohnson/dt7816/tree/master/example-applications/dt78xx-examples/) according to the manufacturer's instructions. See the installation directory for information on what each of these do. The script also creates a NetBeans project for each. It builds:
    * examples: `aio-in`, `aio-out`, `aout-single`, `clk-gen`, `digio`, `dt7816-calibration`, `event-counter`, `fir-filter`, `function-gen`, `sig-analyzer`, `usb-loopback`, `web-server`
-   * [`bat-array`](/example-applications/dt78xx-examples/bat-array) ([**WIP**](https://github.com/aidanjohnson/dt7816/projects/1#card-10768858): this is the custom built ADC recording program for the DAQ; samples recorded in the `.aiff` format using with a standardised file naming convention.)
+   * [`bat-array`](https://github.com/aidanjohnson/dt7816/tree/master/example-applications/dt78xx-examples/bat-array) ([**WIP**](https://github.com/aidanjohnson/dt7816/projects/1#card-10768858): this is the custom built ADC recording program for the DAQ; samples recorded in the `.aiff` format using with a standardised file naming convention.)
 
 3. For an unknown reason, the example C-language code applications contains an include header for a differently named directories. To remedy this, create a link like so:
    ```
