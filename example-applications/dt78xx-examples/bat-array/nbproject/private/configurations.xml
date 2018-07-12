@@ -12,6 +12,8 @@
       <in>extended.c</in>
       <in>float32.c</in>
       <in>g711.c</in>
+      <in>helpers.c</in>
+      <in>helpers.h</in>
       <in>iff.c</in>
       <in>libaiff.c</in>
       <in>libaiff.h</in>

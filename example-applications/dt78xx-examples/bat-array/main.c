@@ -206,7 +206,7 @@ static long getTimeEpoch(long year, int month, int day, int hour, int minute, in
     time->tm_hour = hour;
     time->tm_min = minute;
     time->tm_sec = second;
-    return (long) mktime(&(*time));
+    return (long) timegm(&(*time));
 }
 
 static void timestamp(char* filePath, char** argv) {
@@ -253,10 +253,7 @@ int main (int argc, char** argv) {
     int duration_days = DURATION_DAYS;
     double lat = DEFAULT_LATITUDE;
     double lon = DEFAULT_LONGITUDE;
-    
-#if NIGHT_CYCLE
     long safety_margin = SAFETY_MARGIN;
-#endif
     
     struct circ_buffer buffer_object = {.sample_rate = SAMPLE_RATE, .vbuf = NULL};
     
@@ -562,38 +559,37 @@ int main (int argc, char** argv) {
     struct timeval epoch_present;  //Seconds UTC relative to 1 Jan 1970 (epoch)
     struct tm *t_present = malloc(sizeof(struct tm)); //Time in accordance to ISO 8601
     gettimeofday(&epoch_present, NULL); //Gets current system time
-    
+    t_present = gmtime(&epoch_present.tv_sec); //Gets current time in UTC (aka GMT or Zulu)
+
     int elapsed_days;
     for (elapsed_days = 0; elapsed_days < duration_days; elapsed_days++) {
-        t_present = gmtime(&epoch_present.tv_sec); //Gets current time in UTC (aka GMT or Zulu)
         year = 1900 + (int) t_present->tm_year;
-        month = t_present->tm_mon;
+        month = 1 + t_present->tm_mon;
         day = t_present->tm_mday;
+//        fprintf(stdout, "%d-%d-%d\n", year, month, day);
         
-        int rs = sun_rise_set(year, month, day, lon, lat, &rise, &set);
-        if (rs == 0) {
-            int min_dec_set = (int) fmod(set, 1.0);
-            int minute_set = min_dec_set*60;
-            int hour_set = set - min_dec_set;
-            int second_set = 0;
-            long epoch_set = getTimeEpoch(year, month, day, hour_set, minute_set, second_set);
-            sunsets[elapsed_days] = epoch_set - safety_margin;
+        sun_rise_set(year, month, day, lon, lat, &rise, &set);
+//        fprintf(stdout, "%f, %f\n", rise, set);
+        long epoch_day = getTimeEpoch(year, month, day, 0, 0, 0);
+        long epoch_set = epoch_day + set*3600;
+        sunsets[elapsed_days] = epoch_set - safety_margin;
 
-            int min_dec_rise = (int) fmod(rise, 1.0);
-            int minute_rise = min_dec_rise*60;
-            int hour_rise = rise - 24 - min_dec_rise; //always 1 day after sunset
-            int second_rise = 0;
-            long epoch_rise = getTimeEpoch(year, month, day, hour_rise, minute_rise, second_rise);
-            sunrises[elapsed_days] = epoch_rise + safety_margin;
-            
-            fprintf(stdout, "day %d; sunset %5.2fh; sunrise %5.2fh\n", elapsed_days, set, rise);
-        } else {
-            fprintf(stderr, "ERROR sun above(+1)/below horizon(-1) for 24 h: %d", rs);
-        }
         time_t day_sec = 86400; //Length of 1 day in seconds
-        epoch_present.tv_sec += day_sec;
-        fprintf(stdout, "%ld\n", epoch_present.tv_sec);
+        epoch_day += day_sec;
+        t_present = gmtime(&epoch_day);
+        year = 1900 + (int) t_present->tm_year;
+        month = 1 + t_present->tm_mon;
+        day = t_present->tm_mday;
+//        fprintf(stdout, "%d-%d-%d\n", year, month, day);
+
+        sun_rise_set(year, month, day, lon, lat, &rise, &set);
+//        fprintf(stdout, "%f, %f\n", rise, set);
+        long epoch_rise = getTimeEpoch(year, month, day, 0, 0, 0) + rise*3600;
+        sunrises[elapsed_days] = epoch_rise + safety_margin;
+
+//        fprintf(stdout, "%ld; %ld; day %d; sunset %ld; sunrise %ld\n", epoch_present.tv_sec, epoch_day, elapsed_days, sunsets[elapsed_days], sunrises[elapsed_days]);
     }
+
     elapsed_days = 0; //Resets counter
 #endif
     
@@ -663,7 +659,12 @@ int main (int argc, char** argv) {
             aio_stop(aio);
 
              //Write acquired data to the specified .aiff output file
-            AIFF_Ref file;
+            AIFF_Ref file = malloc(sizeof(AIFF_Ref));
+#if NIGHT_CYCLE
+            char sun_times[LEN];
+            sprintf(sun_times, "%ld-%ld", sunset, sunrise);
+            AIFF_SetAttribute(file, AIFF_ANNO, sun_times);
+#endif
             file = AIFF_OpenFile(filePath, F_WRONLY);
             if (file) {
                 fileNum += 1;
@@ -682,8 +683,10 @@ int main (int argc, char** argv) {
                 goto _exit; 
             }
 
-            int start, writ, end;
-            start = AIFF_StartWritingSamples(file);
+            if (!AIFF_StartWritingSamples(file)) {
+                fprintf(stderr, "ERROR starting writing .aiff file");
+                goto _exit;
+            }
 
             //Convert the raw values to voltage
             for (buff_done=0; buff_done < num_buffers; ++buff_done) { 
@@ -723,18 +726,21 @@ int main (int argc, char** argv) {
                             // <---------------------> <--------------------->  ...
                             //     Sample frame 1          Sample frame 2  
 
-                            writ = AIFF_WriteSamples32Bit(file, (int32_t*) &rptr, 1);
+                            if (AIFF_WriteSamples32Bit(file, (int32_t*) &rptr, 1)) {
+                                fprintf(stdout, "%do .aiff file written\n", fileNum);
+                            } else {
+                                fprintf(stderr, "ERROR writing .aiff file");
+                                goto _exit;
+                            }
                         }
                     }
                 }
             }
-            end = AIFF_EndWritingSamples(file);
-
-            //Checks for successful file writing
-            if (start && writ && end) {
-                fprintf(stderr, "%do .aiff file written\n", fileNum);
+            if (!AIFF_EndWritingSamples(file)) {
+                fprintf(stderr, "ERROR ending writing .aiff file");
+                goto _exit;
             }
-
+            
             //Stops writing
             if (AIFF_CloseFile(file)) {
                 fprintf(stdout, "Closed file...\n");
