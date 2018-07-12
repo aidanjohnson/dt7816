@@ -69,12 +69,12 @@
 #define AIN7                0
 #define PATH_TO_STORAGE     "/usr/local/path/to/ssd/" //Predefined write path
 #define PATH_TO_SUN_CYCLE   "/usr/local/sunup_sundown.txt"
-#define SAMPLE_RATE_HZ      400000.0f
+#define SAMPLE_RATE_HZ      400000.0
  //Constraint: SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS <= 65536 samples = 2^(16 bits)
 #define SAMPLES_PER_FILE    65536 // SAMPLES_PER_CHAN = SAMPLES_PER_FILE / NUM_CHANNELS
 #define NUM_BUFFS           1 //Number of buffers per file initialised
 #define DURATION_DAYS       21 //Default number of days of sampling
-#define SAFETY_MARGIN       3600l //Buffers in seconds before sunset and after sunrise
+#define SAFETY_MARGIN       3600 //Buffers in seconds before sunset and after sunrise
 #define NIGHT_CYCLE         1 //Cycles recording on at night and off at day
 #define DEFAULT_LATITUDE    47.655083 //Latitude (N := +, S := -)
 #define DEFAULT_LONGITUDE   -122.293194 //Longitude (E := +, W := -)
@@ -100,6 +100,8 @@
 #define LEN                 512 //Default character array size
 #define NUM_CHANNELS        AIN0+AIN1+AIN2+AIN3+AIN4+AIN5+AIN6+AIN7 //max ch: 8
 #define SAMPLE_RATE         SAMPLE_RATE_HZ
+#define DAEMON              0
+#define AUTO_TRIG           1
 
 static int g_quit = 0;
 
@@ -245,8 +247,8 @@ int main (int argc, char** argv) {
     
     uint8_t sysStatus = 0x00;
     int ret = EXIT_SUCCESS;
-    int daemonise = 0;
-    int auto_trig = 1;
+    int daemonise = DAEMON;
+    int auto_trig = AUTO_TRIG;
     int samples_per_file = SAMPLES_PER_FILE;
     int num_buffers = NUM_BUFFS;
     int num_channels = NUM_CHANNELS;
@@ -262,9 +264,8 @@ int main (int argc, char** argv) {
                                .clk_freq=SAMPLE_RATE
                               };
    
-    struct aio_struct *aio = NULL;
     int ain[8] = {AIN0, AIN1, AIN2, AIN3, AIN4, AIN5, AIN6, AIN7};
-    int ch_code;//8 bit binary; channel on := 1, channel off := 0
+    int ch_code; //8 bit binary; channel on := 1, channel off := 0
     int opt = 0;
     while ((opt = getopt(argc, argv, "s:c:d:r:b:t:i:m:l:")) != -1) {
         switch (opt) {
@@ -511,7 +512,7 @@ int main (int argc, char** argv) {
     
     //Create and initialise AIO structures
     fprintf(stdout, "Initialising...\n");
-    aio = aio_create(fd_stream, 0, NULL, NULL);
+    struct aio_struct *aio = aio_create(fd_stream, 0, NULL, NULL);
     if (!aio) {
         fprintf(stderr, "ERROR aio_create\n");
         goto _exit;
@@ -548,13 +549,10 @@ int main (int argc, char** argv) {
         goto _exit;
     }
     
-#if NIGHT_CYCLE
     //Calculates sunset (sunsclipse) and sunrise (sunsight) times based on:
     //(1) Date and (2) Latitude and Longitude coordinates
     long *sunsets = malloc(sizeof(long)*duration_days);
     long *sunrises = malloc(sizeof(long)*duration_days);
-    int year, month, day;
-    double rise, set;
     
     struct timeval epoch_present;  //Seconds UTC relative to 1 Jan 1970 (epoch)
     struct tm *t_present = malloc(sizeof(struct tm)); //Time in accordance to ISO 8601
@@ -563,16 +561,23 @@ int main (int argc, char** argv) {
 
     int elapsed_days;
     for (elapsed_days = 0; elapsed_days < duration_days; elapsed_days++) {
-        year = 1900 + (int) t_present->tm_year;
-        month = 1 + t_present->tm_mon;
-        day = t_present->tm_mday;
+        int year = 1900 + (int) t_present->tm_year;
+        int month = 1 + t_present->tm_mon;
+        int day = t_present->tm_mday;
 //        fprintf(stdout, "%d-%d-%d\n", year, month, day);
-        
+                
+        long epoch_day = getTimeEpoch(year, month, day, 0, 0, 0);
+        long epoch_set = epoch_day;
+ #if NIGHT_CYCLE 
+        double rise, set;
         sun_rise_set(year, month, day, lon, lat, &rise, &set);
 //        fprintf(stdout, "%f, %f\n", rise, set);
-        long epoch_day = getTimeEpoch(year, month, day, 0, 0, 0);
-        long epoch_set = epoch_day + set*3600;
+        epoch_set += set*3600;
         sunsets[elapsed_days] = epoch_set - safety_margin;
+
+#else
+        sunsets[elapsed_days] = epoch_set;
+#endif
 
         time_t day_sec = 86400; //Length of 1 day in seconds
         epoch_day += day_sec;
@@ -582,32 +587,37 @@ int main (int argc, char** argv) {
         day = t_present->tm_mday;
 //        fprintf(stdout, "%d-%d-%d\n", year, month, day);
 
+        long epoch_rise = getTimeEpoch(year, month, day, 0, 0, 0);
+#if NIGHT_CYCLE
         sun_rise_set(year, month, day, lon, lat, &rise, &set);
 //        fprintf(stdout, "%f, %f\n", rise, set);
-        long epoch_rise = getTimeEpoch(year, month, day, 0, 0, 0) + rise*3600;
+        epoch_rise += rise*3600;
         sunrises[elapsed_days] = epoch_rise + safety_margin;
-
-//        fprintf(stdout, "%ld; %ld; day %d; sunset %ld; sunrise %ld\n", epoch_present.tv_sec, epoch_day, elapsed_days, sunsets[elapsed_days], sunrises[elapsed_days]);
+#else
+        sunrises[elapsed_days] = epoch_rise;
+#endif
+        fprintf(stdout, "%ld; %ld; day %d; sunset %ld; sunrise %ld\n", epoch_present.tv_sec, epoch_day, elapsed_days, sunsets[elapsed_days], sunrises[elapsed_days]);
     }
 
     elapsed_days = 0; //Resets counter
-#endif
     
     ret = 0;
     int fileNum = 0; //Diagnostic/debugging file counter
     
     //Infinite loop until aborted by ctrl-C
-    while (!g_quit) {
-#if NIGHT_CYCLE
+    while (!g_quit && duration_days > elapsed_days) {
         long present = getPresentTime();
         long sunset = sunsets[elapsed_days];
         long sunrise = sunrises[elapsed_days];
         int night = 0;
 
         //If after dusk and before dawn (entering night)
-        while (present < sunrise && present >= sunset && !g_quit) {
-            night = 1;
-#endif            
+        while (!g_quit && (present < sunrise && present >= sunset)) {           
+            if (g_quit) {
+                goto _exit;
+            } else {
+                night = 1;
+            }
             //Gets time of first sample recording for timestamp
             char filePath[LEN];
             timestamp(filePath, argv);
@@ -660,11 +670,11 @@ int main (int argc, char** argv) {
 
              //Write acquired data to the specified .aiff output file
             AIFF_Ref file = malloc(sizeof(AIFF_Ref));
-#if NIGHT_CYCLE
+
             char sun_times[LEN];
             sprintf(sun_times, "%ld-%ld", sunset, sunrise);
             AIFF_SetAttribute(file, AIFF_ANNO, sun_times);
-#endif
+
             file = AIFF_OpenFile(filePath, F_WRONLY);
             if (file) {
                 fileNum += 1;
@@ -726,9 +736,7 @@ int main (int argc, char** argv) {
                             // <---------------------> <--------------------->  ...
                             //     Sample frame 1          Sample frame 2  
 
-                            if (AIFF_WriteSamples32Bit(file, (int32_t*) &rptr, 1)) {
-                                fprintf(stdout, "%do .aiff file written\n", fileNum);
-                            } else {
+                            if (!AIFF_WriteSamples32Bit(file, (int32_t*) &rptr, 1)) {
                                 fprintf(stderr, "ERROR writing .aiff file");
                                 goto _exit;
                             }
@@ -739,6 +747,8 @@ int main (int argc, char** argv) {
             if (!AIFF_EndWritingSamples(file)) {
                 fprintf(stderr, "ERROR ending writing .aiff file");
                 goto _exit;
+            } else {
+                fprintf(stdout, "%do .aiff file written\n", fileNum);
             }
             
             //Stops writing
@@ -752,12 +762,10 @@ int main (int argc, char** argv) {
                 goto _exit;
             }
             
-#if NIGHT_CYCLE            
             present = getPresentTime(); //Updates time for while loop check
         }
         
         if (night) elapsed_days++; //If after dawn (leaving night), 1 day elapsed
-#endif
     }
 
 //Exit protocol and procedure    
