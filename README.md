@@ -239,7 +239,21 @@ The second and alternative method is to locally network the client and host. Thi
 
 7. Not entirely sure why this fixes the 'cannot resolve syscall' warning in NetBeans, but for each NetBeans project, right click to access the 'Properties' menu. Then under 'C Compiler'->'C Standard' set to C11, and under 'C++ compiler'->'C++ Standard' set to C++11. See this Stack Overflow [post](https://stackoverflow.com/questions/30686264/erroneous-unable-to-resolve-identifier-in-netbeans/35025731) for more information and discussion.
 
-8. To synchronise the board's clock to official US (NIST) time, after the Operation Instructions, follow the steps at this [wiki page](https://wiki.archlinux.org/index.php/Internet_sharing), substituting `enp4s0f1` for `net0` and `wlp3s0` for `internet0` in addition to substituting the arbitrary IP addresses of `192.168.123.0` with `10.0.0.0`, `192.168.123.100` with `10.0.0.1` and `192.168.123.201` with `10.0.0.2`. After this process shares the internet connection of the host computer to the client board, set up the NTP server and client by running the command `ntpdate time.nist.gov` on the server host and `ntpdate 10.0.0.1` on the server client (consult [this page](http://www.ubuntugeek.com/network-time-protocol-ntp-server-and-clients-setup-in-ubuntu.html) for assistance). On the client you likely will have to run these commands in the following order: `service ntp stop`, `ntpdate 10.0.0.1`, `service ntp start`. This should update the local time on the client/board. You can check that it is the case by running the command `date` on the client.
+8. To synchronise the board's clock to official US (NIST) time, after the Operation Instructions, follow the steps at this [wiki page](https://wiki.archlinux.org/index.php/Internet_sharing), substituting `enp4s0f1` for `net0` and `wlp3s0` for `internet0` in addition to substituting the arbitrary IP addresses of `192.168.123.0` with `10.0.0.0`, `192.168.123.100` with `10.0.0.1` and `192.168.123.201` with `10.0.0.2`. 
+
+   After this process shares the internet connection of the host computer to the client board, set up the NTP server and client by following the instructions on [this page](http://www.ubuntugeek.com/network-time-protocol-ntp-server-and-clients-setup-in-ubuntu.html). When editing `/etc/ntp.conf` add the following lines for the host:
+   * `server time.nist.gov`
+   * `restrict time.nist.gov mask 255.255.255.255 nomodify notrap noquery`
+   * `restrict 192.168.1.0 mask 255.255.255.0 nomodify notrap`
+   * `restrict 127.0.0.1`
+   and then after saving run `/etc/init.d/ntp restart`. And for the client, add the lines:
+   * `server 10.0.0.1`
+   * `restrict default notrust nomodify nopeer`
+   * `restrict 192.168.1.1`
+   * `restrict 127.0.0.1`
+   and then after saving run `ntpdate 10.0.0.1` and `/etc/init.d/ntp restart` on the client.
+   
+   If the board is restarted the `date` command likely will not return a properly synchronised time. To update the client's time to the host's time run these commands in the following order on the client: `service ntp stop`, `ntpdate 10.0.0.1`, `service ntp start`. This should update the local time on the client/board. You can check that it is the case by running the command `date` on the client.
 
 ## Acknowledgements
 Thank you to the [Applied Physics Laboratory](http://www.apl.washington.edu/) at the University of Washington and the [UW Institute for Neuroengineering](http://uwin.washington.edu/) for funding and support, and to the [Union Bay Natural Area](https://botanicgardens.uw.edu/center-for-urban-horticulture/visit/union-bay-natural-area/) for support. This project was funded by the UW Institute for Neuroengineering and the Washington Research Foundation Funds for Innovation in Neuroengineering and **<2nd funding source goes here: NIFTI?>**. Contact: [Wu-Jung Lee](https://leewujung.github.io/) at wjlee@apl.washington.edu and [Aidan Johnson](https://aidanjohnson.github.io/) at johnsj96@uw.edu.
