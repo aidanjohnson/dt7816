@@ -18,7 +18,7 @@ See the [manufacturer guide](https://www.mccdaq.com/PDFs/Manuals/DT7816_WebHelp/
    tar -xzvf INSTALL.tar.gz
    ```
 
-   Save these (a shell script, a Python executable program, the `bat-array` program files, and a directory containing the NetBeans IDE project templates) in `~/Downloads`.
+   Save these (a shell script, a Python executable program, the `recorder` program files, and a directory containing the NetBeans IDE project templates) in `~/Downloads`.
    * `build_dev.sh`
    * `build_examples.py`
    * `main.c`, `Makefile`, `README.md`
@@ -121,15 +121,15 @@ The second and alternative method is to locally network the client and host. Thi
 
 3. To check that the NFS server is functioning, type the command `ls -l /usr/local/dt7816-nfs`. You should then see a list of all the files in the `/opt/ti-sdk-am335x-evm-07.00.00.00/` directory on the PC. 
 
-4. Now that we are confident that the preliminary steps are functioning correctly, we can then access the programs or applications that we've written in C. For our purposes we will be running the `bat-array` program such that the board will autonomously sample and record the soundscape. ***—more to be added later on mounting a local storage device (e.g., HDD for lower cost per GB or SSD for lower Watt consumption) at a predefined file structure location—***
+4. Now that we are confident that the preliminary steps are functioning correctly, we can then access the programs or applications that we've written in C. For our purposes we will be running the `recorder` program such that the board will autonomously sample and record the soundscape. ***—more to be added later on mounting a local storage device (e.g., HDD for lower cost per GB or SSD for lower Watt consumption) at a predefined file structure location—***
 
 5. Inconveniently, the board's local time clock needs to be set and synchronised to a common time so the `aiff` files can be properly time-stamped in their file name. The naming convention follows the [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) standard so time is in UTC (Coordinated Universal Time), also known as GMT (Greenwich Mean Time). 
 
    Follow step 13 of the connection instructures to ensure the clocks are synchronised to the host field-laptop. To set current time to the hardware clock in order for the time to be recoverable after reboots, run `hwclock --systohc` command on the board. ***—more on a common external clock that is described in the [User Manual](https://github.com/aidanjohnson/dt7816/tree/master/UM7816.pdf) on pp. 35-39 and p. 48 as it is implemented—***
 
-6. Since we want to run the `bat-array` program without the PC connected to the board, we will need to copy the program over to local, on-board memory. To do so, run the command `cp -r /usr/local/dt7816-nfs/example-applications/dt78xx-examples/bat-array/ /usr/local/`. Then change directories to that location with `cd /usr/local/bat-array`.
+6. Since we want to run the `recorder` program without the PC connected to the board, we will need to copy the program over to local, on-board memory. To do so, run the command `cp -r /usr/local/dt7816-nfs/example-applications/dt78xx-examples/recorder/ /usr/local/`. Then change directories to that location with `cd /usr/local/recorder`.
 
-7. Now we can run the program. To do so, run the command `./release/bat-array <identifier> [options]` on the serial console (via Terminal) where `<identifier>` is a identifier of your choosing for the board's recordings (e.g., N for North), and `[options]` is the set of optional command line parameters (note that the board will run with the default values predefined in the source C code). The "help" display describes the options available. It is reproduced below for convenience.
+7. Now we can run the program. To do so, run the command `./release/recorder <identifier> [options]` on the serial console (via Terminal) where `<identifier>` is a identifier of your choosing for the board's recordings (e.g., N for North), and `[options]` is the set of optional command line parameters (note that the board will run with the default values predefined in the source C code). The "help" display describes the options available. It is reproduced below for convenience.
    ```text
    Samples AINx (where AINx is a combination of AIN0/1/2/3/4/5/6/7 and at most 8
    simultaneous channels) and writes data to timestamped file in AIFF format files 
@@ -137,7 +137,7 @@ The second and alternative method is to locally network the client and host. Thi
    the file identifier is required. The files are saved to 
    <path>/<prefix>_<YYYY-DD-MMTHHmmssuuuuuuZ>.aiff
 
-   Usage        : ./release/bat-array <identifier prefix> [options]
+   Usage        : ./release/recorder <identifier prefix> [options]
 
    Required     : a file or location identifier prefix, such as NORTH or 1.
 
@@ -164,7 +164,7 @@ The second and alternative method is to locally network the client and host. Thi
 
    **Sunrise and Sunset Times**
 
-   Failing to restrain from making a *Fiddler on the Roof* [reference](https://en.wikipedia.org/wiki/Sunrise,_Sunset), ~~the program is fed a `.txt` file coining the sunset times interleaved with the sunrise times of a location determined by its latitude and longitude coordinates. The [US Naval Observatory](http://aa.usno.navy.mil/data/docs/RS_OneDay.php) has a database of these times accesible using a [JSON API](http://aa.usno.navy.mil/data/docs/api.php). The Jupyter Notebook [`navy_json_sunsight_sunclipse.ipynb`](https://github.com/aidanjohnson/dt7816/tree/master/navy_json_sunsight_sunclipse.ipynb) contains a script that writes the sunset and sunrise times (indicating the time of dusk and dawn) for given range of days to the file [`sunup_sundown.txt`](https://github.com/aidanjohnson/dt7816/tree/master/sunup_sundown.txt) in ISO 8601 format. These dates and times are read by the `bat-array` program so that the data sampling and recording only occurs when the bats are out foraging (i.e., at night).~~ the `bat-array` program is given a latitude and longitude coordinate pair for the location of the recording site in order to calculate the sunset and sunrise times for each day in the set duration in days. The sampling regime begins immediately after starting through the command line. 
+   Failing to restrain from making a *Fiddler on the Roof* [reference](https://en.wikipedia.org/wiki/Sunrise,_Sunset), ~~the program is fed a `.txt` file coining the sunset times interleaved with the sunrise times of a location determined by its latitude and longitude coordinates. The [US Naval Observatory](http://aa.usno.navy.mil/data/docs/RS_OneDay.php) has a database of these times accesible using a [JSON API](http://aa.usno.navy.mil/data/docs/api.php). The Jupyter Notebook [`navy_json_sunsight_sunclipse.ipynb`](https://github.com/aidanjohnson/dt7816/tree/master/navy_json_sunsight_sunclipse.ipynb) contains a script that writes the sunset and sunrise times (indicating the time of dusk and dawn) for given range of days to the file [`sunup_sundown.txt`](https://github.com/aidanjohnson/dt7816/tree/master/sunup_sundown.txt) in ISO 8601 format. These dates and times are read by the `bat-array` program so that the data sampling and recording only occurs when the bats are out foraging (i.e., at night).~~ the `recorder` program is given a latitude and longitude coordinate pair for the location of the recording site in order to calculate the sunset and sunrise times for each day in the set duration in days. The sampling regime begins immediately after starting through the command line. 
 
    **Debug LEDs**
    
@@ -237,7 +237,7 @@ The second and alternative method is to locally network the client and host. Thi
    ```
 2. Called by `build_dev.sh`, `build_examples.py` is a Python script that builds each of the [example applications](https://github.com/aidanjohnson/dt7816/tree/master/example-applications/dt78xx-examples/) according to the manufacturer's instructions. See the installation directory for information on what each of these do. The script also creates a NetBeans project for each. It builds:
    * examples: `aio-in`, `aio-out`, `aout-single`, `clk-gen`, `digio`, `dt7816-calibration`, `event-counter`, `fir-filter`, `function-gen`, `sig-analyzer`, `usb-loopback`, `web-server`
-   * [`bat-array`](https://github.com/aidanjohnson/dt7816/tree/master/example-applications/dt78xx-examples/bat-array) ([**WIP**](https://github.com/aidanjohnson/dt7816/projects/1#card-10768858): this is the custom built ADC recording program for the DAQ; samples recorded in the `.aiff` format using with a standardised file naming convention.)
+   * [`recorder`](https://github.com/aidanjohnson/dt7816/tree/master/example-applications/dt78xx-examples/recorder) ([**WIP**](https://github.com/aidanjohnson/dt7816/projects/1#card-10768858): this is the custom built ADC recording program for the DAQ; samples recorded in the `.aiff` format using with a standardised file naming convention.)
 
 3. For an unknown reason, the example C-language code applications contains an include header for a differently named directories. To remedy this, create a link like so:
    ```
