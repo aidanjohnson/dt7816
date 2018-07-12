@@ -30,7 +30,7 @@ DT78xx_DIR = ../../../board-support/extra-drivers/dt78xx/
 # Path to common files
 COMN_DIR = ../common
 # Board type
-BOARD_TYPE = DT7837
+BOARD_TYPE = DT7816
 #----------------------------------------------------------------------------
 include $(RULES_DIR)/Rules.make
 VPATH = $(COMN_DIR)

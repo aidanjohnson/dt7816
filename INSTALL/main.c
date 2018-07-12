@@ -35,9 +35,8 @@
     #define DEV_AIN         "/dev/dt7816-ain"
     #define DOUT_DEV        "/dev/dt7816-dout"
 #else
-    #error Undefined board type
+    #error Board not supported
 #endif
-
 static int g_quit = 0; //Force exit or quit (ctrl+c)
 
 /*****************************************************************************

@@ -30,7 +30,7 @@ DT78xx_DIR = ../../../board-support/extra-drivers/dt78xx/
 # Path to common files
 COMN_DIR = ../common
 # Board type
-BOARD_TYPE = DT7837
+BOARD_TYPE = DT7816
 #----------------------------------------------------------------------------
 include $(RULES_DIR)/Rules.make
 VPATH = $(COMN_DIR)
@@ -45,7 +45,7 @@ CC := $(CROSS_COMPILE)gcc
 #   ----------------------------------------------------------------------------
 #   General options, sources and libraries
 #   ----------------------------------------------------------------------------
-NAME := bat-array
+NAME := recorder
 SRCS := main.c dt78xx_aio.c dt78xx_misc.c libaiff.c aifx.c extended.c float32.c g711.c iff.c lpcm.c pascal.c RingBuf.c sunriset.c recorder_helpers.c
 HDRS := 
 OBJS :=
