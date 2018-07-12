@@ -95,7 +95,7 @@ The second and alternative method is to locally network the client and host. Thi
     ```
     To check all the directories on the server are accesible by the client, run `ls -l /usr/local/dt7816-nfs`
 
-13. To synchronise the board's clock to official US Government (NIST) time, follow the steps at this [wiki page](https://wiki.archlinux.org/index.php/Internet_sharing), substituting `enp4s0f1` for `net0` and `wlp3s0` for `internet0` in addition to substituting the arbitrary IP addresses of `192.168.123.0` with `10.0.0.0`, `192.168.123.100` with `10.0.0.1` and `192.168.123.201` with `10.0.0.2`.
+13. To synchronise the board's clock to official US Government ([NIST](https://tf.nist.gov/tf-cgi/servers.cgi)) time, follow the steps at this [wiki page](https://wiki.archlinux.org/index.php/Internet_sharing), substituting `enp4s0f1` for `net0` and `wlp3s0` for `internet0` in addition to substituting the arbitrary IP addresses of `192.168.123.0` with `10.0.0.0`, `192.168.123.100` with `10.0.0.1` and `192.168.123.201` with `10.0.0.2`.
 
     After this process shares the internet connection of the host computer to the client board, set up the NTP server and client by following the instructions on [this page](http://www.ubuntugeek.com/network-time-protocol-ntp-server-and-clients-setup-in-ubuntu.html). When editing `/etc/ntp.conf` add the following lines for the host:
     * `server time.nist.gov`
