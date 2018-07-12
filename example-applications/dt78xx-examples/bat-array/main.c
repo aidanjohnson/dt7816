@@ -1,30 +1,30 @@
 /* 
-* This is a custom application for DT7816 autonomous asynchronous I/O sampling
-* that configures the board's analog inputs. The sampled data is read 
-* asynchronously from the input stream and written to a AIFF file. See:
-* https://msdn.microsoft.com/en-us/library/windows/desktop/aa365683(v=vs.85).aspx
-* for additional details on (a)synchronous I/O.
-* 
-* (c) Aidan Johnson (johnsj96@uw.edu)
-* 12 July 2018
-* 
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation; either version 2 of the License, or
-* (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software
-* 
-* ============================================================================
-* Usage :
-*	See usage() below
-*/
+ * This is a custom application for DT7816 autonomous asynchronous I/O sampling
+ * that configures the board's analog inputs. The sampled data is read 
+ * asynchronously from the input stream and written to a AIFF file. See:
+ * https://msdn.microsoft.com/en-us/library/windows/desktop/aa365683(v=vs.85).aspx
+ * for additional details on (a)synchronous I/O.
+ * 
+ * (c) Aidan Johnson (johnsj96@uw.edu)
+ * 12 July 2018
+ * 
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * 
+ * ============================================================================
+ * Usage :
+ *	See usage() below
+ */
 
 //Contains helper functions, global constants (macros), and required libraries
 #include "recorder_helpers.h" 
