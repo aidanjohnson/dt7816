@@ -6,8 +6,6 @@
       <in>extended.c</in>
       <in>float32.c</in>
       <in>g711.c</in>
-      <in>helpers.c</in>
-      <in>helpers.h</in>
       <in>iff.c</in>
       <in>libaiff.c</in>
       <in>lpcm.c</in>
@@ -152,10 +150,6 @@
             <pElem>.</pElem>
           </incDir>
         </cTool>
-      </item>
-      <item path="helpers.c" ex="false" tool="0" flavor2="0">
-      </item>
-      <item path="helpers.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="iff.c" ex="false" tool="0" flavor2="2">
         <cTool flags="0">
