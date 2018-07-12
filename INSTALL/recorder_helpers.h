@@ -93,15 +93,6 @@ extern "C" {
 #define AUTO_TRIG           1
 #define LEN                 512 //Default character array size
 
-#ifdef DT7816
-    #define DEV_STREAM_IN   "/dev/dt7816-stream-in"
-    //AIN device file
-    #define DEV_AIN         "/dev/dt7816-ain"
-    #define DOUT_DEV        "/dev/dt7816-dout"
-#else
-    #error Undefined board type
-#endif
-
 #define xstr(s) str(s)
 #define str(s) #s
 
@@ -131,7 +122,8 @@ void configChan(dt78xx_ain_config_t ain_cfg[]);
 
 void initTrig(dt78xx_trig_config_t trig_cfg_ai[]);
 
-void calcSunUpDown(long *sunsets, long *sunrises, int duration_days, long safety_margin, double lon, double lat, int night_cycle);
+void calcSunUpDown(long *sunsets, long *sunrises, int duration_days, 
+                   long safety_margin, double lon, double lat, int night_cycle);
 
 #ifdef __cplusplus
 }

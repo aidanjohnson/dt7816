@@ -29,6 +29,15 @@
 //Contains helper functions, global constants (macros), and required libraries
 #include "recorder_helpers.h" 
 
+#ifdef DT7816
+    #define DEV_STREAM_IN   "/dev/dt7816-stream-in"
+    //AIN device file
+    #define DEV_AIN         "/dev/dt7816-ain"
+    #define DOUT_DEV        "/dev/dt7816-dout"
+#else
+    #error Undefined board type
+#endif
+
 static int g_quit = 0; //Force exit or quit (ctrl+c)
 
 /*****************************************************************************

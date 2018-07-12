@@ -241,7 +241,8 @@ void initTrig(dt78xx_trig_config_t trig_cfg_ai[]) {
     trig_cfg_ai[7] = trig7_cfg;
 }
 
-void calcSunUpDown(long *sunsets, long *sunrises, int duration_days, long safety_margin, double lon, double lat, int night_cycle) {
+void calcSunUpDown(long *sunsets, long *sunrises, int duration_days, 
+                   long safety_margin, double lon, double lat, int night_cycle) {
     struct timeval epoch_present;  //Seconds UTC relative to 1 Jan 1970 (epoch)
     struct tm *t_present = malloc(sizeof(struct tm)); //Time in accordance to ISO 8601
     gettimeofday(&epoch_present, NULL); //Gets current system time
