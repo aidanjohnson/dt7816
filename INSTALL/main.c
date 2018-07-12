@@ -4,103 +4,35 @@
 * asynchronously from the input stream and written to a AIFF file. See:
 * https://msdn.microsoft.com/en-us/library/windows/desktop/aa365683(v=vs.85).aspx
 * for additional details on (a)synchronous I/O.
- * 
- * (c) Aidan Johnson (johnsj96@uw.edu)
- * 05 July 2018
- * 
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * 
- * ============================================================================
- * Usage :
- *	See usage() below
- */
+* 
+* (c) Aidan Johnson (johnsj96@uw.edu)
+* 12 July 2018
+* 
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation; either version 2 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program; if not, write to the Free Software
+* 
+* ============================================================================
+* Usage :
+*	See usage() below
+*/
 
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <unistd.h>
-#include <getopt.h>
-#include <time.h>
-#include <sys/time.h>
-#include <malloc.h>
-#include <math.h>
-#include <omp.h>
+//Contains helper functions, global constants (macros), and required libraries
+#include "recorder_helpers.h" 
 
-#include "dt78xx_ioctl.h"
-#include "dt78xx_aio.h"
-#include "dt78xx_misc.h"
-
-#define LIBAIFF_NOCOMPAT 1 // do not use LibAiff 2 API compatibility
-#include "libaiff.h"
-
-#include "RingBuf.h"
+static int g_quit = 0; //Force exit or quit (ctrl+c)
 
 /*****************************************************************************
- * Customisable Macros
- */
-
-// The sample rate, active channels, number of buffers, and samples per channel  
-// can be set with command line flags in a terminal shell used to run this program.
-
-//Default analog inputs (AINx) enabled/active/on (1) or disabled/inactive/off (0)
-#define AIN0                1
-#define AIN1                0
-#define AIN2                0
-#define AIN3                0
-#define AIN4                0
-#define AIN5                0
-#define AIN6                0
-#define AIN7                0
-#define PATH_TO_STORAGE     "/usr/local/path/to/ssd/" //Predefined write path
-#define PATH_TO_SUN_CYCLE   "/usr/local/sunup_sundown.txt"
-#define SAMPLE_RATE_HZ      400000.0
- //Constraint: SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS <= 65536 samples = 2^(16 bits)
-#define SAMPLES_PER_FILE    65536 // SAMPLES_PER_CHAN = SAMPLES_PER_FILE / NUM_CHANNELS
-#define NUM_BUFFS           1 //Number of buffers per file initialised
-#define DURATION_DAYS       21 //Default number of days of sampling
-#define SAFETY_MARGIN       3600l //Buffers in seconds before sunset and after sunrise
-#define NIGHT_CYCLE         1 //Cycles recording on at night and off at day
-
-/*****************************************************************************
- * Do Not Touch These Macros
- */
-
-#ifdef DT7816
-    #define DEV_STREAM_IN   "/dev/dt7816-stream-in"
-    //AIN device file
-    #define DEV_AIN         "/dev/dt7816-ain"
-    #define DOUT_DEV        "/dev/dt7816-dout"
-#else
-    #error Undefined board type
-#endif
-
-#define xstr(s) str(s)
-#define str(s) #s
-
-#define TRIG_LEVEL_V        0.0
-#define DEFAULT_GAIN        1 // gain 1 => +/- 10 V; must be 1 for DT7816
-#define LEN                 512 //Default character array size
-#define NUM_CHANNELS        AIN0+AIN1+AIN2+AIN3+AIN4+AIN5+AIN6+AIN7 //max ch: 8
-#define SAMPLE_RATE         SAMPLE_RATE_HZ
-
-static int g_quit = 0;
-
-/*****************************************************************************
- * Data types
+ * Circular (ring) buffer (queue) data type
  */
 
 struct circ_buffer {
@@ -143,133 +75,11 @@ static const char g_usage[] = {
 };
 
 /*****************************************************************************
- * Helper functions
+ * Signal handler for ctrl-c prevents the abrupt termination of processes
  */
 
 static void sigint_handler(int i) {
-    //Signal handler for ctrl-c prevents the abrupt termination of processes
     g_quit = -1;
-}
-
-static void led_indicators(uint8_t status, int streaming) {
-    // Updates debug LEDs (8 in total), LED ON (1) := CHANNEL is READING/WRITING
-    // Viewing the DT7816 such that the debug pin row is above the user LEDs:
-    //  ______ ______ ______ ______ ______ ______ ______ ______ ______ _______
-    // | PIN1 | PIN2 | PIN3 | PIN4 | PIN5 | PIN6 | PIN7 | PIN8 | PIN9 | PIN10 |
-    // ***** LED7 ** LED6 ** LED5 ** LED4 ** LED3 ** LED2 ** LED1 ** LED0 *****
-    //
-    // LED0 := AIN0, LED1 := AIN1, LED2 := AIN2, LED3 := AIN3,
-    // LED4 := AIN4, LED5 := AIN5, LED6 := AIN6, LED7 := AIN7
-    //
-    // where the analog input channels have the following coding returned by
-    // IOCTL_CHAN_MASK_GET:
-    //
-    // AIN0 = 0x01, AIN1 = 0x02, AIN2 = 0x04, AIN3 = 0x08
-    // AIN4 = 0x10, AIN5 = 0x20, AIN6 = 0x40, AIN7 = 0x80
-    //
-    // and for input header pins (J16):
-    //  ___________________________________________________
-    // ||  2 |  4 |  6 |  8 | 10 | 12 | 14 | 16 | 18 | 20 ||
-    // ||  1 |  3 |  5 |  7 |  9 | 11 | 13 | 15 | 17 | 19 ||7; //Defaults to 7 days
-    // 
-    // Analog Inputs (AINs):
-    //
-    // PIN5 := AIN0, PIN7 := AIN1, PIN9 := AIN2, PIN11 := AIN3 
-    // PIN13 := AIN4, PIN15 := AIN5, PIN17 := AIN6, PIN19 := AIN7
-    //
-    // Analog Grounds (AGRDs):
-    //
-    // PIN6 := AGRD0, PIN8 := AGRD1, PIN10 := AGRD2, PIN12 := AGRD3 
-    // PIN14 := AGRD4, PIN16 := AGRD5, PIN18 := AGRD6, PIN20 := AGRD7
-    
-    dt78xx_led_t led;
-    led.mask = 0xff;    // all bits are enabled (8 LEDs capable of being lit)
-    led.state = (status & 0xff);
-    ioctl(streaming, IOCTL_LED_SET, &led);    
-}
-
-static void getSunTime(struct tm* time, char* date_time) {
-    //Assumes UTC time given
-    char year[4];
-    char month[2];
-    char day[2];
-    char hour[2];
-    char minute[2];
-    char second[2];
-    int k;
-    for (k = 0; k < 4; k++) {
-        year[k] = date_time[k];
-        if (k < 2) {
-            month[k] = date_time[k + 5];
-            day[k] = date_time[k + 8];
-            hour[k] = date_time[k + 11];
-            minute[k] = date_time[k + 14];
-            second[k] = date_time[k + 17];
-        }
-    }
-    time->tm_year = atol(year) - 1900;
-    time->tm_mon = atoi(month) - 1;
-    time->tm_mday = atoi(day);
-    time->tm_hour = atoi(hour);
-    time->tm_min = atoi(minute);
-    time->tm_sec = atoi(second);
-}
-
-static void getTime(struct tm** curTime, struct timeval* clockTime) {
-    gettimeofday(&(*clockTime), NULL); //Gets current time
-    *curTime = gmtime(&(*clockTime).tv_sec); // UTC aka GMT in ISO 8601: Zulu
-}
-
-static long getTimeEpoch(struct tm* readableTime) {
-    return (long) mktime(&(*readableTime));
-}
-
-static void timestamp(char* filePath, char** argv) {
-    struct timeval tv;
-    struct tm *t_iso; //Time in accordance to ISO 8601
-    getTime(&t_iso, &tv); //Gets current time in UTC (aka GMT or Zulu) 
-     //Time corresponding to first sample (see start of while loop)
-    const char *outputPath = PATH_TO_STORAGE; //A set path to local storage
-    const char *ID; //Identification prefix
-    ID = argv[optind]; //Physical location/identity: identifier
-    char fileTime[LEN];
-
-    //YYYY-MM-DD HH:mm:ss:uuuuuu (u=microseconds)
-    sprintf(fileTime, "_%04d%02d%02dT%02d%02d%02d%liZ.aiff", 
-            t_iso->tm_year+1900, t_iso->tm_mon + 1, t_iso->tm_mday, 
-            t_iso->tm_hour, t_iso->tm_min, t_iso->tm_sec, (long) tv.tv_usec); 
-    char fileName[LEN];
-    strcpy(fileName, ID); //Identify
-    strcat(fileName, fileTime); //Timestamped
-    strcpy(filePath, outputPath); //Directory path
-    strcat(filePath, fileName); //Full file path: concatenates filename
-}
-
-static int findElapsedDays(struct tm** sunsets, struct tm** sunrises, int totalDays) {
-    int elapsedDays = 0;
-    struct timeval sysTime;
-    struct tm* sysDate;
-    getTime(&sysDate, &sysTime);
-    long sysEpoch = (long) sysTime.tv_sec;
-
-    if (sysEpoch <= getTimeEpoch(&(*sunsets)[0])) { //First sunset in epoch time
-        elapsedDays = 0;
-    } else if (sysEpoch >= getTimeEpoch(&(*sunrises)[totalDays - 1])) { //Last sunrise in epoch time
-        elapsedDays = totalDays;
-    } else {
-        //Find where current system time is (relative to) sun up/down cycle
-        while (sysEpoch > getTimeEpoch(&(*sunrises)[elapsedDays])) {
-            elapsedDays++;
-        }
-    }
-    return elapsedDays;
-}
-
-static long getPresentTime() {
-    struct tm* isoTime;
-    struct timeval epochTime;
-    getTime(&isoTime, &epochTime);
-    return (long) epochTime.tv_sec;
 }
 
 /******************************************************************************
@@ -280,16 +90,15 @@ int main (int argc, char** argv) {
     
     uint8_t sysStatus = 0x00;
     int ret = EXIT_SUCCESS;
-    int daemonise = 0;
-    int auto_trig = 1;
+    int daemonise = DAEMON;
+    int auto_trig = AUTO_TRIG;
     int samples_per_file = SAMPLES_PER_FILE;
     int num_buffers = NUM_BUFFS;
     int num_channels = NUM_CHANNELS;
     int duration_days = DURATION_DAYS;
-    
-#if NIGHT_CYCLE
+    double lat = DEFAULT_LATITUDE;
+    double lon = DEFAULT_LONGITUDE;
     long safety_margin = SAFETY_MARGIN;
-#endif
     
     struct circ_buffer buffer_object = {.sample_rate = SAMPLE_RATE, .vbuf = NULL};
     
@@ -298,11 +107,10 @@ int main (int argc, char** argv) {
                                .clk_freq=SAMPLE_RATE
                               };
    
-    struct aio_struct *aio = NULL;
     int ain[8] = {AIN0, AIN1, AIN2, AIN3, AIN4, AIN5, AIN6, AIN7};
-    int ch_code;//8 bit binary; channel on := 1, channel off := 0
+    int ch_code; //8 bit binary; channel on := 1, channel off := 0
     int opt = 0;
-    while ((opt = getopt(argc, argv, "s:c:d:r:b:t:i:m:")) != -1) {
+    while ((opt = getopt(argc, argv, "s:c:d:r:b:t:i:m:l:")) != -1) {
         switch (opt) {
             case 's':
                 samples_per_file = strtoul(optarg, NULL, 10);
@@ -351,115 +159,13 @@ int main (int argc, char** argv) {
     const int channels_per_file = num_channels; //aka Block Size
     chan_mask_t chan_mask = 0x0;
     int *ch_on = malloc(sizeof(int)*channels_per_file);
-    int ch_index = 0;
-    if (ain[0]) {
-        chan_mask |= chan_mask_ain0;
-        ch_on[ch_index++] = 0;
-    }
-    if (ain[1]) {
-        chan_mask |= chan_mask_ain1;
-        ch_on[ch_index++] = 1;    
-    }
-    if (ain[2]) {
-        chan_mask |= chan_mask_ain2;
-        ch_on[ch_index++] = 2;
-    }
-    if (ain[3]) {
-        chan_mask |= chan_mask_ain3;
-        ch_on[ch_index++] = 3;
-    }
-    if (ain[4]) {
-        chan_mask |= chan_mask_ain4;
-        ch_on[ch_index++] = 4;
-    }
-    if (ain[5]) {
-        chan_mask |= chan_mask_ain5;
-        ch_on[ch_index++] = 5;
-    }
-    if (ain[6]) {
-        chan_mask |= chan_mask_ain6;
-        ch_on[ch_index++] = 6;
-    }
-    if (ain[7]) {
-        chan_mask |= chan_mask_ain7;
-        ch_on[ch_index++] = 7;
-    }
+    createChanMask(ain, ch_on, &chan_mask);
     
-    //SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS <= 65536 samples = 2^(16 bits)
     int samples_per_chan = samples_per_file / channels_per_file;
-    int gross_samples = samples_per_file * num_buffers;
-    if(gross_samples > 65536) {
-        fprintf(stderr, "Fatal Error: exceeded 16-bits!\n");
-        fprintf(stderr, "SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS = %d > 65536\n", 
-                gross_samples);
-        return (EXIT_FAILURE);
-    }
-    
-    //Configures all channels even if not enabled and used
-    dt78xx_trig_config_t trig0_cfg;
-    dt78xx_ain_config_t ain0_cfg ={.ain=0, //AIN0
-                                  .gain=1, //Default gain
-                                  .ac_coupling=0, //DC coupling
-                                  .current_on=0, //Current source off
-                                  .differential=0
-                                  }; 
-    dt78xx_trig_config_t trig1_cfg;
-    dt78xx_ain_config_t ain1_cfg ={.ain=1, //AIN1
-                                   .gain=1, //Default gain
-                                   .ac_coupling=0, //DC coupling
-                                   .current_on=0, //Current source off
-                                   .differential=0
-                                  }; 
-    dt78xx_trig_config_t trig2_cfg;
-    dt78xx_ain_config_t ain2_cfg ={.ain=2, //AIN2
-                                   .gain=1, //Default gain
-                                   .ac_coupling=0, //DC coupling
-                                   .current_on=0, //Current source off
-                                   .differential=0
-                                  }; 
-    dt78xx_trig_config_t trig3_cfg;
-    dt78xx_ain_config_t ain3_cfg ={.ain=3, //AIN3
-                                   .gain=1, //Default gain
-                                   .ac_coupling=0, //DC coupling
-                                   .current_on=0, //Current source off
-                                   .differential=0
-                                  }; 
-    dt78xx_trig_config_t trig4_cfg;
-    dt78xx_ain_config_t ain4_cfg ={.ain=4, //AIN4
-                                   .gain=1, //Default gain
-                                   .ac_coupling=0, //DC coupling
-                                   .current_on=0, //Current source off
-                                   .differential=0
-                                  }; 
-    dt78xx_trig_config_t trig5_cfg;
-    dt78xx_ain_config_t ain5_cfg ={.ain=5, //AIN5
-                                   .gain=1, //Default gain
-                                   .ac_coupling=0, //DC coupling
-                                   .current_on=0, //Current source off
-                                   .differential=0
-                                  }; 
-    dt78xx_trig_config_t trig6_cfg;
-    dt78xx_ain_config_t ain6_cfg ={.ain=6, //AIN6
-                                   .gain=1, //Default gain
-                                   .ac_coupling=0, //DC coupling
-                                   .current_on=0, //Current source off
-                                   .differential=0
-                                  }; 
-    dt78xx_trig_config_t trig7_cfg;
-    dt78xx_ain_config_t ain7_cfg ={.ain=7, //AIN7
-                                   .gain=1, //Default gain
-                                   .ac_coupling=0, //DC coupling
-                                   .current_on=0, //Current source off
-                                   .differential=0
-                                  }; 
-    dt78xx_ain_config_t ain_cfg[8] = {ain0_cfg, ain1_cfg, 
-                                      ain2_cfg, ain3_cfg, 
-                                      ain4_cfg, ain5_cfg,
-                                      ain6_cfg, ain7_cfg};
-    dt78xx_trig_config_t trig_cfg_ai[8] = {trig0_cfg, trig1_cfg, 
-                                           trig2_cfg, trig3_cfg, 
-                                           trig4_cfg, trig5_cfg,
-                                           trig6_cfg, trig7_cfg};
+    checkFatal(samples_per_file * num_buffers);
+   
+    dt78xx_ain_config_t ain_cfg[8] = {};
+    configChan(ain_cfg);
     
     //Missing AIFF file identifier
     if (optind >= argc) {
@@ -509,6 +215,9 @@ int main (int argc, char** argv) {
     }
     buffer_object.sample_rate = clk.clk_freq; //Actual rate
        
+    dt78xx_trig_config_t trig_cfg_ai[8] = {};
+    initTrig(trig_cfg_ai);
+    
     //Configure for software trigger for all enabled channels
     fprintf(stdout, "Configuring trigger...\n");
     int i;
@@ -547,7 +256,7 @@ int main (int argc, char** argv) {
     
     //Create and initialise AIO structures
     fprintf(stdout, "Initialising...\n");
-    aio = aio_create(fd_stream, 0, NULL, NULL);
+    struct aio_struct *aio = aio_create(fd_stream, 0, NULL, NULL);
     if (!aio) {
         fprintf(stderr, "ERROR aio_create\n");
         goto _exit;
@@ -573,46 +282,6 @@ int main (int argc, char** argv) {
         fprintf(stderr, "ERROR buffer_object.vbuf\n");
         goto _exit;
     }
-
-#if NIGHT_CYCLE    
-    FILE *sunUpDown;
-    sunUpDown = fopen(PATH_TO_SUN_CYCLE, "r");
-    if (sunUpDown == NULL) {
-        fprintf(stderr, "ERROR cannot open sun up and down cycle .txt file\n");
-        goto _exit;
-    }
-    
-    int elapsed_days = 0;
-    struct tm *sunsets = malloc(sizeof(struct tm)*duration_days);
-    struct tm *sunrises = malloc(sizeof(struct tm)*duration_days);
-    char line_sunset[26];
-    char line_sunrise[26];
-    for (elapsed_days = 0; elapsed_days < duration_days; elapsed_days++) {
-        if (fscanf(sunUpDown, "%s", line_sunset) != 1) { // sunset 
-            if (elapsed_days == 0) {
-                fprintf(stderr, "ERROR insufficient number of sunsets\n");
-                goto _exit;
-            }
-            fprintf(stderr, "ERROR insufficient number of sunsets (< %d); "
-                    "using last day's sunset time\n", duration_days);
-            sunsets[elapsed_days] = sunsets[elapsed_days - 1];
-        } else {
-            getSunTime(&(sunsets[elapsed_days]), line_sunset);   
-        }
-        if (fscanf(sunUpDown, "%s", line_sunrise) != 1) { // sunrise 
-            if (elapsed_days == 0) {
-                fprintf(stderr, "ERROR insufficient number of sunrises\n");
-                goto _exit;
-            }            
-            fprintf(stderr, "ERROR insufficient number of sunrises (< %d); "
-                    "using last day's sunrise time\n", duration_days);
-            sunrises[elapsed_days] = sunrises[elapsed_days - 1];
-        } else {
-            getSunTime(&(sunrises[elapsed_days]), line_sunrise); 
-        }
-    }
-    elapsed_days = findElapsedDays(&sunsets, &sunrises, duration_days);
-#endif
     
     //Wait for user input to start or abort
     fprintf(stdout,"Press s to start, any other key to quit\n");
@@ -624,24 +293,35 @@ int main (int argc, char** argv) {
         goto _exit;
     }
     
+    //Calculates sunset (sunsclipse) and sunrise (sunsight) times based on:
+    //(1) Date and (2) Latitude and Longitude coordinates
+    long *sunsets = malloc(sizeof(long)*duration_days);
+    long *sunrises = malloc(sizeof(long)*duration_days);
+    calcSunUpDown(sunsets, sunrises, duration_days, safety_margin, lon, lat, NIGHT_CYCLE);
+    
+    
+    int elapsed_days = 0; //Resets counter
+    
     ret = 0;
     int fileNum = 0; //Diagnostic/debugging file counter
     
     //Infinite loop until aborted by ctrl-C
-    while (!g_quit) {
-#if NIGHT_CYCLE
+    while (!g_quit && duration_days > elapsed_days) {
         long present = getPresentTime();
-        long sunset = getTimeEpoch(&sunsets[elapsed_days]) - safety_margin;
-        long sunrise = getTimeEpoch(&sunrises[elapsed_days]) + safety_margin;
+        long sunset = sunsets[elapsed_days];
+        long sunrise = sunrises[elapsed_days];
         int night = 0;
 
         //If after dusk and before dawn (entering night)
-        while (present < sunrise && present >= sunset && !g_quit) {
-            night = 1;
-#endif            
+        while (!g_quit && (present < sunrise && present >= sunset)) {           
+            if (g_quit) {
+                goto _exit;
+            } else {
+                night = 1;
+            }
             //Gets time of first sample recording for timestamp
             char filePath[LEN];
-            timestamp(filePath, argv);
+            timestamp(filePath, argv, PATH_TO_STORAGE);
 
             //Submit the buffers
             fprintf(stdout, "\nCommencing buffer...\n");
@@ -690,7 +370,12 @@ int main (int argc, char** argv) {
             aio_stop(aio);
 
              //Write acquired data to the specified .aiff output file
-            AIFF_Ref file;
+            AIFF_Ref file = malloc(sizeof(AIFF_Ref));
+
+            char sun_times[LEN];
+            sprintf(sun_times, "%ld-%ld", sunset, sunrise);
+            AIFF_SetAttribute(file, AIFF_ANNO, sun_times);
+
             file = AIFF_OpenFile(filePath, F_WRONLY);
             if (file) {
                 fileNum += 1;
@@ -709,8 +394,10 @@ int main (int argc, char** argv) {
                 goto _exit; 
             }
 
-            int start, writ, end;
-            start = AIFF_StartWritingSamples(file);
+            if (!AIFF_StartWritingSamples(file)) {
+                fprintf(stderr, "ERROR starting writing .aiff file");
+                goto _exit;
+            }
 
             //Convert the raw values to voltage
             for (buff_done=0; buff_done < num_buffers; ++buff_done) { 
@@ -750,18 +437,21 @@ int main (int argc, char** argv) {
                             // <---------------------> <--------------------->  ...
                             //     Sample frame 1          Sample frame 2  
 
-                            writ = AIFF_WriteSamples32Bit(file, (int32_t*) &rptr, 1);
+                            if (!AIFF_WriteSamples32Bit(file, (int32_t*) &rptr, 1)) {
+                                fprintf(stderr, "ERROR writing .aiff file");
+                                goto _exit;
+                            }
                         }
                     }
                 }
             }
-            end = AIFF_EndWritingSamples(file);
-
-            //Checks for successful file writing
-            if (start && writ && end) {
-                fprintf(stderr, "%do .aiff file written\n", fileNum);
+            if (!AIFF_EndWritingSamples(file)) {
+                fprintf(stderr, "ERROR ending writing .aiff file");
+                goto _exit;
+            } else {
+                fprintf(stdout, "%do .aiff file written\n", fileNum);
             }
-
+            
             //Stops writing
             if (AIFF_CloseFile(file)) {
                 fprintf(stdout, "Closed file...\n");
@@ -773,12 +463,9 @@ int main (int argc, char** argv) {
                 goto _exit;
             }
             
-#if NIGHT_CYCLE            
             present = getPresentTime(); //Updates time for while loop check
         }
-        
         if (night) elapsed_days++; //If after dawn (leaving night), 1 day elapsed
-#endif
     }
 
 //Exit protocol and procedure    
