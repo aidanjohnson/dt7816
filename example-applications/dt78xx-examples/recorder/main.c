@@ -377,11 +377,7 @@ int main (int argc, char** argv) {
 
              //Write acquired data to the specified .aiff output file
             AIFF_Ref file = malloc(sizeof(AIFF_Ref));
-
-            char sun_times[LEN];
-            sprintf(sun_times, "%ld-%ld", sunset, sunrise);
-            AIFF_SetAttribute(file, AIFF_ANNO, sun_times);
-
+            
             file = AIFF_OpenFile(file_path, F_WRONLY);
             if (file) {
                 file_num += 1;
@@ -394,6 +390,12 @@ int main (int argc, char** argv) {
                     AIFF_CloseFile(file);
                     fprintf(stderr, "ERROR audio_format_set");
                     goto _exit;
+                }
+                
+                char sun_times[LEN];
+                sprintf(sun_times, "%ld-%ld", sunset, sunrise);
+                if (!AIFF_SetAttribute(file, AIFF_NAME, sun_times)) {
+                    fprintf(stderr, "ERROR failed to set metadata: %s\n", sun_times);
                 }
             } else {
                 fprintf(stderr, "ERROR audio_file_open");

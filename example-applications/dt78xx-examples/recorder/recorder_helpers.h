@@ -75,7 +75,7 @@ extern "C" {
 #define SAMPLE_RATE_HZ      400000.0
 #define DURATION_DAYS       21 //Default number of days of sampling
 #define SAFETY_MARGIN       3600 //Buffers in seconds before sunset and after sunrise
-#define NIGHT_CYCLE         1 //Cycles recording on at night and off at day
+#define NIGHT_CYCLE         0 //Cycles recording on at night and off at day
 #define DEFAULT_LATITUDE    47.655083 //Latitude (N := +, S := -)
 #define DEFAULT_LONGITUDE   -122.293194 //Longitude (E := +, W := -)
     
