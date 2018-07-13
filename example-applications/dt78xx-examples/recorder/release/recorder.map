@@ -377,7 +377,7 @@ LOAD /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/u
                 0x0000f1f8                rev180
                 0x0000f240                GMST0
  .text          0x0000f298      0x818 release/recorder_helpers.o
-                0x0000f298                led_indicators
+                0x0000f298                ledIndicators
                 0x0000f2c8                getTime
                 0x0000f2f0                getTimeEpoch
                 0x0000f338                timestamp

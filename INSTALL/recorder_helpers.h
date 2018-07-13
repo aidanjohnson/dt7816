@@ -103,14 +103,14 @@ extern "C" {
  /*****************************************************************************
  * Helper functions for recorder (DT7816)
  */
-    
-void led_indicators(uint8_t status, int streaming);
+        
+void ledIndicators(uint8_t status, int streaming);
 
-void getTime(struct tm **curTime, struct timeval *clockTime);
+void getTime(struct tm **pres_time, struct timeval *clock_time);
 
 long getTimeEpoch(long year, int month, int day, int hour, int minute, int second);
 
-void timestamp(char *filePath, char **argv, char *path_to_storage);
+void timestamp(char *file_path, char **argv, char *path_to_storage);
 
 long getPresentTime();
 

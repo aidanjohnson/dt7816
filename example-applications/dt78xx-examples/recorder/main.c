@@ -96,7 +96,7 @@ static void sigint_handler(int i) {
 
 int main (int argc, char** argv) {
     
-    uint8_t sysStatus = 0x00;
+    uint8_t sys_status = 0x00;
     int ret = EXIT_SUCCESS;
     int daemonise = DAEMON;
     int auto_trig = AUTO_TRIG;
@@ -307,11 +307,9 @@ int main (int argc, char** argv) {
     long *sunrises = malloc(sizeof(long)*duration_days);
     calcSunUpDown(sunsets, sunrises, duration_days, safety_margin, lon, lat, NIGHT_CYCLE);
     
-    
     int elapsed_days = 0; //Resets counter
-    
     ret = 0;
-    int fileNum = 0; //Diagnostic/debugging file counter
+    int file_num = 0; //Diagnostic/debugging file counter
     
     //Infinite loop until aborted by ctrl-C
     while (!g_quit && duration_days > elapsed_days) {
@@ -328,8 +326,8 @@ int main (int argc, char** argv) {
                 night = 1;
             }
             //Gets time of first sample recording for timestamp
-            char filePath[LEN];
-            timestamp(filePath, argv, PATH_TO_STORAGE);
+            char file_path[LEN];
+            timestamp(file_path, argv, PATH_TO_STORAGE);
 
             //Submit the buffers
             fprintf(stdout, "\nCommencing buffer...\n");
@@ -364,13 +362,13 @@ int main (int argc, char** argv) {
             }
 
             //Gets current active channels, indicating status on LEDs
-            chan_mask_t activeCH;
-            if (ioctl(fd_stream, IOCTL_CHAN_MASK_GET, &activeCH)) {
+            chan_mask_t active_chan;
+            if (ioctl(fd_stream, IOCTL_CHAN_MASK_GET, &active_chan)) {
                 perror("IOCTL_CHAN_MASK_GET");    
                 goto _exit;
             }
-            sysStatus = activeCH;
-            led_indicators(sysStatus, fd_stream);
+            sys_status = active_chan;
+            ledIndicators(sys_status, fd_stream);
 
             //Stop streaming after buffer completion
             fprintf(stdout, "Completing...\n");
@@ -384,9 +382,9 @@ int main (int argc, char** argv) {
             sprintf(sun_times, "%ld-%ld", sunset, sunrise);
             AIFF_SetAttribute(file, AIFF_ANNO, sun_times);
 
-            file = AIFF_OpenFile(filePath, F_WRONLY);
+            file = AIFF_OpenFile(file_path, F_WRONLY);
             if (file) {
-                fileNum += 1;
+                file_num += 1;
                 fprintf(stdout, "Opened .aiff file...\n");
 
                 //Sets formatting
@@ -457,15 +455,15 @@ int main (int argc, char** argv) {
                 fprintf(stderr, "ERROR ending writing .aiff file");
                 goto _exit;
             } else {
-                fprintf(stdout, "%do .aiff file written\n", fileNum);
+                fprintf(stdout, "%do .aiff file written\n", file_num);
             }
             
             //Stops writing
             if (AIFF_CloseFile(file)) {
                 fprintf(stdout, "Closed file...\n");
-                sysStatus = 0x00; //All off
-                led_indicators(sysStatus, fd_stream);
-                fprintf(stdout, "File at %s\n", filePath);
+                sys_status = 0x00; //All off
+                ledIndicators(sys_status, fd_stream);
+                fprintf(stdout, "File at %s\n", file_path);
             } else {
                 fprintf(stderr, "ERROR audio_file_close");
                 goto _exit;
@@ -478,8 +476,8 @@ int main (int argc, char** argv) {
 
 //Exit protocol and procedure    
 _exit :
-    sysStatus = 0x00;
-    led_indicators(sysStatus, fd_stream);
+    sys_status = 0x00;
+    ledIndicators(sys_status, fd_stream);
     aio_stop(aio);
     aio_destroy(aio);
     if (fd_ain > 0)

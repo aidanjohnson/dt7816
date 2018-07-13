@@ -29,8 +29,8 @@
  /*****************************************************************************
  * Helper functions for recorder (DT7816)
  */
-    
-void led_indicators(uint8_t status, int streaming) {
+
+void ledIndicators(uint8_t status, int streaming) {
     // Updates debug LEDs (8 in total), LED ON (1) := CHANNEL is READING/WRITING
     // Viewing the DT7816 such that the debug pin row is above the user LEDs:
     //  ______ ______ ______ ______ ______ ______ ______ ______ ______ _______
@@ -67,9 +67,9 @@ void led_indicators(uint8_t status, int streaming) {
     ioctl(streaming, IOCTL_LED_SET, &led);    
 }
 
-void getTime(struct tm **curTime, struct timeval *clockTime) {
-    gettimeofday(&(*clockTime), NULL); //Gets current time
-    *curTime = gmtime(&(*clockTime).tv_sec); // UTC aka GMT in ISO 8601: Zulu
+void getTime(struct tm **pres_time, struct timeval *clock_time) {
+    gettimeofday(clock_time, NULL); //Gets current time
+    *pres_time = gmtime(&(*clock_time).tv_sec); // UTC aka GMT in ISO 8601: Zulu
 }
 
 long getTimeEpoch(long year, int month, int day, int hour, int minute, int second) {
@@ -84,32 +84,32 @@ long getTimeEpoch(long year, int month, int day, int hour, int minute, int secon
     return (long) timegm(&(*time));
 }
 
-void timestamp(char *filePath, char **argv, char *path_to_storage) {
+void timestamp(char *file_path, char **argv, char *path_to_storage) {
     struct timeval tv;
     struct tm *t_iso; //Time in accordance to ISO 8601
     getTime(&t_iso, &tv); //Gets current time in UTC (aka GMT or Zulu) 
      //Time corresponding to first sample (see start of while loop)
-    const char *outputPath = path_to_storage; //A set path to local storage
+    const char *output_path = path_to_storage; //A set path to local storage
     const char *ID; //Identification prefix
     ID = argv[optind]; //Physical location/identity: identifier
-    char fileTime[LEN];
+    char file_time[LEN];
 
     //YYYY-MM-DD HH:mm:ss:uuuuuu (u=microseconds)
-    sprintf(fileTime, "_%04d%02d%02dT%02d%02d%02d%liZ.aiff", 
+    sprintf(file_time, "_%04d%02d%02dT%02d%02d%02d%liZ.aiff", 
             t_iso->tm_year+1900, t_iso->tm_mon + 1, t_iso->tm_mday, 
             t_iso->tm_hour, t_iso->tm_min, t_iso->tm_sec, (long) tv.tv_usec); 
-    char fileName[LEN];
-    strcpy(fileName, ID); //Identify
-    strcat(fileName, fileTime); //Timestamped
-    strcpy(filePath, outputPath); //Directory path
-    strcat(filePath, fileName); //Full file path: concatenates filename
+    char file_name[LEN];
+    strcpy(file_name, ID); //Identify
+    strcat(file_name, file_time); //Timestamped
+    strcpy(file_path, output_path); //Directory path
+    strcat(file_path, file_name); //Full file path: concatenates filename
 }
 
 long getPresentTime() {
-    struct tm* isoTime;
-    struct timeval epochTime;
-    getTime(&isoTime, &epochTime);
-    return (long) epochTime.tv_sec;
+    struct tm* iso_time;
+    struct timeval epoch_time;
+    getTime(&iso_time, &epoch_time);
+    return (long) epoch_time.tv_sec;
 }
 
 int checkFatal(int gross_samples) {
