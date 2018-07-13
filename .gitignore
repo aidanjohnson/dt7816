@@ -23,6 +23,7 @@
 *.tar.gz
 !INSTALL/INSTALL.tar.gz
 !INSTALL/libaiff-5.0-release.tar.gz
+!INSTALL/recorder_application.zip
 *.tar.bz2
 *.ubi
 
