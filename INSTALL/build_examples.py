@@ -3,14 +3,14 @@ from subprocess import call
 import os
 
 path_examples = "/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples"
-fftw_path = "/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/fftw-3.3.4"
+fftw_path = "/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/fftw-3.3.8"
 dirs = ['aio-in', 'aio-out', 'aout-single', 'clk-gen', 'digio', 'dt7816-calibration', 'event-counter', 'fir-filter', 'function-gen', 'sig-analyzer', 'usb-loopback', 'web-server']
 os.chdir(path_examples)
 
-call(["mkdir", "bat-array"])
-call(["mv", "~/Downloads/main.c", "bat-array"])
-call(["mv", "~/Downloads/Makefile", "bat-array"])
-call(["mv", "~/Downloads/README.txt", "bat-array"])
+call(["mkdir", "recorder"])
+call(["mv", "~/Downloads/main.c", "recorder"])
+call(["mv", "~/Downloads/Makefile", "recorder"])
+call(["mv", "~/Downloads/README.txt", "recorder"])
 
 for filename in os.listdir(path_examples):
 	if filename in dirs:
