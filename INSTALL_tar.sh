@@ -2,6 +2,4 @@
 
 cd /opt/ti-sdk-am335x-evm-07.00.00.00/
 sudo cp /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/* /opt/ti-sdk-am335x-evm-07.00.00.00/INSTALL/
-cd INSTALL
-sudo tar --exclude=INSTALL.tar.gz -czvf INSTALL.tar.gz *
-#error Board not supported
+sudo tar --exclude=INSTALL.tar.gz -czvf INSTALL/INSTALL.tar.gz INSTALL
