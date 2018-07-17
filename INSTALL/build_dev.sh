@@ -5,6 +5,7 @@ sudo chmod +x ti-sdk-am335x-evm-07.00.00.00-Linux-x86-Install.bin
 sudo ./ti-sdk-am335x-evm-07.00.00.00-Linux-x86-Install.bin
 
 sudo apt-get install libusb-1.0-0-dev
+sudo apt-get install gcc-multilib
 sudo apt-get install build-essential gcc make linux-headers-$(uname -r)
 
 sudo chmod +x DT78XX-setup-3.2.bz2.run
