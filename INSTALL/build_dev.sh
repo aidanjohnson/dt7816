@@ -10,8 +10,8 @@ sudo chmod +x DT78XX-setup-3.2.bz2.run
 sudo ./DT78XX-setup-3.2.bz2.run --target /opt/ti-sdk-am335x-evm-07.00.00.00/
 
 cd /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications
-tar -xzvf ~/Downloads/fftw-3.3.4.tar.gz
-cd fftw-3.3.4/
+tar -xzvf ~/Downloads/fftw-3.3.8.tar.gz
+cd fftw-3.3.8/
 sudo ./configure --with-slow-timer --host=arm-linux-gnueabi --enable-single --enable-neon CFLAGS="-march=armv7-a -marm -mthumb-interwork -mfloat-abi=hard -mfpu=neon -mtune=cortex-a8 -O4 -Wall" CC="/opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-gcc"
 sudo make 
 
