@@ -17,17 +17,6 @@ cd fftw-3.3.8/
 sudo ./configure --with-slow-timer --host=arm-linux-gnueabi --enable-single --enable-neon CFLAGS="-march=armv7-a -marm -mthumb-interwork -mfloat-abi=hard -mfpu=neon -mtune=cortex-a8 -O4 -Wall" CC="/opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-gcc"
 sudo make 
 
-cd ~/Downloads
-sudo cp build_examples.py /opt/ti-sdk-am335x-evm-07.00.00.00/
-sudo cp -r nbproject /opt/ti-sdk-am335x-evm-07.00.00.00/
-cd /opt/ti-sdk-am335x-evm-07.00.00.00/
-sudo chmod +x build_examples.py
-sudo ./build_examples.py
-
-sudo make -f dt78xx.mak linux
-sudo make -f dt78xx.mak dtmods_clean
-sudo make -f dt78xx.mak dtmods
-
 sudo ln -sf /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/extra-drivers/dt78xx/dt78xx_ioctl.h /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/common
 sudo ln -sf /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/include/asm-generic /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/include/asm
 sudo ln -sf /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/include/acpi/processor.h /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/include/asm
@@ -58,6 +47,19 @@ sudo ln -sf /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/cortexa8hf-
 sudo ln -s /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/lib/gcc/arm-linux-gnueabihf/4.7.3/include-fixed/syslimits.h /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/include/linux/
 sudo ln -sf /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/lib/gcc/arm-linux-gnueabihf/4.7.3/include/stdbool.h /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/include/linux/
 
+
+cd ~/Downloads
+sudo cp build_examples.py /opt/ti-sdk-am335x-evm-07.00.00.00/
+sudo cp -r nbproject /opt/ti-sdk-am335x-evm-07.00.00.00/
+cd /opt/ti-sdk-am335x-evm-07.00.00.00/
+sudo chmod +x build_examples.py
+sudo ./build_examples.py
+
+cd /opt/ti-sdk-am335x-evm-07.00.00
+sudo make -f dt78xx.mak linux
+sudo make -f dt78xx.mak dtmods_clean
+sudo make -f dt78xx.mak dtmods
+
 sudo mv ~/Downloads/libaiff-5.0-release.tar.gz /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications
 cd /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications
 sudo tar -xzvf libaiff-5.0-release.tar.gz
@@ -66,3 +68,7 @@ sudo ./configure --prefix=/opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux
 sudo make
 sudo make install
 sudo ln -sf /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/libaiff-5.0/libaiff.* /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/lib/
+
+sudo cp opt/ti-sdk-am335x-evm-07.00.00.00/board-support/extra-drivers/dt78xx/dt78xx.ko /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/cortexa8hf-vfp-neon-3.8-oe-linux-gnueabi/lib/modules/3.12.10-ti2013.12.01/extra
+sudo cp opt/ti-sdk-am335x-evm-07.00.00.00/board-support/extra-drivers/dt78xx/dt7816/dt7816.ko /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/cortexa8hf-vfp-neon-3.8-oe-linux-gnueabi/lib/modules/3.12.10-ti2013.12.01/extra
+sudo cp opt/ti-sdk-am335x-evm-07.00.00.00/board-support/extra-drivers/dt78xx-usb-gadget/g_dt78xx.k /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/cortexa8hf-vfp-neon-3.8-oe-linux-gnueabi/lib/modules/3.12.10-ti2013.12.01/extra
