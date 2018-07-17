@@ -8,9 +8,9 @@ dirs = ['aio-in', 'aio-out', 'aout-single', 'clk-gen', 'digio', 'dt7816-calibrat
 os.chdir(path_examples)
 
 call(["mkdir", "recorder"])
-call(["mv", "~/Downloads/main.c", "recorder"])
-call(["mv", "~/Downloads/Makefile", "recorder"])
-call(["mv", "~/Downloads/README.txt", "recorder"])
+call(["mv", "~/Downloads/main.c", "/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder"])
+call(["mv", "~/Downloads/Makefile", "/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder"])
+call(["mv", "~/Downloads/README.txt", "/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder)
 
 for filename in os.listdir(path_examples):
 	if filename in dirs:
