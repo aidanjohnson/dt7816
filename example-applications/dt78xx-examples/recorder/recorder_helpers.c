@@ -37,7 +37,7 @@ void ledIndicators(uint8_t status, int streaming) {
     // | PIN1 | PIN2 | PIN3 | PIN4 | PIN5 | PIN6 | PIN7 | PIN8 | PIN9 | PIN10 |
     // ***** LED7 ** LED6 ** LED5 ** LED4 ** LED3 ** LED2 ** LED1 ** LED0 *****
     //
-    // LED0 := AIN0, LED1 := AIN1, LED2 := AIN2, LED3 := AIN3,
+    // LED0 := AIN0recorder, LED1 := AIN1, LED2 := AIN2, LED3 := AIN3,
     // LED4 := AIN4, LED5 := AIN5, LED6 := AIN6, LED7 := AIN7
     //
     // where the analog input channels have the following coding returned by
@@ -286,5 +286,54 @@ void calcSunUpDown(long *sunsets, long *sunrises, int duration_days,
         }
 //        fprintf(stdout, "%ld; %ld; day %d; sunset %ld; sunrise %ld\n", epoch_present.tv_sec, epoch_day, elapsed_days, sunsets[elapsed_days], sunrises[elapsed_days]);
     }
+}
+
+int writeBuffer(AIFF_Ref file, struct circ_buffer buffer_object, int channels_per_file, int num_buffers, int* ch_on, void** buf_array, dt78xx_ain_config_t* ain_cfg) {
+    int success = 0;
+    int buff_done;
+    for (buff_done=0; buff_done < num_buffers; ++buff_done) { 
+        fprintf(stdout, "Reading buffer and writing file...\n");
+
+        //The order of the data in the input (AIN) buffer is as follows,
+        //assuming that all channels are enabled in the input stream:
+        //Analog input channels 0 through 7. Each analog input sample is a
+        //16-bit, two’s complement value.
+        int16_t *raw = buf_array[buff_done];
+
+        int queue, ch;
+        //Circular buffer write and read pointers lead and follow
+        for (queue = 0; queue < buffer_object.num_samples + 1; queue++) {  
+            for (ch = 0; ch < channels_per_file; ch++, ++raw) {
+                //Decouples input from output with circular buffer
+                int ain_i = ch_on[ch];
+                //Write pointer leads read pointer by channels_per_file
+                if (queue < buffer_object.num_samples) { 
+                    float sample_volt = raw2volts(*raw, ain_cfg[ain_i].gain);
+                    float* wptr = &sample_volt; //write pointer for input
+                    buffer_object.vbuf->add(buffer_object.vbuf, wptr);
+                }
+                //Read pointer lags write pointer by channels_per_file
+                if (queue > 0) {
+                    float* rptr = NULL; //read pointer for writing to file
+                    buffer_object.vbuf->pull(buffer_object.vbuf, &rptr);
+
+                    //Simultaneously analog input (channel) samples put 
+                    //inline and sequentially for AIFF recording like so:
+                    // ___________ ___________ ___________ ___________
+                    //|           |           |           |           |
+                    //| Channel 1 | Channel 2 | Channel 1 | Channel 2 | ...
+                    //|___________|___________|___________|___________|
+                    // <---------> <---------> <---------> <--------->  ...
+                    //   Segment     Segment     Segment     Segment
+                    // <---------------------> <--------------------->  ...
+                    //     Sample frame 1          Sample frame 2  
+
+                    success = AIFF_WriteSamples32Bit(file, (int32_t*) &rptr, 1);
+                    if (!success) break;
+                }
+            }
+        }
+    }
+    return success;
 }
 

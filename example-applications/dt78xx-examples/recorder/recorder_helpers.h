@@ -75,7 +75,7 @@ extern "C" {
 #define SAMPLE_RATE_HZ      400000.0
 #define DURATION_DAYS       21 //Default number of days of sampling
 #define SAFETY_MARGIN       3600 //Buffers in seconds before sunset and after sunrise
-#define NIGHT_CYCLE         0 //Cycles recording on at night and off at day
+#define NIGHT_CYCLE         1 //Cycles recording on at night and off at day
 #define DEFAULT_LATITUDE    47.655083 //Latitude (N := +, S := -)
 #define DEFAULT_LONGITUDE   -122.293194 //Longitude (E := +, W := -)
     
@@ -99,6 +99,16 @@ extern "C" {
 #define TRIG_LEVEL_V        0.0
 #define DEFAULT_GAIN        1 // gain 1 => +/- 10 V; must be 1 for DT7816
 #define LIBAIFF_NOCOMPAT    1 // do not use LibAiff 2 API compatibility
+
+/*****************************************************************************
+ * Circular (ring) buffer (queue) data type
+ */
+
+struct circ_buffer {
+    float sample_rate;  
+    int32_t num_samples;
+    RingBuf *vbuf;  //buffer with raw values converted to voltage
+};
 
  /*****************************************************************************
  * Helper functions for recorder (DT7816)
@@ -124,6 +134,11 @@ void initTrig(dt78xx_trig_config_t trig_cfg_ai[]);
 
 void calcSunUpDown(long *sunsets, long *sunrises, int duration_days, 
                    long safety_margin, double lon, double lat, int night_cycle);
+
+int writeBuffer(AIFF_Ref file, struct circ_buffer buffer_object, 
+                int channels_per_file, int num_buffers, int* ch_on, 
+                void** buf_array, dt78xx_ain_config_t* ain_cfg);
+
 
 #ifdef __cplusplus
 }

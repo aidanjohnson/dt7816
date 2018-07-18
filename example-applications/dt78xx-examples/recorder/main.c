@@ -40,16 +40,6 @@
 static int g_quit = 0; //Force exit or quit (ctrl+c)
 
 /*****************************************************************************
- * Circular (ring) buffer (queue) data type
- */
-
-struct circ_buffer {
-    float sample_rate;  
-    int32_t num_samples;
-    RingBuf *vbuf;  //buffer with raw values converted to voltage
-};
-
-/*****************************************************************************
  * Command line arguments with help
  */
 
@@ -377,7 +367,11 @@ int main (int argc, char** argv) {
 
              //Write acquired data to the specified .aiff output file
             AIFF_Ref file = malloc(sizeof(AIFF_Ref));
-            
+
+            char sun_times[LEN];
+            sprintf(sun_times, "%ld-%ld", sunset, sunrise);
+            AIFF_SetAttribute(file, AIFF_ANNO, sun_times);
+
             file = AIFF_OpenFile(file_path, F_WRONLY);
             if (file) {
                 file_num += 1;
@@ -391,12 +385,6 @@ int main (int argc, char** argv) {
                     fprintf(stderr, "ERROR audio_format_set");
                     goto _exit;
                 }
-                
-                char sun_times[LEN];
-                sprintf(sun_times, "%ld-%ld", sunset, sunrise);
-                if (!AIFF_SetAttribute(file, AIFF_NAME, sun_times)) {
-                    fprintf(stderr, "ERROR failed to set metadata: %s\n", sun_times);
-                }
             } else {
                 fprintf(stderr, "ERROR audio_file_open");
                 goto _exit; 
@@ -406,53 +394,14 @@ int main (int argc, char** argv) {
                 fprintf(stderr, "ERROR starting writing .aiff file");
                 goto _exit;
             }
-
-            //Convert the raw values to voltage
-            for (buff_done=0; buff_done < num_buffers; ++buff_done) { 
-                fprintf(stdout, "Reading buffer and writing file...\n");
-
-                //The order of the data in the input (AIN) buffer is as follows,
-                //assuming that all channels are enabled in the input stream:
-                //Analog input channels 0 through 7. Each analog input sample is a
-                //16-bit, two’s complement value.
-                int16_t *raw = buf_array[buff_done];
-
-                int queue, ch;
-                //Circular buffer write and read pointers lead and follow
-                for (queue = 0; queue < buffer_object.num_samples + 1; queue++) {  
-                    for (ch = 0; ch < channels_per_file; ch++, ++raw) {
-                        //Decouples input from output with circular buffer
-                        int ain_i = ch_on[ch];
-                        //Write pointer leads read pointer by channels_per_file
-                        if (queue < buffer_object.num_samples) { 
-                            float sample_volt = raw2volts(*raw, ain_cfg[ain_i].gain);
-                            float* wptr = &sample_volt; //write pointer for input
-                            buffer_object.vbuf->add(buffer_object.vbuf, wptr);
-                        }
-                        //Read pointer lags write pointer by channels_per_file
-                        if (queue > 0) {
-                            float* rptr = NULL; //read pointer for writing to file
-                            buffer_object.vbuf->pull(buffer_object.vbuf, &rptr);
-
-                            //Simultaneously analog input (channel) samples put 
-                            //inline and sequentially for AIFF recording like so:
-                            // ___________ ___________ ___________ ___________
-                            //|           |           |           |           |
-                            //| Channel 1 | Channel 2 | Channel 1 | Channel 2 | ...
-                            //|___________|___________|___________|___________|
-                            // <---------> <---------> <---------> <--------->  ...
-                            //   Segment     Segment     Segment     Segment
-                            // <---------------------> <--------------------->  ...
-                            //     Sample frame 1          Sample frame 2  
-
-                            if (!AIFF_WriteSamples32Bit(file, (int32_t*) &rptr, 1)) {
-                                fprintf(stderr, "ERROR writing .aiff file");
-                                goto _exit;
-                            }
-                        }
-                    }
-                }
+            
+            // Writes buffer to intermediate circular buffer to be written to file
+            if (!writeBuffer(file, buffer_object, channels_per_file, 
+                             num_buffers, ch_on, buf_array, ain_cfg)) {
+                fprintf(stderr, "ERROR writing .aiff file");
+                goto _exit;
             }
+
             if (!AIFF_EndWritingSamples(file)) {
                 fprintf(stderr, "ERROR ending writing .aiff file");
                 goto _exit;
