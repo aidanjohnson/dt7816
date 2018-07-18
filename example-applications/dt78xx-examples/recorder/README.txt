@@ -11,7 +11,7 @@ saved to a predefined storage path. All options below are not required, only
 the file identifier is required. The files are saved to 
 <path>/<prefix>_<YYYY-DD-MMTHHmmssuuuuuuZ>.aiff
 
-Usage        : ./release/bat-array <identifier prefix> [options]
+Usage        : ./release/recorder <identifier prefix> [options]
 
 Required     : a file or location identifier prefix, such as NORTH or 1.
 
@@ -28,7 +28,6 @@ Options
 -b|--buffers : number of buffers per file written, defaults 1.
 -d|--dur     : fixed duration of sampling period in days at night as determined
                by sunset and sunrise times; defaults 7 days.
--r|--run     : runs this application as a daemon process, defaults off.
 -t|--trig    : when the voltage on either AIN crosses 0.0 V rising 
                (threshold) acquisition is triggered. By default, acquisition
                is triggered when you start the analog input operation using 

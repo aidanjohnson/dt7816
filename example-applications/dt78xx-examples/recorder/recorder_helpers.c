@@ -30,50 +30,19 @@
  * Helper functions for recorder (DT7816)
  */
 
-void ledIndicators(uint8_t status, int streaming) {
-    // Updates debug LEDs (8 in total), LED ON (1) := CHANNEL is READING/WRITING
-    // Viewing the DT7816 such that the debug pin row is above the user LEDs:
-    //  ______ ______ ______ ______ ______ ______ ______ ______ ______ _______
-    // | PIN1 | PIN2 | PIN3 | PIN4 | PIN5 | PIN6 | PIN7 | PIN8 | PIN9 | PIN10 |
-    // ***** LED7 ** LED6 ** LED5 ** LED4 ** LED3 ** LED2 ** LED1 ** LED0 *****
-    //
-    // LED0 := AIN0recorder, LED1 := AIN1, LED2 := AIN2, LED3 := AIN3,
-    // LED4 := AIN4, LED5 := AIN5, LED6 := AIN6, LED7 := AIN7
-    //
-    // where the analog input channels have the following coding returned by
-    // IOCTL_CHAN_MASK_GET:
-    //
-    // AIN0 = 0x01, AIN1 = 0x02, AIN2 = 0x04, AIN3 = 0x08
-    // AIN4 = 0x10, AIN5 = 0x20, AIN6 = 0x40, AIN7 = 0x80
-    //
-    // and for input header pins (J16):
-    //  ___________________________________________________
-    // ||  2 |  4 |  6 |  8 | 10 | 12 | 14 | 16 | 18 | 20 ||
-    // ||  1 |  3 |  5 |  7 |  9 | 11 | 13 | 15 | 17 | 19 ||7; //Defaults to 7 days
-    // 
-    // Analog Inputs (AINs):
-    //
-    // PIN5 := AIN0, PIN7 := AIN1, PIN9 := AIN2, PIN11 := AIN3 
-    // PIN13 := AIN4, PIN15 := AIN5, PIN17 := AIN6, PIN19 := AIN7
-    //
-    // Analog Grounds (AGRDs):
-    //
-    // PIN6 := AGRD0, PIN8 := AGRD1, PIN10 := AGRD2, PIN12 := AGRD3 
-    // PIN14 := AGRD4, PIN16 := AGRD5, PIN18 := AGRD6, PIN20 := AGRD7
-    
+void ledIndicators(uint8_t status, int streaming) {   
     dt78xx_led_t led;
-    led.mask = 0xff;    // all bits are enabled (8 LEDs capable of being lit)
+    led.mask = 0xff; /// All bits are enabled (8 LEDs capable of being lit)
     led.state = (status & 0xff);
     ioctl(streaming, IOCTL_LED_SET, &led);    
 }
 
 void getTime(struct tm **pres_time, struct timeval *clock_time) {
-    gettimeofday(clock_time, NULL); //Gets current time
-    *pres_time = gmtime(&(*clock_time).tv_sec); // UTC aka GMT in ISO 8601: Zulu
+    gettimeofday(clock_time, NULL);
+    *pres_time = gmtime(&(*clock_time).tv_sec);
 }
 
 long getTimeEpoch(long year, int month, int day, int hour, int minute, int second) {
-    //Assumes UTC time given
     struct tm *time = malloc(sizeof(struct tm));
     time->tm_year = year - 1900;
     time->tm_mon = month - 1;
@@ -86,23 +55,21 @@ long getTimeEpoch(long year, int month, int day, int hour, int minute, int secon
 
 void timestamp(char *file_path, char **argv, char *path_to_storage) {
     struct timeval tv;
-    struct tm *t_iso; //Time in accordance to ISO 8601
-    getTime(&t_iso, &tv); //Gets current time in UTC (aka GMT or Zulu) 
-     //Time corresponding to first sample (see start of while loop)
-    const char *output_path = path_to_storage; //A set path to local storage
-    const char *ID; //Identification prefix
-    ID = argv[optind]; //Physical location/identity: identifier
+    struct tm *t_iso;
+    getTime(&t_iso, &tv);
+    const char *output_path = path_to_storage;
+    const char *ID;
+    ID = argv[optind];
     char file_time[LEN];
 
-    //YYYY-MM-DD HH:mm:ss:uuuuuu (u=microseconds)
     sprintf(file_time, "_%04d%02d%02dT%02d%02d%02d%liZ.aiff", 
             t_iso->tm_year+1900, t_iso->tm_mon + 1, t_iso->tm_mday, 
             t_iso->tm_hour, t_iso->tm_min, t_iso->tm_sec, (long) tv.tv_usec); 
     char file_name[LEN];
-    strcpy(file_name, ID); //Identify
-    strcat(file_name, file_time); //Timestamped
-    strcpy(file_path, output_path); //Directory path
-    strcat(file_path, file_name); //Full file path: concatenates filename
+    strcpy(file_name, ID);
+    strcat(file_name, file_time);
+    strcpy(file_path, output_path);
+    strcat(file_path, file_name);
 }
 
 long getPresentTime() {
@@ -113,7 +80,6 @@ long getPresentTime() {
 }
 
 int checkFatal(int gross_samples) {
-    //SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS <= 65536 samples = 2^(16 bits)
     if(gross_samples > 65536) {
         fprintf(stderr, "Fatal Error: exceeded 16-bits!\n");
         fprintf(stderr, "SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS = %d > 65536\n", 
@@ -125,7 +91,7 @@ int checkFatal(int gross_samples) {
 }
 
 void createChanMask(int ain[], int *ch_on, chan_mask_t *chan_mask) {
-        int ch_index = 0;
+    int ch_index = 0;
     if (ain[0]) {
         *chan_mask |= chan_mask_ain0;
         ch_on[ch_index++] = 0;
@@ -161,68 +127,65 @@ void createChanMask(int ain[], int *ch_on, chan_mask_t *chan_mask) {
 }
 
 void configChan(dt78xx_ain_config_t ain_cfg[]) {
-    //Configures all channels even if not enabled and used
-    dt78xx_ain_config_t ain0_cfg ={.ain=0, //AIN0
-                                  .gain=1, //Default gain
-                                  .ac_coupling=0, //DC coupling
-                                  .current_on=0, //Current source off
+    dt78xx_ain_config_t ain0_cfg ={.ain=0, /// AIN0
+                                  .gain=1, /// Default gain
+                                  .ac_coupling=0, /// DC coupling
+                                  .current_on=0, /// Current source off
                                   .differential=0
                                   }; 
     ain_cfg[0] = ain0_cfg;
-    dt78xx_ain_config_t ain1_cfg ={.ain=1, //AIN1
-                                   .gain=1, //Default gain
-                                   .ac_coupling=0, //DC coupling
-                                   .current_on=0, //Current source off
+    dt78xx_ain_config_t ain1_cfg ={.ain=1, /// AIN1
+                                   .gain=1, /// Default gain
+                                   .ac_coupling=0, /// DC coupling
+                                   .current_on=0, /// Current source off
                                    .differential=0
                                   }; 
     ain_cfg[1] = ain1_cfg;
-    dt78xx_ain_config_t ain2_cfg ={.ain=2, //AIN2
-                                   .gain=1, //Default gain
-                                   .ac_coupling=0, //DC coupling
-                                   .current_on=0, //Current source off
+    dt78xx_ain_config_t ain2_cfg ={.ain=2, /// AIN2
+                                   .gain=1, /// Default gain
+                                   .ac_coupling=0, /// DC coupling
+                                   .current_on=0, /// Current source off
                                    .differential=0
                                   }; 
     ain_cfg[2] = ain2_cfg;
-    dt78xx_ain_config_t ain3_cfg ={.ain=3, //AIN3
-                                   .gain=1, //Default gain
-                                   .ac_coupling=0, //DC coupling
-                                   .current_on=0, //Current source off
+    dt78xx_ain_config_t ain3_cfg ={.ain=3, /// AIN3
+                                   .gain=1, /// Default gain
+                                   .ac_coupling=0, /// DC coupling
+                                   .current_on=0, /// Current source off
                                    .differential=0
                                   }; 
     ain_cfg[3] = ain3_cfg;
-    dt78xx_ain_config_t ain4_cfg ={.ain=4, //AIN4
-                                   .gain=1, //Default gain
-                                   .ac_coupling=0, //DC coupling
-                                   .current_on=0, //Current source off
+    dt78xx_ain_config_t ain4_cfg ={.ain=4, /// AIN4
+                                   .gain=1, /// Default gain
+                                   .ac_coupling=0, /// DC coupling
+                                   .current_on=0, /// Current source off
                                    .differential=0
                                   }; 
     ain_cfg[4] = ain4_cfg;
-    dt78xx_ain_config_t ain5_cfg ={.ain=5, //AIN5
-                                   .gain=1, //Default gain
-                                   .ac_coupling=0, //DC coupling
-                                   .current_on=0, //Current source off
+    dt78xx_ain_config_t ain5_cfg ={.ain=5, /// AIN5
+                                   .gain=1, /// Default gain
+                                   .ac_coupling=0, /// DC coupling
+                                   .current_on=0, /// Current source off
                                    .differential=0
                                   }; 
     ain_cfg[5] = ain5_cfg;
-    dt78xx_ain_config_t ain6_cfg ={.ain=6, //AIN6
-                                   .gain=1, //Default gain
-                                   .ac_coupling=0, //DC coupling
-                                   .current_on=0, //Current source off
+    dt78xx_ain_config_t ain6_cfg ={.ain=6, /// AIN6
+                                   .gain=1, /// Default gain
+                                   .ac_coupling=0, /// DC coupling
+                                   .current_on=0, /// Current source off
                                    .differential=0
                                   }; 
     ain_cfg[6] = ain6_cfg;
-    dt78xx_ain_config_t ain7_cfg ={.ain=7, //AIN7
-                                   .gain=1, //Default gain
-                                   .ac_coupling=0, //DC coupling
-                                   .current_on=0, //Current source off
+    dt78xx_ain_config_t ain7_cfg ={.ain=7, /// AIN7
+                                   .gain=1, /// Default gain
+                                   .ac_coupling=0, /// DC coupling
+                                   .current_on=0, /// Current source off
                                    .differential=0
                                   }; 
     ain_cfg[7] = ain7_cfg;
 }
 
-
 void initTrig(dt78xx_trig_config_t trig_cfg_ai[]) {
-    //Configure for software trigger for all enabled channels
     dt78xx_trig_config_t trig0_cfg;
     trig_cfg_ai[0] = trig0_cfg;
     dt78xx_trig_config_t trig1_cfg;
@@ -241,12 +204,23 @@ void initTrig(dt78xx_trig_config_t trig_cfg_ai[]) {
     trig_cfg_ai[7] = trig7_cfg;
 }
 
+int configTrig(int* fd_stream, dt78xx_trig_config_t trig_cfg, int auto_trig) {
+    if (auto_trig) /// default trigger == auto or software trigger
+        trig_cfg.src = trig_src_sw;
+    else { /// threshold trigger
+        trig_cfg.src = trig_src_threshold;
+        trig_cfg.src_cfg.threshold.edge_rising = 1;
+        trig_cfg.src_cfg.threshold.level = volts2raw(TRIG_LEVEL_V,DEFAULT_GAIN);
+    }
+    return ioctl(*fd_stream, IOCTL_START_TRIG_CFG_SET, &trig_cfg);
+}
+
 void calcSunUpDown(long *sunsets, long *sunrises, int duration_days, 
                    long safety_margin, double lon, double lat, int night_cycle) {
-    struct timeval epoch_present;  //Seconds UTC relative to 1 Jan 1970 (epoch)
-    struct tm *t_present = malloc(sizeof(struct tm)); //Time in accordance to ISO 8601
-    gettimeofday(&epoch_present, NULL); //Gets current system time
-    t_present = gmtime(&epoch_present.tv_sec); //Gets current time in UTC (aka GMT or Zulu)
+    struct timeval epoch_present;  /// Seconds UTC relative to 1 Jan 1970 (epoch)
+    struct tm *t_present = malloc(sizeof(struct tm)); /// Time in accordance to ISO 8601
+    gettimeofday(&epoch_present, NULL); /// Gets current system time
+    t_present = gmtime(&epoch_present.tv_sec); /// Gets current time in UTC (aka GMT or Zulu)
 
     int elapsed_days;
     double rise, set;
@@ -254,80 +228,62 @@ void calcSunUpDown(long *sunsets, long *sunrises, int duration_days,
         int year = 1900 + (int) t_present->tm_year;
         int month = 1 + t_present->tm_mon;
         int day = t_present->tm_mday;
-//        fprintf(stdout, "%d-%d-%d\n", year, month, day);
                 
         long epoch_day = getTimeEpoch(year, month, day, 0, 0, 0);
         long epoch_set = epoch_day;
         if (night_cycle) {
             sun_rise_set(year, month, day, lon, lat, &rise, &set);
-    //        fprintf(stdout, "%f, %f\n", rise, set);
             epoch_set += set*3600;
             sunsets[elapsed_days] = epoch_set - safety_margin;
         } else {
             sunsets[elapsed_days] = epoch_set;
         }
 
-        time_t day_sec = 86400; //Length of 1 day in seconds
+        time_t day_sec = 86400; /// Length of 1 day in seconds
         epoch_day += day_sec;
         t_present = gmtime(&epoch_day);
         year = 1900 + (int) t_present->tm_year;
         month = 1 + t_present->tm_mon;
         day = t_present->tm_mday;
-//        fprintf(stdout, "%d-%d-%d\n", year, month, day);
 
         long epoch_rise = getTimeEpoch(year, month, day, 0, 0, 0);
         if (night_cycle) {
             sun_rise_set(year, month, day, lon, lat, &rise, &set);
-    //        fprintf(stdout, "%f, %f\n", rise, set);
             epoch_rise += rise*3600;
             sunrises[elapsed_days] = epoch_rise + safety_margin;
         } else {
             sunrises[elapsed_days] = epoch_rise;
         }
-//        fprintf(stdout, "%ld; %ld; day %d; sunset %ld; sunrise %ld\n", epoch_present.tv_sec, epoch_day, elapsed_days, sunsets[elapsed_days], sunrises[elapsed_days]);
     }
 }
 
-int writeBuffer(AIFF_Ref file, struct circ_buffer buffer_object, int channels_per_file, int num_buffers, int* ch_on, void** buf_array, dt78xx_ain_config_t* ain_cfg) {
+int writeBuffer(AIFF_Ref file, struct circ_buffer buffer_object, 
+                int channels_per_file, int num_buffers, int* ch_on, 
+                void** buf_array, dt78xx_ain_config_t* ain_cfg) {
+
     int success = 0;
     int buff_done;
     for (buff_done=0; buff_done < num_buffers; ++buff_done) { 
         fprintf(stdout, "Reading buffer and writing file...\n");
 
-        //The order of the data in the input (AIN) buffer is as follows,
-        //assuming that all channels are enabled in the input stream:
-        //Analog input channels 0 through 7. Each analog input sample is a
-        //16-bit, two’s complement value.
         int16_t *raw = buf_array[buff_done];
 
         int queue, ch;
-        //Circular buffer write and read pointers lead and follow
+        /// Circular buffer write and read pointers lead and follow
         for (queue = 0; queue < buffer_object.num_samples + 1; queue++) {  
             for (ch = 0; ch < channels_per_file; ch++, ++raw) {
-                //Decouples input from output with circular buffer
+                /// Decouples input from output with circular buffer
                 int ain_i = ch_on[ch];
-                //Write pointer leads read pointer by channels_per_file
+                /// Write pointer leads read pointer by channels_per_file
                 if (queue < buffer_object.num_samples) { 
                     float sample_volt = raw2volts(*raw, ain_cfg[ain_i].gain);
                     float* wptr = &sample_volt; //write pointer for input
                     buffer_object.vbuf->add(buffer_object.vbuf, wptr);
                 }
-                //Read pointer lags write pointer by channels_per_file
+                /// Read pointer lags write pointer by channels_per_file
                 if (queue > 0) {
-                    float* rptr = NULL; //read pointer for writing to file
+                    float* rptr = NULL; /// Read pointer for writing to file
                     buffer_object.vbuf->pull(buffer_object.vbuf, &rptr);
-
-                    //Simultaneously analog input (channel) samples put 
-                    //inline and sequentially for AIFF recording like so:
-                    // ___________ ___________ ___________ ___________
-                    //|           |           |           |           |
-                    //| Channel 1 | Channel 2 | Channel 1 | Channel 2 | ...
-                    //|___________|___________|___________|___________|
-                    // <---------> <---------> <---------> <--------->  ...
-                    //   Segment     Segment     Segment     Segment
-                    // <---------------------> <--------------------->  ...
-                    //     Sample frame 1          Sample frame 2  
-
                     success = AIFF_WriteSamples32Bit(file, (int32_t*) &rptr, 1);
                     if (!success) break;
                 }
@@ -337,3 +293,54 @@ int writeBuffer(AIFF_Ref file, struct circ_buffer buffer_object, int channels_pe
     return success;
 }
 
+int checkID(int argc, char** argv) {
+    if (optind >= argc) {
+        printf(g_usage, argv[0]);
+        return (EXIT_FAILURE);
+    } else {
+        return (EXIT_SUCCESS);
+    }
+}
+int checkRate(struct circ_buffer buffer_object, char** argv) { 
+    if (buffer_object.sample_rate <= 0.0f) {
+        printf(g_usage, argv[0]);
+        return (EXIT_FAILURE);
+    } else {
+        return (EXIT_SUCCESS);
+    }
+}    
+
+int openStream(int* fd_stream) {
+    fprintf(stdout, "Opening stream...\n");
+    *fd_stream = open(DEV_STREAM_IN, O_RDONLY);
+    if (*fd_stream < 0) {
+        fprintf(stderr, "ERROR %d \"%s\" open %s\n", 
+                errno, strerror(errno), DEV_STREAM_IN);
+        return (EXIT_FAILURE);
+    } else {
+        return (EXIT_SUCCESS);
+    }    
+}
+int openAIN(int* fd_stream, int* fd_ain) {
+    fprintf(stdout, "Opening analog input...\n");
+    *fd_ain = open(DEV_AIN, O_RDONLY);
+    if (*fd_ain < 0) {
+        fprintf(stderr, "ERROR %d \"%s\" open %s\n", 
+                errno, strerror(errno), DEV_AIN);
+        close(*fd_stream);
+        return (EXIT_FAILURE);
+    } else {
+        return (EXIT_SUCCESS);
+    }
+}
+
+void waitBuffering(int num_buffers, int g_quit, struct aio_struct** aio) {
+    fprintf(stdout, "Buffering in progress...\n");
+    int buff_done = 0;
+    while (!g_quit && (buff_done < num_buffers)) {
+        int ret = aio_wait(*aio, 0);
+        if (ret < 0) /// Error
+            break;
+        buff_done += ret;
+    }
+}
