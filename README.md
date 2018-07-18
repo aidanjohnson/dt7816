@@ -100,11 +100,11 @@ The second and alternative method is to locally network the client and host. Thi
 
     * Install the nftables package with `sudo apt-get install nftables`
     * Run the commands
-      `nft add table ip nat`
-      `nft add chain ip nat prerouting { type nat hook prerouting priority 0 \; }`
-      `nft add chain ip nat postrouting { type nat hook postrouting priority 100 \; }`
+      * `nft add table ip nat`
+      * `nft add chain ip nat prerouting { type nat hook prerouting priority 0 \; }`
+      * `nft add chain ip nat postrouting { type nat hook postrouting priority 100 \; }`
     * After that, you have to masquerade the `enp4s0f1` adresses for `wlp3s0`:
-      `nft add rule nat postrouting oifname wlp3s0 masquerade`
+      * `nft add rule nat postrouting oifname wlp3s0 masquerade`
 
     After this process shares the internet connection of the host computer to the client board, set up the NTP server and client by following the instructions on [this page](http://www.ubuntugeek.com/network-time-protocol-ntp-server-and-clients-setup-in-ubuntu.html). When editing `/etc/ntp.conf` add the following lines for the host:
     * `server time.nist.gov`
