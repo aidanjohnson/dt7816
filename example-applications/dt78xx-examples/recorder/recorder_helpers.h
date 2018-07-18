@@ -1,5 +1,6 @@
 /* 
- * This is the header for the custom application for DT7816 autonomous 
+ * @file recorder_helpers.h
+ * @brief This is the header for the custom application for DT7816 autonomous 
  * asynchronous I/O sampling that configures the board's analog inputs. 
  * The sampled data is read asynchronously from the input stream and 
  * written to a AIFF file.
@@ -28,8 +29,8 @@
 extern "C" {
 #endif
 
-/*****************************************************************************
- * External Libraries
+/*
+ * ==== External Libraries ====
  */
  
 #include <stdint.h>
@@ -60,16 +61,16 @@ extern "C" {
 #endif
     
 #include "sunriset.h"
-#define LIBAIFF_NOCOMPAT 1 // do not use LibAiff 2 API compatibility
+#define LIBAIFF_NOCOMPAT 1  /* do not use LibAiff 2 API compatibility */
 #include "libaiff.h"
 #include "RingBuf.h"
     
-/*****************************************************************************
- * Customisable Macros
+/*
+ * ==== Customisable Macros ====
  */
 
 /**
- * The sample rate, active channels, number of buffers, and samples per channel
+ * @brief The sample rate, active channels, number of buffers, and samples per channel
  * can be set with command line flags in a terminal shell used to run this program.
  * 
  * Default analog inputs (AINx) enabled/active/on (1) or disabled/inactive/off (0)
@@ -82,36 +83,36 @@ extern "C" {
 #define AIN5                0
 #define AIN6                0
 #define AIN7                0
-#define PATH_TO_STORAGE     "/usr/local/path/to/ssd/" /// Predefined write path
+#define PATH_TO_STORAGE     "/usr/local/path/to/ssd/" /* Predefined write path */
 #define SAMPLE_RATE_HZ      400000.0
-#define DURATION_DAYS       21 /// Default number of days of sampling
-#define SAFETY_MARGIN       3600 /// Buffers in seconds before sunset and after sunrise
-#define NIGHT_CYCLE         0 /// Cycles recording on at night and off at day
-#define DEFAULT_LATITUDE    47.655083 /// Latitude (N := +, S := -)
-#define DEFAULT_LONGITUDE   -122.293194 /// Longitude (E := +, W := -)
+#define DURATION_DAYS       21 /* Default number of days of sampling */
+#define SAFETY_MARGIN       3600 /* Buffers in seconds before sunset and after sunrise */
+#define NIGHT_CYCLE         0 /* Cycles recording on at night and off at day */
+#define DEFAULT_LATITUDE    47.655083 /* Latitude (N := +, S := -) */
+#define DEFAULT_LONGITUDE   -122.293194 /* Longitude (E := +, W := -) */
     
-/// Constraint: SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS <= 65536 samples = 2^(16 bits)
-#define SAMPLES_PER_FILE    65536 /// SAMPLES_PER_CHAN = SAMPLES_PER_FILE / NUM_CHANNELS
-#define NUM_BUFFS           1 /// Number of buffers per file initialised
+/* Constraint: SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS <= 65536 samples = 2^(16 bits) */
+#define SAMPLES_PER_FILE    65536 /* SAMPLES_PER_CHAN = SAMPLES_PER_FILE / NUM_CHANNELS */
+#define NUM_BUFFS           1 /* Number of buffers per file initialised */
 
-/*****************************************************************************
- * Defaults: Change at own risk
+/*
+ * ==== Defaults: Change at own risk ====
  */
 
-#define NUM_CHANNELS        AIN0+AIN1+AIN2+AIN3+AIN4+AIN5+AIN6+AIN7 /// max ch: 8
+#define NUM_CHANNELS        AIN0+AIN1+AIN2+AIN3+AIN4+AIN5+AIN6+AIN7 /* max ch: 8 */
 #define SAMPLE_RATE         SAMPLE_RATE_HZ
 #define AUTO_TRIG           1
-#define LEN                 512 /// Default character array size
+#define LEN                 512 /* Default character array size */
 
 #define xstr(s) str(s)
 #define str(s) #s
 
 #define TRIG_LEVEL_V        0.0
-#define DEFAULT_GAIN        1 /// gain 1 => +/- 10 V; must be 1 for DT7816
-#define LIBAIFF_NOCOMPAT    1 /// Do not use LibAiff 2 API compatibility
+#define DEFAULT_GAIN        1 /* gain 1 => +/- 10 V; must be 1 for DT7816 */
+#define LIBAIFF_NOCOMPAT    1 /* Do not use LibAiff 2 API compatibility */
 
-/*****************************************************************************
- * Command line arguments with help
+/*
+ * ==== Command line arguments with help ====
  */
 
 static const char g_usage[] = {
@@ -142,26 +143,26 @@ static const char g_usage[] = {
 "\n"
 };
 
-/*****************************************************************************
- * Circular (ring) buffer (queue) data type
+/*
+ * ==== Circular (ring) buffer (queue) data type ====
  */
 
 struct circ_buffer {
     float sample_rate;  
     int32_t num_samples;
-    RingBuf *vbuf;  /// Buffer with raw values converted to voltage
+    RingBuf *vbuf;  /* Buffer with raw values converted to voltage */
 };
 
- /*****************************************************************************
- * Helper functions for recorder (DT7816)
- */
+ /*
+  * ==== Helper functions for recorder (DT7816) ====
+  */
 
 /**
  * Updates debug LEDs (8 in total), LED ON (1) := CHANNEL is READING/WRITING. 
  * Viewing the DT7816 such that the debug pin row is above the user LEDs:
- *  ______ ______ ______ ______ ______ ______ ______ ______ ______ _______
- * | PIN1 | PIN2 | PIN3 | PIN4 | PIN5 | PIN6 | PIN7 | PIN8 | PIN9 | PIN10 |
- * ***** LED7 ** LED6 ** LED5 ** LED4 ** LED3 ** LED2 ** LED1 ** LED0 *****
+ *  ______ ______ ______ ______ ______ ______ ______ ______ ______ _______\n
+ * | PIN1 | PIN2 | PIN3 | PIN4 | PIN5 | PIN6 | PIN7 | PIN8 | PIN9 | PIN10 |\n
+ * ***** LED7 ** LED6 ** LED5 ** LED4 ** LED3 ** LED2 ** LED1 ** LED0 *****\n
  * 
  * LED0 := AIN0recorder, LED1 := AIN1, LED2 := AIN2, LED3 := AIN3,
  * LED4 := AIN4, LED5 := AIN5, LED6 := AIN6, LED7 := AIN7
@@ -173,9 +174,9 @@ struct circ_buffer {
  * AIN4 = 0x10, AIN5 = 0x20, AIN6 = 0x40, AIN7 = 0x80
  * 
  * and for input header pins (J16):
- *  ___________________________________________________
- * ||  2 |  4 |  6 |  8 | 10 | 12 | 14 | 16 | 18 | 20 ||
- * ||  1 |  3 |  5 |  7 |  9 | 11 | 13 | 15 | 17 | 19 ||
+ *  ___________________________________________________\n
+ * ||  2 |  4 |  6 |  8 | 10 | 12 | 14 | 16 | 18 | 20 ||\n
+ * ||  1 |  3 |  5 |  7 |  9 | 11 | 13 | 15 | 17 | 19 ||\n
  * 
  * Analog Inputs (AINs):
  * 
@@ -258,7 +259,6 @@ int checkFatal(int gross_samples);
 /**
  * Creates channel mask for each active channel determined by ain.
  * 
- * 
  * @param ain       Array of channel states (1 = on, 0 = off) for channels 
  *                  1, 2, 3, 4, 5, 6, 7
  * @param ch_on     Array of the active/enabled/on channels given by their index
@@ -295,6 +295,7 @@ int configTrig(int* fd_stream, dt78xx_trig_config_t trig_cfg, int auto_trig);
 /**
  * Calculates the sunset and sunrise time (offset by a safety margin) according
  * to a location on Earth given by longitude and latitude coordinates. 
+ * 
  * Note:
  *      year,month,date = calendar date, 1801-2099 only.
  *      Eastern longitude positive, Western longitude negative

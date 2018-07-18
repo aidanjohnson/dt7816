@@ -1,5 +1,6 @@
 /* 
- * This is the header for the custom application for DT7816 autonomous 
+ * @file recorder_helpers.c
+ * @brief This is the header for the custom application for DT7816 autonomous 
  * asynchronous I/O sampling that configures the board's analog inputs. 
  * The sampled data is read asynchronously from the input stream and 
  * written to a AIFF file.
@@ -21,18 +22,18 @@
  * along with this program; if not, write to the Free Software
  */
 
-/*****************************************************************************
- * External Libraries
+/*
+ * ==== External Libraries ====
  */
 #include "recorder_helpers.h"
 
- /*****************************************************************************
- * Helper functions for recorder (DT7816)
+ /*
+ * ==== Helper functions for recorder (DT7816) ====
  */
 
 void ledIndicators(uint8_t status, int streaming) {   
     dt78xx_led_t led;
-    led.mask = 0xff; /// All bits are enabled (8 LEDs capable of being lit)
+    led.mask = 0xff; /* All bits are enabled (8 LEDs capable of being lit) */
     led.state = (status & 0xff);
     ioctl(streaming, IOCTL_LED_SET, &led);    
 }
@@ -127,59 +128,59 @@ void createChanMask(int ain[], int *ch_on, chan_mask_t *chan_mask) {
 }
 
 void configChan(dt78xx_ain_config_t ain_cfg[]) {
-    dt78xx_ain_config_t ain0_cfg ={.ain=0, /// AIN0
-                                  .gain=1, /// Default gain
-                                  .ac_coupling=0, /// DC coupling
-                                  .current_on=0, /// Current source off
+    dt78xx_ain_config_t ain0_cfg ={.ain=0, /* AIN0 */
+                                  .gain=1, /* Default gain */
+                                  .ac_coupling=0, /* DC coupling */
+                                  .current_on=0, /* Current source off */
                                   .differential=0
                                   }; 
     ain_cfg[0] = ain0_cfg;
-    dt78xx_ain_config_t ain1_cfg ={.ain=1, /// AIN1
-                                   .gain=1, /// Default gain
-                                   .ac_coupling=0, /// DC coupling
-                                   .current_on=0, /// Current source off
+    dt78xx_ain_config_t ain1_cfg ={.ain=1, /* AIN1 */
+                                   .gain=1, /* Default gain */
+                                   .ac_coupling=0, /* DC coupling */
+                                   .current_on=0, /* Current source off */
                                    .differential=0
                                   }; 
     ain_cfg[1] = ain1_cfg;
-    dt78xx_ain_config_t ain2_cfg ={.ain=2, /// AIN2
-                                   .gain=1, /// Default gain
-                                   .ac_coupling=0, /// DC coupling
-                                   .current_on=0, /// Current source off
+    dt78xx_ain_config_t ain2_cfg ={.ain=2, /* AIN2 */
+                                   .gain=1, /* Default gain */
+                                   .ac_coupling=0, /* DC coupling */
+                                   .current_on=0, /* Current source off */
                                    .differential=0
                                   }; 
     ain_cfg[2] = ain2_cfg;
-    dt78xx_ain_config_t ain3_cfg ={.ain=3, /// AIN3
-                                   .gain=1, /// Default gain
-                                   .ac_coupling=0, /// DC coupling
-                                   .current_on=0, /// Current source off
+    dt78xx_ain_config_t ain3_cfg ={.ain=3, /* AIN3 */
+                                   .gain=1, /* Default gain */
+                                   .ac_coupling=0, /* DC coupling */
+                                   .current_on=0, /* Current source off */
                                    .differential=0
                                   }; 
     ain_cfg[3] = ain3_cfg;
-    dt78xx_ain_config_t ain4_cfg ={.ain=4, /// AIN4
-                                   .gain=1, /// Default gain
-                                   .ac_coupling=0, /// DC coupling
-                                   .current_on=0, /// Current source off
+    dt78xx_ain_config_t ain4_cfg ={.ain=4, /* AIN4 */
+                                   .gain=1, /* Default gain */
+                                   .ac_coupling=0, /* DC coupling */
+                                   .current_on=0, /* Current source off */
                                    .differential=0
                                   }; 
     ain_cfg[4] = ain4_cfg;
-    dt78xx_ain_config_t ain5_cfg ={.ain=5, /// AIN5
-                                   .gain=1, /// Default gain
-                                   .ac_coupling=0, /// DC coupling
-                                   .current_on=0, /// Current source off
+    dt78xx_ain_config_t ain5_cfg ={.ain=5, /* AIN5 */
+                                   .gain=1, /* Default gain */
+                                   .ac_coupling=0, /* DC coupling */
+                                   .current_on=0, /* Current source off */
                                    .differential=0
                                   }; 
     ain_cfg[5] = ain5_cfg;
-    dt78xx_ain_config_t ain6_cfg ={.ain=6, /// AIN6
-                                   .gain=1, /// Default gain
-                                   .ac_coupling=0, /// DC coupling
-                                   .current_on=0, /// Current source off
+    dt78xx_ain_config_t ain6_cfg ={.ain=6, /* AIN6 */
+                                   .gain=1, /* Default gain */
+                                   .ac_coupling=0, /* DC coupling */
+                                   .current_on=0, /* Current source off */
                                    .differential=0
                                   }; 
     ain_cfg[6] = ain6_cfg;
-    dt78xx_ain_config_t ain7_cfg ={.ain=7, /// AIN7
-                                   .gain=1, /// Default gain
-                                   .ac_coupling=0, /// DC coupling
-                                   .current_on=0, /// Current source off
+    dt78xx_ain_config_t ain7_cfg ={.ain=7, /* AIN7 */
+                                   .gain=1, /* Default gain */
+                                   .ac_coupling=0, /* DC coupling */
+                                   .current_on=0, /* Current source off */
                                    .differential=0
                                   }; 
     ain_cfg[7] = ain7_cfg;
@@ -205,9 +206,9 @@ void initTrig(dt78xx_trig_config_t trig_cfg_ai[]) {
 }
 
 int configTrig(int* fd_stream, dt78xx_trig_config_t trig_cfg, int auto_trig) {
-    if (auto_trig) /// default trigger == auto or software trigger
+    if (auto_trig) /* default trigger == auto or software trigger */
         trig_cfg.src = trig_src_sw;
-    else { /// threshold trigger
+    else { /* threshold trigger */
         trig_cfg.src = trig_src_threshold;
         trig_cfg.src_cfg.threshold.edge_rising = 1;
         trig_cfg.src_cfg.threshold.level = volts2raw(TRIG_LEVEL_V,DEFAULT_GAIN);
@@ -217,10 +218,10 @@ int configTrig(int* fd_stream, dt78xx_trig_config_t trig_cfg, int auto_trig) {
 
 void calcSunUpDown(long *sunsets, long *sunrises, int duration_days, 
                    long safety_margin, double lon, double lat, int night_cycle) {
-    struct timeval epoch_present;  /// Seconds UTC relative to 1 Jan 1970 (epoch)
-    struct tm *t_present = malloc(sizeof(struct tm)); /// Time in accordance to ISO 8601
-    gettimeofday(&epoch_present, NULL); /// Gets current system time
-    t_present = gmtime(&epoch_present.tv_sec); /// Gets current time in UTC (aka GMT or Zulu)
+    struct timeval epoch_present;  /* Seconds UTC relative to 1 Jan 1970 (epoch) */
+    struct tm *t_present = malloc(sizeof(struct tm)); /* Time in accordance to ISO 8601 */
+    gettimeofday(&epoch_present, NULL); /* Gets current system time */
+    t_present = gmtime(&epoch_present.tv_sec); /* Gets current time in UTC (aka GMT or Zulu) */
 
     int elapsed_days;
     double rise, set;
@@ -239,7 +240,7 @@ void calcSunUpDown(long *sunsets, long *sunrises, int duration_days,
             sunsets[elapsed_days] = epoch_set;
         }
 
-        time_t day_sec = 86400; /// Length of 1 day in seconds
+        time_t day_sec = 86400; /* Length of 1 day in seconds */
         epoch_day += day_sec;
         t_present = gmtime(&epoch_day);
         year = 1900 + (int) t_present->tm_year;
@@ -269,20 +270,20 @@ int writeBuffer(AIFF_Ref file, struct circ_buffer buffer_object,
         int16_t *raw = buf_array[buff_done];
 
         int queue, ch;
-        /// Circular buffer write and read pointers lead and follow
+        /* Circular buffer write and read pointers lead and follow */
         for (queue = 0; queue < buffer_object.num_samples + 1; queue++) {  
             for (ch = 0; ch < channels_per_file; ch++, ++raw) {
-                /// Decouples input from output with circular buffer
+                /* Decouples input from output with circular buffer */
                 int ain_i = ch_on[ch];
-                /// Write pointer leads read pointer by channels_per_file
+                /* Write pointer leads read pointer by channels_per_file */
                 if (queue < buffer_object.num_samples) { 
                     float sample_volt = raw2volts(*raw, ain_cfg[ain_i].gain);
                     float* wptr = &sample_volt; //write pointer for input
                     buffer_object.vbuf->add(buffer_object.vbuf, wptr);
                 }
-                /// Read pointer lags write pointer by channels_per_file
+                /* Read pointer lags write pointer by channels_per_file */
                 if (queue > 0) {
-                    float* rptr = NULL; /// Read pointer for writing to file
+                    float* rptr = NULL; /* Read pointer for writing to file */
                     buffer_object.vbuf->pull(buffer_object.vbuf, &rptr);
                     success = AIFF_WriteSamples32Bit(file, (int32_t*) &rptr, 1);
                     if (!success) break;
@@ -339,7 +340,7 @@ void waitBuffering(int num_buffers, int g_quit, struct aio_struct** aio) {
     int buff_done = 0;
     while (!g_quit && (buff_done < num_buffers)) {
         int ret = aio_wait(*aio, 0);
-        if (ret < 0) /// Error
+        if (ret < 0) /* Error */
             break;
         buff_done += ret;
     }
