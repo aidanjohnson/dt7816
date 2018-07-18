@@ -30,11 +30,11 @@
 /* Contains helper functions, global constants (macros), and required libraries */
 #include "recorder_helpers.h" 
 
-static int g_quit = 0; /* Force exit or quit (ctrl+c) */
-
 /*
  * ==== Signal handler for ctrl-c prevents the abrupt termination of processes ====
  */
+
+static int g_quit = 0; /* Force exit or quit (ctrl+c) */
 
 static void sigint_handler(int i) {
     g_quit = -1;
@@ -57,7 +57,8 @@ int main (int argc, char** argv) {
     double lon = DEFAULT_LONGITUDE;
     long safety_margin = SAFETY_MARGIN;
     
-    struct circ_buffer buffer_object = {.sample_rate = SAMPLE_RATE, .vbuf = NULL};
+    struct circ_buffer buffer_object = {.sample_rate = SAMPLE_RATE, 
+                                        .vbuf = NULL};
     
     dt78xx_clk_config_t clk = {.ext_clk=0, /* Internal clock */
                                .ext_clk_din=0, 
