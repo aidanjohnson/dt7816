@@ -6,16 +6,20 @@
 <name>event-counter</name>
             <c-extensions>c</c-extensions>
             <cpp-extensions/>
-            <header-extensions/>
+            <header-extensions>h</header-extensions>
             <sourceEncoding>UTF-8</sourceEncoding>
             <make-dep-projects/>
             <sourceRootList>
-                <sourceRootElem>.</sourceRootElem>
+                <sourceRootElem>/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder</sourceRootElem>
             </sourceRootList>
             <confList>
                 <confElem>
-                    <name>Default</name>
-                    <type>0</type>
+                    <name>Debug</name>
+                    <type>1</type>
+                </confElem>
+                <confElem>
+                    <name>Release</name>
+                    <type>1</type>
                 </confElem>
             </confList>
             <formatting>
