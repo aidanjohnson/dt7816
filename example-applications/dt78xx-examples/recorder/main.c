@@ -53,6 +53,7 @@ int main (int argc, char** argv) {
     int num_buffers = NUM_BUFFS;
     int num_channels = NUM_CHANNELS;
     int duration_days = DURATION_DAYS;
+    int night_cycle = NIGHT_CYCLE;
     double lat = DEFAULT_LATITUDE;
     double lon = DEFAULT_LONGITUDE;
     long safety_margin = SAFETY_MARGIN;
@@ -103,6 +104,9 @@ int main (int argc, char** argv) {
                 break;
             case 'm' :
                 safety_margin = atol(optarg);
+                break;
+            case 'n' :
+                night_cycle = atoi(optarg);
                 break;
             default :
                 printf(g_usage, argv[0]);
@@ -215,7 +219,7 @@ int main (int argc, char** argv) {
     /* (1) Date and (2) Latitude and Longitude coordinates */
     long *sunsets = malloc(sizeof(long)*duration_days);
     long *sunrises = malloc(sizeof(long)*duration_days);
-    calcSunUpDown(sunsets, sunrises, duration_days, safety_margin, lon, lat, NIGHT_CYCLE);
+    calcSunUpDown(sunsets, sunrises, duration_days, safety_margin, lon, lat, night_cycle);
     
     int elapsed_days = 0; /* Resets counter */
     ret = 0;
