@@ -34,7 +34,10 @@ Options
                the ioct.
 -m|--margin  : margin of safety before the time of sunset and after the time of
                sunrise in seconds (hours*3600); defaults 3600 s. 
-
+-n|--night   : night cycling (on after sun down and off after sun up). Sun up and
+               down times calculated. Defaults to disabled state (recording 24
+               hours a day).
+               
 -------------------------------------------------------------------------------
 Test setup 
 
