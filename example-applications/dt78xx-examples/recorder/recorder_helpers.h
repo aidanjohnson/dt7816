@@ -140,6 +140,9 @@ static const char g_usage[] = {
 "               when you start the analog input operation using the ioct.\n"
 "-m|--margin  : margin of safety before the time of sunset and after the time of "
 "               sunrise in seconds (hours*3600), defaults " xstr(SAFETY_MARGIN) " s."
+"-n|--night   : night cycling (on after sun down and off after sun up). Sun up and \n"
+"               down times calculated. Defaults to disabled state (recording 24 \n"
+"               hours a day).\n" 
 "\n"
 };
 
