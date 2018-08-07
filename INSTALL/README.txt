@@ -9,7 +9,7 @@ Samples AIN* (where AINx is a combination of AIN0/1/2/3/4/5/6/7 and at most 8
 simultaneous channels) and writes data to timestamped file in AIFF format files 
 saved to a predefined storage path. All options below are not required, only 
 the file identifier is required. The files are saved to 
-<path>/<prefix>_<YYYY-DD-MMTHHmmssuuuuuuZ>.aiff
+<path>/<prefix>_<YYYYMMDD>T<HHmmssuuuuuu>Z.aiff
 
 Usage        : ./release/recorder <identifier prefix> [options]
 
@@ -34,7 +34,10 @@ Options
                the ioct.
 -m|--margin  : margin of safety before the time of sunset and after the time of
                sunrise in seconds (hours*3600); defaults 3600 s. 
-
+-n|--night   : night cycling (on after sun down and off after sun up). Sun up and
+               down times calculated. Defaults to disabled state (recording 24
+               hours a day).
+               
 -------------------------------------------------------------------------------
 Test setup 
 

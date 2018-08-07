@@ -119,7 +119,7 @@ static const char g_usage[] = {
 "\n--------------------Autonomous Microphone Array for the DT7816 DAQ------------------\n"
 "Samples channels AINx (at most 8 simultaneous channels) and writes data to\n"
 "a timestamped file in AIFF format, saving it following a predefined path to\n"
-"storage. The files are saved to <path>/<prefix>_<YYYYMMDD>T<HHmmssuuuuuu>Z.aiff\n"
+"storage. The files are saved to <prefix>_<YYYYMMDD>T<HHmmssuuuuuu>Z.aiff\n"
 "Usage        : %s <identifier prefix> [options] \n"
 "Required     : a file or location identifier prefix, such as NORTH or 1.\n" 
 "Options\n"
@@ -140,6 +140,9 @@ static const char g_usage[] = {
 "               when you start the analog input operation using the ioct.\n"
 "-m|--margin  : margin of safety before the time of sunset and after the time of "
 "               sunrise in seconds (hours*3600), defaults " xstr(SAFETY_MARGIN) " s."
+"-n|--night   : night cycling (on after sun down and off after sun up). Sun up and \n"
+"               down times calculated. Defaults to disabled state (recording 24 \n"
+"               hours a day).\n" 
 "\n"
 };
 
@@ -232,7 +235,7 @@ long getTimeEpoch(long year, int month, int day, int hour, int minute, int secon
  * 
  * The full file path has the form of (T and Z are not placeholders):
  * 
- * <prefix>_<YYYYMMDD>T<HHmmssuuuuuu>Z.aiff
+ * <path>/<prefix>_<YYYYMMDD>T<HHmmssuuuuuu>Z.aiff
  * 
  * @param file_path         Concatenated resultant string of full file path
  * @param argv              ID argument

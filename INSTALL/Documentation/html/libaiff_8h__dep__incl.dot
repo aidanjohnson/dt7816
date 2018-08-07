@@ -1,0 +1,30 @@
+digraph "libaiff.h"
+{
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node8 [label="libaiff.h",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black"];
+  Node8 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="aifx.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$aifx_8c.html"];
+  Node8 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="extended.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$extended_8c.html"];
+  Node8 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="float32.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$float32_8c.html"];
+  Node8 -> Node12 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="g711.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$g711_8c.html"];
+  Node8 -> Node13 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="iff.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$iff_8c.html"];
+  Node8 -> Node14 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node14 [label="libaiff.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$libaiff_8c.html"];
+  Node8 -> Node15 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="lpcm.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$lpcm_8c.html"];
+  Node8 -> Node16 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="recorder_helpers.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$recorder__helpers_8h.html"];
+  Node16 -> Node17 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="main.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$main_8c.html"];
+  Node16 -> Node18 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="recorder_helpers.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$recorder__helpers_8c.html"];
+  Node16 -> Node19 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="tests/newcunittest.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$newcunittest_8c.html"];
+  Node8 -> Node20 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node20 [label="pascal.c",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$pascal_8c.html"];
+}
