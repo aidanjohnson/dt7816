@@ -37,7 +37,11 @@ Options
 -n|--night   : night cycling (on after sun down and off after sun up). Sun up and
                down times calculated. Defaults to disabled state (recording 24
                hours a day).
-               
+-p|--phi     : latitude (decimal coordinate) of recording site; defaults 47.655083.
+               Northern hemisphere coordinates are positive, and southern negative.
+-l|--lambda  : longitude (decimal coordinate) of recording site defaults -122.293194.
+               Eastern hemisphere coordinates are positive, and western negative.
+
 -------------------------------------------------------------------------------
 Test setup 
 
