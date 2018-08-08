@@ -69,7 +69,7 @@ int main (int argc, char** argv) {
     int ain[8] = {AIN0, AIN1, AIN2, AIN3, AIN4, AIN5, AIN6, AIN7};
     int ch_code; /* 8 bit binary; channel on := 1, channel off := 0 */
     int opt = 0;
-    while ((opt = getopt(argc, argv, "s:c:d:b:t:i:m:n:")) != -1) {
+    while ((opt = getopt(argc, argv, "s:c:d:b:t:i:m:n:p:l:")) != -1) {
         switch (opt) {
             case 's':
                 samples_per_file = strtoul(optarg, NULL, 10);
@@ -107,6 +107,12 @@ int main (int argc, char** argv) {
                 break;
             case 'n' :
                 night_cycle = atoi(optarg);
+                break;
+            case 'p' :
+                lat = atof(optarg);
+                break;
+            case 'l' :
+                lon = atof(optarg);
                 break;
             default :
                 printf(g_usage, argv[0]);
