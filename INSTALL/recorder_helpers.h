@@ -83,7 +83,7 @@ extern "C" {
 #define AIN5                0
 #define AIN6                0
 #define AIN7                0
-#define PATH_TO_STORAGE     "/usr/local/path/to/ssd/" /* Predefined write path */
+#define PATH_TO_STORAGE     "/media/path/to/ssd/" /* Predefined write path */
 #define SAMPLE_RATE_HZ      400000.0
 #define DURATION_DAYS       21 /* Default number of days of sampling */
 #define SAFETY_MARGIN       3600 /* Buffers in seconds before sunset and after sunrise */
@@ -399,6 +399,16 @@ int openAIN(int* fd_stream, int* fd_ain);
  * @param aio_struct    analog input/output API
  */
 void waitBuffering(int num_buffers, int g_quit, struct aio_struct**);
+
+/** 
+ * Sets AIFF file metadata.
+ * 
+ * @param   lon     longitude set as name attribute
+ * @param   lat     latitude set as author attribute
+ * @param   sunset  sunset time (in Unix Epoch time, seconds) set as copyright attribute
+ * @param   sunrise sunrise time set as annotation attribute
+ */
+void setMetadata(AIFF_Ref file, double lon, double lat, long sunset, long sunrise);
 
 #ifdef __cplusplus
 }

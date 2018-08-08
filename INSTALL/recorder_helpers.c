@@ -345,3 +345,15 @@ void waitBuffering(int num_buffers, int g_quit, struct aio_struct** aio) {
         buff_done += ret;
     }
 }
+
+void setMetadata(AIFF_Ref file, double lon, double lat, long sunset, long sunrise) {
+    char metadata[LEN];
+    sprintf(metadata, "%f", lon);
+    AIFF_SetAttribute(file, AIFF_NAME, metadata);
+    sprintf(metadata, "%f", lat);
+    AIFF_SetAttribute(file, AIFF_AUTH, metadata);
+    sprintf(metadata, "%ld", sunset);
+    AIFF_SetAttribute(file, AIFF_ANNO, metadata);
+    sprintf(metadata, "%ld", sunrise);
+    AIFF_SetAttribute(file, AIFF_COPY, metadata);
+}

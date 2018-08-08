@@ -284,9 +284,8 @@ int main (int argc, char** argv) {
             /* Write acquired data to the specified .aiff output file */
             AIFF_Ref file = malloc(sizeof(AIFF_Ref));
 
-            char sun_times[LEN];
-            sprintf(sun_times, "%ld-%ld", sunset, sunrise);
-            AIFF_SetAttribute(file, AIFF_ANNO, sun_times);
+            /* Sets AIFF file metadata */
+            setMetadata(file, lon, lat, sunset, sunrise);
 
             file = AIFF_OpenFile(file_path, F_WRONLY);
             if (file) {
