@@ -7,8 +7,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <CUnit/Basic.h>
-#include "recorder_helpers.h"
+#include <time.h>
+#include </usr/include/CUnit/Basic.h>
+#include "../recorder_helpers.h"
 
 /*
  * CUnit Test Suite
@@ -32,8 +33,8 @@ void testLedIndicators() {
 }
 
 void testGetTime() {
-    tm** pres_time;
-    timeval* clock_time;
+    struct tm** pres_time;
+    struct timeval* clock_time;
     getTime(pres_time, clock_time);
     if (1 /*check result*/) {
         CU_ASSERT(0);
@@ -118,7 +119,7 @@ void testCalcSunUpDown() {
     }
 }
 
-int main() {
+int testMain() {
     CU_pSuite pSuite = NULL;
 
     /* Initialize the CUnit test registry */

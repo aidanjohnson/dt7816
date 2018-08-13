@@ -143,6 +143,10 @@ static const char g_usage[] = {
 "-n|--night   : night cycling (on after sun down and off after sun up). Sun up and \n"
 "               down times calculated. Defaults to disabled state (recording 24 \n"
 "               hours a day).\n" 
+"-p|--phi     : latitude (decimal coordinate) of recording site; defaults 47.655083.\n"
+"               Northern hemisphere coordinates are positive, and southern negative.\n"
+"-l|--lambda  : longitude (decimal coordinate) of recording site defaults -122.293194.\n"
+"               Eastern hemisphere coordinates are positive, and western negative.\n"
 "\n"
 };
 
