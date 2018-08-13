@@ -57,6 +57,7 @@ sudo chmod +x build_examples.py
 sudo ./build_examples.py
 
 cd /opt/ti-sdk-am335x-evm-07.00.00.00/
+sudo rm build_examples.py
 sudo make -f dt78xx.mak linux
 sudo make -f dt78xx.mak dtmods_clean
 sudo make -f dt78xx.mak dtmods
