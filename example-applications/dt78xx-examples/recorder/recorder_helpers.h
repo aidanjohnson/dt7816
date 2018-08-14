@@ -43,7 +43,6 @@ extern "C" {
 #include <getopt.h>
 #include <malloc.h>
 #include <math.h>
-#include <omp.h>
 #include <time.h>
 #include <sys/time.h>    
     

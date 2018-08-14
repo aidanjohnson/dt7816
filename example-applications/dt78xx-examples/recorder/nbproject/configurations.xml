@@ -78,6 +78,12 @@
         <ccTool>
           <standard>8</standard>
         </ccTool>
+        <linkerTool>
+          <linkerCopySharedLibs>true</linkerCopySharedLibs>
+          <linkerLibItems>
+            <linkerLibLibItem>cunit</linkerLibLibItem>
+          </linkerLibItems>
+        </linkerTool>
       </compileType>
       <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/RingBuf.c"
             ex="false"
@@ -189,11 +195,16 @@
         <linkerTool>
           <output>${TESTDIR}/TestFiles/f1</output>
           <linkerLibItems>
-            <linkerOptionItem>-lcunit</linkerOptionItem>
+            <linkerOptionItem>cunit</linkerOptionItem>
           </linkerLibItems>
         </linkerTool>
       </folder>
       <item path="tests/testRecorder.c" ex="false" tool="0" flavor2="0">
+        <cTool>
+          <incDir>
+            <pElem>/usr/lib/cunit/include</pElem>
+          </incDir>
+        </cTool>
       </item>
     </conf>
     <conf name="Release" type="1">

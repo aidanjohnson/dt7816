@@ -74,7 +74,7 @@ OBJDIR := release
 EXTRA_FLAGS := -O4 -Wall 
 endif
 BINDIR := $(OBJDIR)
-LIBS := $(LIBS) -lpthread -lm
+LIBS := $(LIBS) -lpthread -lm -lcunit
 OBJS := $(SRCS:%.c=$(OBJDIR)/%.o)
 
 #   ----------------------------------------------------------------------------

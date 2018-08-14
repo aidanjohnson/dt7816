@@ -73,7 +73,7 @@ FFLAGS=
 ASFLAGS=
 
 # Link Libraries and Options
-LDLIBSOPTIONS=
+LDLIBSOPTIONS=-lcunit
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
@@ -152,13 +152,13 @@ ${OBJECTDIR}/_ext/28d545ba/sunriset.o: /opt/ti-sdk-am335x-evm-07.00.00.00/exampl
 
 ${TESTDIR}/TestFiles/f1: ${TESTDIR}/tests/testRecorder.o ${OBJECTFILES:%.o=%_nomain.o}
 	${MKDIR} -p ${TESTDIR}/TestFiles
-	${LINK.c} -o ${TESTDIR}/TestFiles/f1 $^ ${LDLIBSOPTIONS}   -lcunit 
+	${LINK.c} -o ${TESTDIR}/TestFiles/f1 $^ ${LDLIBSOPTIONS}   cunit 
 
 
 ${TESTDIR}/tests/testRecorder.o: tests/testRecorder.c 
 	${MKDIR} -p ${TESTDIR}/tests
 	${RM} "$@.d"
-	$(COMPILE.c) -g -DDT7816 -DDT7816 -I/opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/include/linux -I/opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/include -I/opt/ti-sdk-am335x-evm-07.00.00.00/board-support/extra-drivers/dt78xx -I/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/common -I../../../board-support/linux-3.12.10-ti2013.12.01/include/linux -I../../../board-support/linux-3.12.10-ti2013.12.01/include -I../../../board-support/extra-drivers/dt78xx -I../common -std=c11 -MMD -MP -MF "$@.d" -o ${TESTDIR}/tests/testRecorder.o tests/testRecorder.c
+	$(COMPILE.c) -g -DDT7816 -DDT7816 -I/usr/lib/cunit/include -I/opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/include/linux -I/opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/include -I/opt/ti-sdk-am335x-evm-07.00.00.00/board-support/extra-drivers/dt78xx -I/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/common -I../../../board-support/linux-3.12.10-ti2013.12.01/include/linux -I../../../board-support/linux-3.12.10-ti2013.12.01/include -I../../../board-support/extra-drivers/dt78xx -I../common -std=c11 -MMD -MP -MF "$@.d" -o ${TESTDIR}/tests/testRecorder.o tests/testRecorder.c
 
 
 ${OBJECTDIR}/_ext/28d545ba/RingBuf_nomain.o: ${OBJECTDIR}/_ext/28d545ba/RingBuf.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/RingBuf.c 
