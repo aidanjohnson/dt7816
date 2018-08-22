@@ -23,12 +23,12 @@
 
 # Path to Rules.make. Edit if this Makefile is moved elsewhere or assign the
 # path in the command line
-RULES_DIR = ../..
+RULES_DIR = ../../..
 # Path to directory with DT78xx header file. Edit if this Makefile is 
 # moved elsewhere or assign the path in the command line
-DT78xx_DIR = ../../board-support/extra-drivers/dt78xx/
+DT78xx_DIR = ../../../board-support/extra-drivers/dt78xx/
 # Path to common files
-COMN_DIR = ../../example-applications/dt78xx-examples/common/
+COMN_DIR = ../../../example-applications/dt78xx-examples/common/
 # Board type
 BOARD_TYPE = DT7816
 # Path to LibAiff files
