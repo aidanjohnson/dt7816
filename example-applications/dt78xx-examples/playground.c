@@ -1,0 +1,645 @@
+/* 
+ * Usage :
+ *	See usage() below
+ *****************************************************************************/
+
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdarg.h>
+#define __USE_GNU   (1)
+#include <signal.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <getopt.h>
+#include <linux/aio_abi.h>	/* for AIO types and constants */
+#include <malloc.h>
+#include <sys/time.h>
+#include <time.h>
+
+#include "dt78xx_ioctl.h"
+#include "aio_syscall.h"
+#include "dt78xx_aio.h"
+#include "dt78xx_misc.h"
+
+
+/*****************************************************************************
+ * MACROS
+ */
+
+#define MAX_AIO_EVENTS      (64)
+#define WAIT_MS             (0)
+/*
+ * Debug led turned on/off at entry/exit of FIR filter function to measure its
+ * timing. Statistics collected for more than 100K invocations of this function
+ * using 1024 samples per buffer and 69 tap filter are,
+ *                     Mean      Min       Max         Std-dev
+ * FIR_USES_FLOAT      694.27us  671us     1.53ms      32.0485us
+ * FIR_USES_INT        551.64us  545us     1.2ms       12.85us
+ * 
+ * Note that the release build use GCC's "auto vectorization" feature for the
+ * NEON and hence the significant decrease in processing time. For more details,
+ * see 
+ * http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dht0004a/CHDBAIDJ.html
+ * 
+ */
+#define BUFF_DONE_LED               (1)  //Debug led flashed on each buffer done                        
+
+//Debug led turned on at entry to buffer underrun callback
+#define OVERRUN_LED                 (1) //Debug led flashed on overrun 
+
+//Debug led blinks to indicate collecion status
+#define STATUS_LED                  (7)
+
+#if (defined STATUS_LED) && ((STATUS_LED < 0) || (STATUS_LED > 7))
+    #error STATUS_LED
+#endif
+#if (defined OVERRUN_LED) && ((OVERRUN_LED < 0) || (OVERRUN_LED > 7))
+    #error OVERRUN_LED
+#endif
+#if (defined BUFF_DONE_LED) && ((BUFF_DONE_LED < 0) || (BUFF_DONE_LED > 7))
+    #error BUFF_DONE_LED
+#endif
+
+/*
+ * Board specific macros.
+ */
+
+#define BOARD_STR       "dt7816"
+#define CLK_MAX_HZ      (400000.0f)
+#define CLK_MIN_HZ      (100.0f) //Minimum for AD
+                      
+#define WAIT_TIMEOUT_MS             (1) //-1 for indefinite wait
+#define DEFAULT_NUM_BUFFS           (8)
+#define DEFAULT_SAMPLES_PER_CHAN    (1024)
+
+#define OUT_STREAM_DEV  "/dev/"BOARD_STR"-stream-out"
+#define IN_STREAM_DEV   "/dev/"BOARD_STR"-stream-in"
+#define AIN_DEV         "/dev/"BOARD_STR"-ain"
+#define TACH_DEV        "/dev/"BOARD_STR"-tach"
+
+/*****************************************************************************
+ * GLOBALS
+ */
+
+/*
+ * Command line arguments
+ */
+static const char usage[]=
+{
+"%s [options] [coeff-file]\n"
+"Sample AIN0, \n"
+"Options : \n"
+"-c|--clk    : Sampling rate in Hz, default 100000\n"
+"-n|--numbuf : Number of buffers queued, default 8\n"
+"-s|--samples: Number of *samples* per buffer, default 1024\n"
+};
+
+static int g_quit = 0;
+
+#if (defined STATUS_LED) 
+//turn on/off indicator led after this count based on sampling rate & buffer
+uint32_t g_led_count;
+#endif
+
+//File handles for board subsystems
+int fd_in_stream = -1;
+static int g_samples_per_chan = DEFAULT_SAMPLES_PER_CHAN;
+static int g_num_buffs = DEFAULT_NUM_BUFFS;
+static int g_queue_empty_stop = 1;  //Stop on buffer overrun
+static int g_requeue = 0;      //requeue buffers after processing      
+static chan_mask_t g_chan_mask; //cached on acquisition start
+static int g_queue_empty = 0;       //#of times buffer overran while acquiring
+static int g_buffs_done = 0;    //#of buffers done
+void **g_buff_array;           //Array of pointers to input buffers
+
+//Asynchronous IO
+struct aio_struct *g_aio_in;
+
+/*****************************************************************************
+ * Signal handler for ctrl-C does nothing. It prevents the process from 
+ * terminating abruptly
+ */
+static void ctrlC_handler(int i) 
+{
+    g_quit = 1;
+}
+
+#if (defined STATUS_LED) 
+/*****************************************************************************
+ * Blink status LED approximately once a second
+ */
+static void update_status_led(int fd, int reset)
+{
+    static uint32_t count = 0; //msb has status led on/off state
+    dt78xx_led_t led;
+    led.mask = (1<<STATUS_LED);  
+    if (reset)
+    {
+        count = 0;
+        led.state = 0;
+        ioctl(fd, IOCTL_LED_SET, &led);
+        return;
+    }
+    
+    ++count;
+    if ((count & INT32_MAX) < g_led_count)
+        return;
+    
+    if (count & ~INT32_MAX)
+    {
+        led.state = 0;
+        count = 0;
+    }
+    else
+    {
+        led.state = 0xff;
+        count = ~INT32_MAX;
+    }
+    ioctl(fd, IOCTL_LED_SET, &led);
+}
+#endif
+
+/******************************************************************************
+ * Input stream fill/overrun signal handler
+ * @param i   : signal number SIGUSR1
+ */
+static void in_overrun_cb(int i) 
+{
+    
+    fprintf(stderr, "%s(%d)\n", __func__, i);
+    //Your error code here ...
+}
+
+/******************************************************************************
+ * Free allocated iocbs
+ * @param iocbs
+ * @param num
+ */
+static void free_iocb_buffers(struct iocb **iocbs, int num)
+{
+    if (!iocbs)
+        return;
+    while (--num >= 0)
+    {
+        if (iocbs[num])
+        {
+            if (iocbs[num]->aio_buf)
+                free ((void *)(uint32_t)iocbs[num]->aio_buf);
+            free (iocbs[num]);
+        }
+    }
+    free (iocbs);
+}
+
+/******************************************************************************
+ * Allocate array of iocbs and buffers in each. BUFFERS MUST BE MULTIPLE OF
+ * 32-BYTES AND ALIGNED AT 32-BYTE BOUNDARY
+ * @param fd        : stream
+ * @param write     : 1=output stream, 0=input stream
+ * @param numbuf    : Number of buffers
+ * @param buflen    : Length of each buffer in bytes
+ * @return          : NULL=error, >0=pointer to array of icob pointers 
+ */
+static struct iocb **alloc_iocb_buffers(int fd, int write, int numbuf, int buflen)
+{
+    struct iocb **iocbs; //array of iocb pointers
+    int i;
+    int alignment = 32; //REQUIRED  
+    
+    //allocate array of pointers to iocb's
+    iocbs = (struct iocb **)malloc(sizeof(struct iocb *) * numbuf);
+    if (!iocbs)
+    {
+       fprintf(stderr, "[%s(%d)] ERROR malloc\n", __func__, __LINE__);
+       return NULL;
+    }
+    memset(iocbs, 0, (sizeof(struct iocb *) * numbuf));
+    
+    //allocate iocb for each buffer
+    for (i=0; i < numbuf; ++i)
+    {
+        struct iocb *cb = (struct iocb *)malloc(sizeof(struct iocb));
+        if (!cb)
+        {
+            fprintf(stderr, "[%s(%d)] ERROR malloc\n", __func__, __LINE__);
+            break;
+        }
+        memset(cb, 0, sizeof(struct iocb));
+        iocbs[i] = cb;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
+        cb->aio_buf = (__u64)memalign(alignment, buflen);
+#pragma GCC diagnostic pop        
+        if (!cb->aio_buf)
+        {
+            fprintf(stderr, "[%s(%d)] ERROR malloc\n", __func__, __LINE__);
+            break;
+        }
+        cb->aio_fildes = fd;
+        cb->aio_lio_opcode = write?IOCB_CMD_PWRITE:IOCB_CMD_PREAD;
+        cb->aio_nbytes = buflen;
+        cb->aio_data = write;
+    }
+    
+    if (i == numbuf) //no errors
+        return iocbs;
+    
+    //malloc failed
+    free_iocb_buffers(iocbs, numbuf);
+
+    return NULL;
+}
+
+/******************************************************************************
+ * Configure input stream to include AIN0, sampling rate, s/w trigger and 
+ * AIN0 configures for DC coupling, gain 1, IEPE disabled
+ * @param sample_rate
+ * @return <0=error. >0 handle of input stream file
+ */
+static int configure_input(float sample_rate)
+{
+    int fd, fd_ain_stream;
+    
+    if ((fd = open(IN_STREAM_DEV, O_RDWR)) < 0)
+    {
+        perror("open");
+        return -ENODEV;
+    }    
+    //configure sampling rate. The actual rate is returned on success
+    dt78xx_clk_config_t clk;
+    memset(&clk, 0, sizeof(clk));
+    clk.clk_freq = sample_rate;
+    if (ioctl(fd, IOCTL_SAMPLE_CLK_SET, &clk))
+    {
+        fprintf(stderr, "IOCTL_SAMPLE_CLK_SET ERROR %d \"%s\"\n", 
+                errno, strerror(errno));
+        return -errno;
+    }
+    
+    //write channel mask to enable AIN0
+    chan_mask_t chan_mask = chan_mask_ain0;
+    if (ioctl(fd, IOCTL_CHAN_MASK_SET, &chan_mask))
+    {
+        fprintf(stderr, "IOCTL_CHAN_MASK_SET ERROR %d \"%s\"\n", 
+                errno, strerror(errno));
+        return -errno;
+    } 
+    //configure s/w trigger 
+    dt78xx_trig_config_t trig;
+    memset(&trig, 0, sizeof(trig));
+    trig.src = trig_src_sw;
+    if (ioctl(fd, IOCTL_START_TRIG_CFG_SET, &trig))
+    {
+        fprintf(stderr, "IOCTL_START_TRIG_CFG_SET ERROR %d \"%s\"\n", 
+                errno, strerror(errno));
+        return -errno;
+    } 
+    
+    //open the AIN subsystem to configure AIN0
+    if ((fd_ain_stream = open(AIN_DEV, O_RDONLY)) < 0)
+    {
+        close(fd);
+        return -ENODEV;
+    }    
+    //Channel gain, coupling and current source
+    dt78xx_ain_config_t ain_cfg;
+    ain_cfg.ain = 0;
+    ain_cfg.gain = 1; //x1 gain
+    ain_cfg.ac_coupling = 0; //dc coupling
+    ain_cfg.current_on = 0; //current source off
+    if (ioctl(fd_ain_stream, IOCTL_AIN_CFG_SET, &ain_cfg))
+    {
+        fprintf(stderr, "IOCTL_AIN_CFG_SET ERROR %d \"%s\"\n", 
+                errno, strerror(errno));
+        close(fd);
+        close(fd_ain_stream);
+        return -errno;
+    }
+    
+    close(fd_ain_stream);
+    return fd;
+}
+
+/******************************************************************************
+ * Input stream empty signal handler
+ * @param i   : signal number set by 
+ */
+void in_stream_empty_cb(int i) 
+{
+    PRINT("%s(%d) %s\n", __func__, i,g_queue_empty_stop?"STOP":"");
+    ++g_queue_empty;
+#if (defined OVERRUN_LED) && (OVERRUN_LED > -1) && (OVERRUN_LED < 8)
+    dt78xx_led_t led;
+    led.mask = (1<<OVERRUN_LED);    
+    led.state = (1<<OVERRUN_LED);
+    ioctl(fd_in_stream, IOCTL_LED_SET, &led);
+#endif    
+    if (g_queue_empty_stop && (g_buffs_done==g_num_buffs)) //Stop on queue empty
+    {
+        if (ioctl(fd_in_stream, IOCTL_STOP_SUBSYS, 0))
+           perror("IOCTL_STOP_SUBSYS");
+        aio_stop(g_aio_in);
+    }
+}
+
+/******************************************************************************
+ * AIO buffer done callback
+ * @param buff : pointer to buffer with samples from enabled channels
+ * @param len  : length of buffer; this is an integral multiple of equal number
+ *               of samples from all enabled channels
+ * @return     : The return value determines whether this buffer will be 
+ *               resubmitted for continued AIO operations 
+ *               0 = do not requeue, 1= requeue 
+ */
+int in_buffer_done_cb(void *buff, int len)
+{
+    ++g_buffs_done;
+    
+    PRINT("%s %s\n", __func__, g_queue_empty && g_queue_empty_stop?"STOP":"");
+    //If operation was stopped on queue empty, clean up after all buffers have
+    //been dequeued and processed
+    if (g_queue_empty_stop && g_queue_empty && (g_buffs_done==g_num_buffs)) 
+    {
+        if (ioctl(fd_in_stream, IOCTL_STOP_SUBSYS, 0))
+           perror("IOCTL_STOP_SUBSYS");
+        aio_stop(g_aio_in);
+    }
+    
+    // Buffer processing here
+#if (defined BUFF_DONE_LED) && (BUFF_DONE_LED > -1) && (BUFF_DONE_LED < 8)
+    dt78xx_led_t led;
+    led.mask = (1<<BUFF_DONE_LED);    
+    led.state = (1<<BUFF_DONE_LED);
+    ioctl(fd_in_stream, IOCTL_LED_SET, &led);
+#endif    
+    
+    //Process completed buffers here  
+        
+#if (defined BUFF_DONE_LED) && (BUFF_DONE_LED > -1) && (BUFF_DONE_LED < 8)
+    led.state = 0;
+    ioctl(fd_in_stream, IOCTL_LED_SET, &led);
+#endif  
+    return g_requeue;
+}
+
+/*****************************************************************************
+ * Command line arguments see usage above
+ */
+int main (int argc, char** argv)
+{
+    int opt, i;
+    int err = EXIT_SUCCESS;
+    float sample_clk = CLK_MAX_HZ; //default sampling rate
+    int numbuf = DEFAULT_NUM_BUFFS;     //default #of buffers in AIO
+    int samples = DEFAULT_SAMPLES_PER_CHAN; //default #of samples per buffer
+    int buflen;
+    int in_strm = -EINVAL;
+    int out_strm = -EINVAL;
+    
+    aio_context_t ioctx = 0;
+    struct iocb **out_iocb = NULL;
+    struct iocb **in_iocb = NULL;
+     
+    //Specifying the expected options
+    static struct option long_options[] = 
+    {
+        {"numbuf",      required_argument,  0,  'n' },
+        {"samples",     required_argument,  0,  's' },
+        {"clock",       required_argument,  0,  'c' },
+        {0,             0,                  0,  0   }
+    };
+    
+    opterr=0;
+    while ((opt = getopt_long(argc, argv,"n:s:c:", long_options, NULL)) != -1) 
+    {
+        switch (opt) 
+        {
+            case 'n' : 
+                numbuf = atoi(optarg);
+                if (numbuf <= 0)
+                {
+                    printf(usage, argv[0]); 
+                    exit(EXIT_FAILURE);
+                }
+                if (numbuf > MAX_AIO_EVENTS)
+                {
+                    fprintf(stderr, "Max number of buffers is %d\n", MAX_AIO_EVENTS);
+                    exit(EXIT_FAILURE);
+                }
+                break;
+            case 's' : 
+                samples = atoi(optarg);
+                if (samples <= 0)
+                {
+                    printf(usage, argv[0]); 
+                    exit(EXIT_FAILURE);
+                }
+                break;
+            case 'c' : 
+                sample_clk = strtof(optarg, NULL);
+                if ((sample_clk < CLK_MIN_HZ) || (sample_clk > CLK_MAX_HZ))
+                {
+                    fprintf(stderr, "Sample must be %.3f - %.3f\n", 
+                            CLK_MIN_HZ, CLK_MAX_HZ);
+                    exit(EXIT_FAILURE);
+                }
+                break;
+            default: 
+                printf(usage, argv[0]); 
+                exit(EXIT_FAILURE);
+        }
+    }
+        
+#if (defined STATUS_LED) 
+    g_led_count = (uint32_t)(sample_clk/samples);
+    g_led_count /= 2;
+#endif    
+    
+    //Set up AIO context
+    if ((err = io_setup(MAX_AIO_EVENTS, &ioctx)))
+    {
+        fprintf(stderr, "io_setup ERROR %d \"%s\"\n", 
+                err, strerror(err));
+        goto _exit;
+    }
+            
+    //Set up ctrl-C handler to terminate process gracefully
+    sigaction_register(SIGINT, ctrlC_handler);
+    
+    /* Allocate buffers, each sized to hold the specified #of samples. Since both
+     * AD or DA samples are identical in size, the buffer length to hold a 
+     * specific number of samples will be the same for either chan_mask_ain0 or
+     * chan_mask_aout0.
+     */
+    buflen = aio_buff_size(samples, chan_mask_ain0, NULL);
+
+    /*----------------  input stream    --------------------------------*/
+    //open the input stream
+    in_strm = configure_input(sample_clk);
+    if (in_strm < 0)
+    {
+        err = -in_strm;
+        fprintf(stderr, "configure_input ERROR %d \"%s\"\n", 
+                err, strerror(err));
+        goto _exit;
+    }
+    //allocate buffers for input stream
+    if (!(in_iocb = alloc_iocb_buffers(in_strm, 0, numbuf, buflen)))
+    {
+        fprintf(stderr, "alloc_queue_buffers ERROR %d \"%s\"\n", 
+                err, strerror(err));
+        goto _exit;
+    }
+    //register signal SIGUSR1 for input stream buffer overrun
+    file_sigaction_register(in_strm, SIGUSR1, in_overrun_cb);
+         
+    //submit the output buffers
+    if (io_submit(ioctx, numbuf, out_iocb) != numbuf)
+    {
+        fprintf(stderr, "ERROR aio_start\n");
+        goto _exit;
+    }
+    //submit the input buffers
+    if (io_submit(ioctx, numbuf, in_iocb) != numbuf)
+    {
+        fprintf(stderr, "ERROR aio_start\n");
+        goto _exit;
+    }
+    fprintf(stdout, "Clock %.3f Queued %d buffers each %d samples (%d bytes)\n", 
+                        sample_clk, numbuf, samples, buflen);
+  
+    //arm output stream
+    if (ioctl(out_strm, IOCTL_ARM_SUBSYS, 0))
+    {
+        fprintf(stderr, "ERROR IOCTL_ARM_SUBSYS %d \"%s\"\n", 
+                errno, strerror(errno));
+        goto _exit;
+    } 
+    //arm input stream
+    if (ioctl(in_strm, IOCTL_ARM_SUBSYS, 0))
+    {
+        fprintf(stderr, "ERROR IOCTL_ARM_SUBSYS %d \"%s\"\n", 
+                errno, strerror(errno));
+        goto _exit;
+    }
+    //start both input and output simultaneously
+    uint32_t simultaneous = 1;
+    if (ioctl(out_strm, IOCTL_START_SUBSYS, &simultaneous))
+    {
+        fprintf(stderr, "ERROR IOCTL_START_SUBSYS %d \"%s\"\n", 
+                errno, strerror(errno));
+        goto _exit;
+    } 
+#ifdef FILE_DUMP    
+    int buff_write = 0;
+#endif    
+    struct timespec tmo;
+    tmo.tv_sec = WAIT_MS/1000;
+    tmo.tv_nsec = (WAIT_MS - tmo.tv_sec*1000)*1000;
+    
+    //Infinite loop until ctrl-C or q/Q enetered
+    fprintf(stdout, "Press q or Q or ctrl-C to exit\n"); 
+    while (!g_quit)
+    {
+        struct iocb *done[1];
+        struct io_event events[1];  //for io_getevents()
+        
+        //if key pressed
+        if(kbhit())
+        {
+            char c = fgetc(stdin);
+#ifdef FILE_DUMP    
+            if (c=='w')
+                buff_write = 1;
+#endif            
+            if ((c=='q')||(c=='Q'))//quit
+                break;
+            fflush(stdin);
+        }
+        
+        //check buffer completion
+        int ret = io_getevents(ioctx, 1, ARRAY_SIZE(events), events, &tmo);
+        for (i=0; i < ret; ++i)
+        {
+            struct iocb *cb = (struct iocb *)events[i].obj;
+            if (events[i].res2) //Non-zero ==error
+            {
+#if 1            
+                fprintf(stdout, "aio_data %llx evt_data %llx %llx %llx\n", 
+                    cb->aio_data,  events[i].data, events[i].res, 
+                        events[i].res2);
+#endif            
+                errno = events[i].res2;
+                perror("iocb");
+                break;
+            }
+            if (cb->aio_fildes == in_strm) //input
+            {
+#if (defined BUFF_DONE_LED) 
+                dt78xx_led_t led;
+                led.mask = (1<<BUFF_DONE_LED);    
+                led.state = (1<<BUFF_DONE_LED);
+                ioctl(out_strm, IOCTL_LED_SET, &led);
+#endif 
+                void *buf = (void *)((__u32)cb->aio_buf);
+                //queue the filtered buffer to output stream
+                cb->aio_fildes = out_strm;
+                cb->aio_lio_opcode = IOCB_CMD_PWRITE;
+                
+#if (defined BUFF_DONE_LED) 
+                led.state = 0;
+                ioctl(out_strm, IOCTL_LED_SET, &led);
+#endif    
+            }
+            else
+            {
+                //queue the buffer back to input stream
+                cb->aio_fildes = in_strm;
+                cb->aio_lio_opcode = IOCB_CMD_PREAD;
+            }
+#if (defined STATUS_LED) 
+            update_status_led(out_strm, 0);
+#endif    
+            //re-submit the buffer
+            done[0] = cb;
+            if (io_submit(ioctx, 1, done) < 1)
+            {
+                fprintf(stderr, "ERROR io_submit\n");
+                ret = -EIO;
+                break;
+            }
+        }
+    }
+    
+_exit: 
+    fprintf(stdout,"\n");
+    //stop the streams
+    if (out_strm > 0)
+        ioctl(out_strm, IOCTL_STOP_SUBSYS, 0); 
+    if (in_strm > 0)
+        ioctl(in_strm, IOCTL_STOP_SUBSYS, 0); 
+
+    //free the iocb and buffers 
+    free_iocb_buffers(out_iocb, numbuf);
+    free_iocb_buffers(in_iocb, numbuf);
+    
+    if (ioctx)
+       io_destroy(ioctx);
+    if (in_strm > 0)
+        close(in_strm);
+    if (out_strm > 0)
+    {
+#if (defined STATUS_LED) 
+        update_status_led(out_strm, 1);
+#endif    
+        close(out_strm);
+    }
+    fir_filter_free();
+    kbfini(); //see dt78xx_misc.h
+    return (err);
+}
