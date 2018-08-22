@@ -23,12 +23,12 @@
 
 # Path to Rules.make. Edit if this Makefile is moved elsewhere or assign the
 # path in the command line
-RULES_DIR = ../..
+RULES_DIR = ../../..
 # Path to directory with DT78xx header file. Edit if this Makefile is 
 # moved elsewhere or assign the path in the command line
 DT78xx_DIR = ../../board-support/extra-drivers/dt78xx/
 # Path to common files
-COMN_DIR = ../example-applications/dt78xx-examples/common
+COMN_DIR = ../common
 # Board type
 BOARD_TYPE = DT7816
 #----------------------------------------------------------------------------
@@ -46,7 +46,7 @@ CC := $(CROSS_COMPILE)gcc
 #   General options, sources and libraries
 #   ----------------------------------------------------------------------------
 NAME := recorder
-SRCS := main.c dt78xx_aio.c dt78xx_misc.c libaiff.c aifx.c extended.c float32.c g711.c iff.c lpcm.c pascal.c RingBuf.c sunriset.c recorder_helpers.c
+SRCS := tests/testRecorder.c main.c dt78xx_aio.c dt78xx_misc.c libaiff.c aifx.c extended.c float32.c g711.c iff.c lpcm.c pascal.c RingBuf.c sunriset.c recorder_helpers.c
 HDRS := 
 OBJS :=
 DEBUG :=
@@ -74,7 +74,7 @@ OBJDIR := release
 EXTRA_FLAGS := -O4 -Wall 
 endif
 BINDIR := $(OBJDIR)
-LIBS := $(LIBS) -lpthread -lm
+LIBS := $(LIBS) -lpthread -lm -lcunit
 OBJS := $(SRCS:%.c=$(OBJDIR)/%.o)
 
 #   ----------------------------------------------------------------------------
@@ -116,7 +116,7 @@ $(BINDIR)/$(BIN): banner $(OBJS) Makefile
 	$(CC) -o $@ $(OBJS) $(LIBS) $(LDFLAGS)  -Wl,-Map,$(BINDIR)/$(NAME).map
 
 $(OBJDIR)/%.o : %.c $(HDRS)
-	@mkdir -p $(OBJDIR)
+	@mkdir -p $(OBJDIR)/tests
 	$(CC) $(DEFS) $(ALL_CFLAGS) -o $@ $<
 
 clean:

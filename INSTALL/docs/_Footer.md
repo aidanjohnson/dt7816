@@ -1,0 +1,1 @@
+> Found an error or area for improvement? Let us know; [help](https://github.com/aidanjohnson/dt7816/blob/master/.github/CONTRIBUTING.md) is welcome and always appreciated! 

@@ -9,9 +9,9 @@ Samples AIN* (where AINx is a combination of AIN0/1/2/3/4/5/6/7 and at most 8
 simultaneous channels) and writes data to timestamped file in AIFF format files 
 saved to a predefined storage path. All options below are not required, only 
 the file identifier is required. The files are saved to 
-<path>/<prefix>_<YYYY-DD-MMTHHmmssuuuuuuZ>.aiff
+<path>/<prefix>_<YYYYMMDD>T<HHmmssuuuuuu>Z.aiff
 
-Usage        : ./release/bat-array <identifier prefix> [options]
+Usage        : ./release/recorder <identifier prefix> [options]
 
 Required     : a file or location identifier prefix, such as NORTH or 1.
 
@@ -28,13 +28,19 @@ Options
 -b|--buffers : number of buffers per file written, defaults 1.
 -d|--dur     : fixed duration of sampling period in days at night as determined
                by sunset and sunrise times; defaults 7 days.
--r|--run     : runs this application as a daemon process, defaults off.
 -t|--trig    : when the voltage on either AIN crosses 0.0 V rising 
                (threshold) acquisition is triggered. By default, acquisition
                is triggered when you start the analog input operation using 
                the ioct.
 -m|--margin  : margin of safety before the time of sunset and after the time of
                sunrise in seconds (hours*3600); defaults 3600 s. 
+-n|--night   : night cycling (on after sun down and off after sun up). Sun up and
+               down times calculated. Defaults to disabled state (recording 24
+               hours a day).
+-p|--phi     : latitude (decimal coordinate) of recording site; defaults 47.655083.
+               Northern hemisphere coordinates are positive, and southern negative.
+-l|--lambda  : longitude (decimal coordinate) of recording site defaults -122.293194.
+               Eastern hemisphere coordinates are positive, and western negative.
 
 -------------------------------------------------------------------------------
 Test setup 

@@ -36,6 +36,12 @@
                    displayName="Test Files"
                    projectFiles="false"
                    kind="TEST_LOGICAL_FOLDER">
+      <logicalFolder name="f1"
+                     displayName="recorderTests"
+                     projectFiles="true"
+                     kind="TEST">
+        <itemPath>tests/testRecorder.c</itemPath>
+      </logicalFolder>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -60,10 +66,10 @@
         <cTool>
           <standard>10</standard>
           <incDir>
-            <pElem>/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/common</pElem>
             <pElem>/opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/include/linux</pElem>
             <pElem>/opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/include</pElem>
             <pElem>/opt/ti-sdk-am335x-evm-07.00.00.00/board-support/extra-drivers/dt78xx</pElem>
+            <pElem>/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/common</pElem>
           </incDir>
           <preprocessorList>
             <Elem>DT7816</Elem>
@@ -72,6 +78,12 @@
         <ccTool>
           <standard>8</standard>
         </ccTool>
+        <linkerTool>
+          <linkerCopySharedLibs>true</linkerCopySharedLibs>
+          <linkerLibItems>
+            <linkerLibLibItem>cunit</linkerLibLibItem>
+          </linkerLibItems>
+        </linkerTool>
       </compileType>
       <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/RingBuf.c"
             ex="false"
@@ -167,6 +179,32 @@
             ex="false"
             tool="3"
             flavor2="0">
+      </item>
+      <folder path="TestFiles/f1">
+        <cTool>
+          <incDir>
+            <pElem>../../../board-support/linux-3.12.10-ti2013.12.01/include/linux</pElem>
+            <pElem>../../../board-support/linux-3.12.10-ti2013.12.01/include</pElem>
+            <pElem>../../../board-support/extra-drivers/dt78xx</pElem>
+            <pElem>../common</pElem>
+          </incDir>
+          <preprocessorList>
+            <Elem>DT7816</Elem>
+          </preprocessorList>
+        </cTool>
+        <linkerTool>
+          <output>${TESTDIR}/TestFiles/f1</output>
+          <linkerLibItems>
+            <linkerOptionItem>cunit</linkerOptionItem>
+          </linkerLibItems>
+        </linkerTool>
+      </folder>
+      <item path="tests/testRecorder.c" ex="false" tool="0" flavor2="0">
+        <cTool>
+          <incDir>
+            <pElem>/usr/lib/cunit/include</pElem>
+          </incDir>
+        </cTool>
       </item>
     </conf>
     <conf name="Release" type="1">
@@ -283,6 +321,16 @@
             ex="false"
             tool="3"
             flavor2="0">
+      </item>
+      <folder path="TestFiles/f1">
+        <linkerTool>
+          <output>${TESTDIR}/TestFiles/f1</output>
+          <linkerLibItems>
+            <linkerOptionItem>-lcunit</linkerOptionItem>
+          </linkerLibItems>
+        </linkerTool>
+      </folder>
+      <item path="tests/testRecorder.c" ex="false" tool="0" flavor2="0">
       </item>
     </conf>
   </confs>
