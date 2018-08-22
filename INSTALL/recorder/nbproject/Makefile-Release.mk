@@ -35,18 +35,8 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
-	${OBJECTDIR}/_ext/28d545ba/RingBuf.o \
-	${OBJECTDIR}/_ext/28d545ba/aifx.o \
-	${OBJECTDIR}/_ext/28d545ba/extended.o \
-	${OBJECTDIR}/_ext/28d545ba/float32.o \
-	${OBJECTDIR}/_ext/28d545ba/g711.o \
-	${OBJECTDIR}/_ext/28d545ba/iff.o \
-	${OBJECTDIR}/_ext/28d545ba/libaiff.o \
-	${OBJECTDIR}/_ext/28d545ba/lpcm.o \
-	${OBJECTDIR}/_ext/28d545ba/main.o \
-	${OBJECTDIR}/_ext/28d545ba/pascal.o \
-	${OBJECTDIR}/_ext/28d545ba/recorder_helpers.o \
-	${OBJECTDIR}/_ext/28d545ba/sunriset.o
+	${OBJECTDIR}/main.o \
+	${OBJECTDIR}/recorder_helpers.o
 
 # Test Directory
 TESTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}/tests
@@ -83,65 +73,15 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/recorder: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
 	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/recorder ${OBJECTFILES} ${LDLIBSOPTIONS}
 
-${OBJECTDIR}/_ext/28d545ba/RingBuf.o: /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/RingBuf.c
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
+${OBJECTDIR}/main.o: main.c
+	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/RingBuf.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/RingBuf.c
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/main.o main.c
 
-${OBJECTDIR}/_ext/28d545ba/aifx.o: /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/aifx.c
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
+${OBJECTDIR}/recorder_helpers.o: recorder_helpers.c
+	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/aifx.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/aifx.c
-
-${OBJECTDIR}/_ext/28d545ba/extended.o: /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/extended.c
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
-	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/extended.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/extended.c
-
-${OBJECTDIR}/_ext/28d545ba/float32.o: /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/float32.c
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
-	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/float32.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/float32.c
-
-${OBJECTDIR}/_ext/28d545ba/g711.o: /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/g711.c
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
-	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/g711.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/g711.c
-
-${OBJECTDIR}/_ext/28d545ba/iff.o: /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/iff.c
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
-	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/iff.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/iff.c
-
-${OBJECTDIR}/_ext/28d545ba/libaiff.o: /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/libaiff.c
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
-	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/libaiff.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/libaiff.c
-
-${OBJECTDIR}/_ext/28d545ba/lpcm.o: /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/lpcm.c
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
-	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/lpcm.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/lpcm.c
-
-${OBJECTDIR}/_ext/28d545ba/main.o: /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/main.c
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
-	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/main.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/main.c
-
-${OBJECTDIR}/_ext/28d545ba/pascal.o: /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/pascal.c
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
-	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/pascal.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/pascal.c
-
-${OBJECTDIR}/_ext/28d545ba/recorder_helpers.o: /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/recorder_helpers.c
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
-	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/recorder_helpers.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/recorder_helpers.c
-
-${OBJECTDIR}/_ext/28d545ba/sunriset.o: /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/sunriset.c
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
-	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/sunriset.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/sunriset.c
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/recorder_helpers.o recorder_helpers.c
 
 # Subprojects
 .build-subprojects:
@@ -152,169 +92,39 @@ ${OBJECTDIR}/_ext/28d545ba/sunriset.o: /opt/ti-sdk-am335x-evm-07.00.00.00/exampl
 
 ${TESTDIR}/TestFiles/f1: ${TESTDIR}/tests/testRecorder.o ${OBJECTFILES:%.o=%_nomain.o}
 	${MKDIR} -p ${TESTDIR}/TestFiles
-	${LINK.c} -o ${TESTDIR}/TestFiles/f1 $^ ${LDLIBSOPTIONS}   -lcunit 
+	${LINK.c} -o ${TESTDIR}/TestFiles/f1 $^ ${LDLIBSOPTIONS}   
 
 
 ${TESTDIR}/tests/testRecorder.o: tests/testRecorder.c 
 	${MKDIR} -p ${TESTDIR}/tests
 	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${TESTDIR}/tests/testRecorder.o tests/testRecorder.c
+	$(COMPILE.c) -O2 -I. -MMD -MP -MF "$@.d" -o ${TESTDIR}/tests/testRecorder.o tests/testRecorder.c
 
 
-${OBJECTDIR}/_ext/28d545ba/RingBuf_nomain.o: ${OBJECTDIR}/_ext/28d545ba/RingBuf.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/RingBuf.c 
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
-	@NMOUTPUT=`${NM} ${OBJECTDIR}/_ext/28d545ba/RingBuf.o`; \
+${OBJECTDIR}/main_nomain.o: ${OBJECTDIR}/main.o main.c 
+	${MKDIR} -p ${OBJECTDIR}
+	@NMOUTPUT=`${NM} ${OBJECTDIR}/main.o`; \
 	if (echo "$$NMOUTPUT" | ${GREP} '|main$$') || \
 	   (echo "$$NMOUTPUT" | ${GREP} 'T main$$') || \
 	   (echo "$$NMOUTPUT" | ${GREP} 'T _main$$'); \
 	then  \
 	    ${RM} "$@.d";\
-	    $(COMPILE.c) -O2 -Dmain=__nomain -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/RingBuf_nomain.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/RingBuf.c;\
+	    $(COMPILE.c) -O2 -Dmain=__nomain -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/main_nomain.o main.c;\
 	else  \
-	    ${CP} ${OBJECTDIR}/_ext/28d545ba/RingBuf.o ${OBJECTDIR}/_ext/28d545ba/RingBuf_nomain.o;\
+	    ${CP} ${OBJECTDIR}/main.o ${OBJECTDIR}/main_nomain.o;\
 	fi
 
-${OBJECTDIR}/_ext/28d545ba/aifx_nomain.o: ${OBJECTDIR}/_ext/28d545ba/aifx.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/aifx.c 
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
-	@NMOUTPUT=`${NM} ${OBJECTDIR}/_ext/28d545ba/aifx.o`; \
+${OBJECTDIR}/recorder_helpers_nomain.o: ${OBJECTDIR}/recorder_helpers.o recorder_helpers.c 
+	${MKDIR} -p ${OBJECTDIR}
+	@NMOUTPUT=`${NM} ${OBJECTDIR}/recorder_helpers.o`; \
 	if (echo "$$NMOUTPUT" | ${GREP} '|main$$') || \
 	   (echo "$$NMOUTPUT" | ${GREP} 'T main$$') || \
 	   (echo "$$NMOUTPUT" | ${GREP} 'T _main$$'); \
 	then  \
 	    ${RM} "$@.d";\
-	    $(COMPILE.c) -O2 -Dmain=__nomain -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/aifx_nomain.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/aifx.c;\
+	    $(COMPILE.c) -O2 -Dmain=__nomain -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/recorder_helpers_nomain.o recorder_helpers.c;\
 	else  \
-	    ${CP} ${OBJECTDIR}/_ext/28d545ba/aifx.o ${OBJECTDIR}/_ext/28d545ba/aifx_nomain.o;\
-	fi
-
-${OBJECTDIR}/_ext/28d545ba/extended_nomain.o: ${OBJECTDIR}/_ext/28d545ba/extended.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/extended.c 
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
-	@NMOUTPUT=`${NM} ${OBJECTDIR}/_ext/28d545ba/extended.o`; \
-	if (echo "$$NMOUTPUT" | ${GREP} '|main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T _main$$'); \
-	then  \
-	    ${RM} "$@.d";\
-	    $(COMPILE.c) -O2 -Dmain=__nomain -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/extended_nomain.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/extended.c;\
-	else  \
-	    ${CP} ${OBJECTDIR}/_ext/28d545ba/extended.o ${OBJECTDIR}/_ext/28d545ba/extended_nomain.o;\
-	fi
-
-${OBJECTDIR}/_ext/28d545ba/float32_nomain.o: ${OBJECTDIR}/_ext/28d545ba/float32.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/float32.c 
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
-	@NMOUTPUT=`${NM} ${OBJECTDIR}/_ext/28d545ba/float32.o`; \
-	if (echo "$$NMOUTPUT" | ${GREP} '|main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T _main$$'); \
-	then  \
-	    ${RM} "$@.d";\
-	    $(COMPILE.c) -O2 -Dmain=__nomain -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/float32_nomain.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/float32.c;\
-	else  \
-	    ${CP} ${OBJECTDIR}/_ext/28d545ba/float32.o ${OBJECTDIR}/_ext/28d545ba/float32_nomain.o;\
-	fi
-
-${OBJECTDIR}/_ext/28d545ba/g711_nomain.o: ${OBJECTDIR}/_ext/28d545ba/g711.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/g711.c 
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
-	@NMOUTPUT=`${NM} ${OBJECTDIR}/_ext/28d545ba/g711.o`; \
-	if (echo "$$NMOUTPUT" | ${GREP} '|main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T _main$$'); \
-	then  \
-	    ${RM} "$@.d";\
-	    $(COMPILE.c) -O2 -Dmain=__nomain -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/g711_nomain.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/g711.c;\
-	else  \
-	    ${CP} ${OBJECTDIR}/_ext/28d545ba/g711.o ${OBJECTDIR}/_ext/28d545ba/g711_nomain.o;\
-	fi
-
-${OBJECTDIR}/_ext/28d545ba/iff_nomain.o: ${OBJECTDIR}/_ext/28d545ba/iff.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/iff.c 
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
-	@NMOUTPUT=`${NM} ${OBJECTDIR}/_ext/28d545ba/iff.o`; \
-	if (echo "$$NMOUTPUT" | ${GREP} '|main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T _main$$'); \
-	then  \
-	    ${RM} "$@.d";\
-	    $(COMPILE.c) -O2 -Dmain=__nomain -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/iff_nomain.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/iff.c;\
-	else  \
-	    ${CP} ${OBJECTDIR}/_ext/28d545ba/iff.o ${OBJECTDIR}/_ext/28d545ba/iff_nomain.o;\
-	fi
-
-${OBJECTDIR}/_ext/28d545ba/libaiff_nomain.o: ${OBJECTDIR}/_ext/28d545ba/libaiff.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/libaiff.c 
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
-	@NMOUTPUT=`${NM} ${OBJECTDIR}/_ext/28d545ba/libaiff.o`; \
-	if (echo "$$NMOUTPUT" | ${GREP} '|main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T _main$$'); \
-	then  \
-	    ${RM} "$@.d";\
-	    $(COMPILE.c) -O2 -Dmain=__nomain -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/libaiff_nomain.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/libaiff.c;\
-	else  \
-	    ${CP} ${OBJECTDIR}/_ext/28d545ba/libaiff.o ${OBJECTDIR}/_ext/28d545ba/libaiff_nomain.o;\
-	fi
-
-${OBJECTDIR}/_ext/28d545ba/lpcm_nomain.o: ${OBJECTDIR}/_ext/28d545ba/lpcm.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/lpcm.c 
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
-	@NMOUTPUT=`${NM} ${OBJECTDIR}/_ext/28d545ba/lpcm.o`; \
-	if (echo "$$NMOUTPUT" | ${GREP} '|main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T _main$$'); \
-	then  \
-	    ${RM} "$@.d";\
-	    $(COMPILE.c) -O2 -Dmain=__nomain -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/lpcm_nomain.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/lpcm.c;\
-	else  \
-	    ${CP} ${OBJECTDIR}/_ext/28d545ba/lpcm.o ${OBJECTDIR}/_ext/28d545ba/lpcm_nomain.o;\
-	fi
-
-${OBJECTDIR}/_ext/28d545ba/main_nomain.o: ${OBJECTDIR}/_ext/28d545ba/main.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/main.c 
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
-	@NMOUTPUT=`${NM} ${OBJECTDIR}/_ext/28d545ba/main.o`; \
-	if (echo "$$NMOUTPUT" | ${GREP} '|main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T _main$$'); \
-	then  \
-	    ${RM} "$@.d";\
-	    $(COMPILE.c) -O2 -Dmain=__nomain -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/main_nomain.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/main.c;\
-	else  \
-	    ${CP} ${OBJECTDIR}/_ext/28d545ba/main.o ${OBJECTDIR}/_ext/28d545ba/main_nomain.o;\
-	fi
-
-${OBJECTDIR}/_ext/28d545ba/pascal_nomain.o: ${OBJECTDIR}/_ext/28d545ba/pascal.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/pascal.c 
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
-	@NMOUTPUT=`${NM} ${OBJECTDIR}/_ext/28d545ba/pascal.o`; \
-	if (echo "$$NMOUTPUT" | ${GREP} '|main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T _main$$'); \
-	then  \
-	    ${RM} "$@.d";\
-	    $(COMPILE.c) -O2 -Dmain=__nomain -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/pascal_nomain.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/pascal.c;\
-	else  \
-	    ${CP} ${OBJECTDIR}/_ext/28d545ba/pascal.o ${OBJECTDIR}/_ext/28d545ba/pascal_nomain.o;\
-	fi
-
-${OBJECTDIR}/_ext/28d545ba/recorder_helpers_nomain.o: ${OBJECTDIR}/_ext/28d545ba/recorder_helpers.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/recorder_helpers.c 
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
-	@NMOUTPUT=`${NM} ${OBJECTDIR}/_ext/28d545ba/recorder_helpers.o`; \
-	if (echo "$$NMOUTPUT" | ${GREP} '|main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T _main$$'); \
-	then  \
-	    ${RM} "$@.d";\
-	    $(COMPILE.c) -O2 -Dmain=__nomain -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/recorder_helpers_nomain.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/recorder_helpers.c;\
-	else  \
-	    ${CP} ${OBJECTDIR}/_ext/28d545ba/recorder_helpers.o ${OBJECTDIR}/_ext/28d545ba/recorder_helpers_nomain.o;\
-	fi
-
-${OBJECTDIR}/_ext/28d545ba/sunriset_nomain.o: ${OBJECTDIR}/_ext/28d545ba/sunriset.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/sunriset.c 
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
-	@NMOUTPUT=`${NM} ${OBJECTDIR}/_ext/28d545ba/sunriset.o`; \
-	if (echo "$$NMOUTPUT" | ${GREP} '|main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T main$$') || \
-	   (echo "$$NMOUTPUT" | ${GREP} 'T _main$$'); \
-	then  \
-	    ${RM} "$@.d";\
-	    $(COMPILE.c) -O2 -Dmain=__nomain -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/sunriset_nomain.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/sunriset.c;\
-	else  \
-	    ${CP} ${OBJECTDIR}/_ext/28d545ba/sunriset.o ${OBJECTDIR}/_ext/28d545ba/sunriset_nomain.o;\
+	    ${CP} ${OBJECTDIR}/recorder_helpers.o ${OBJECTDIR}/recorder_helpers_nomain.o;\
 	fi
 
 # Run Test Targets

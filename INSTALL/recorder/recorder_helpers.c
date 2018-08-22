@@ -38,6 +38,37 @@ void ledIndicators(uint8_t status, int streaming) {
     ioctl(streaming, IOCTL_LED_SET, &led);    
 }
 
+#if (defined STATUS_LED) 
+void updateStatusLed(int fd, int reset) {
+    static uint32_t count = 0; //msb has status led on/off state
+    dt78xx_led_t led;
+    led.mask = (1<<STATUS_LED);  
+    if (reset)
+    {
+        count = 0;
+        led.state = 0;
+        ioctl(fd, IOCTL_LED_SET, &led);
+        return;
+    }
+    
+    ++count;
+    if ((count & INT32_MAX) < g_led_count)
+        return;
+    
+    if (count & ~INT32_MAX)
+    {
+        led.state = 0;
+        count = 0;
+    }
+    else
+    {
+        led.state = 0xff;
+        count = ~INT32_MAX;
+    }
+    ioctl(fd, IOCTL_LED_SET, &led);
+}
+#endif
+
 void getTime(struct tm **pres_time, struct timeval *clock_time) {
     gettimeofday(clock_time, NULL);
     *pres_time = gmtime(&(*clock_time).tv_sec);
@@ -78,6 +109,17 @@ long getPresentTime() {
     struct timeval epoch_time;
     getTime(&iso_time, &epoch_time);
     return (long) epoch_time.tv_sec;
+}
+
+int checkFatal(int gross_samples) {
+    if(gross_samples > 65536) {
+        fprintf(stderr, "Fatal Error: exceeded 16-bits!\n");
+        fprintf(stderr, "SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS = %d > 65536\n", 
+                gross_samples);
+        return (EXIT_FAILURE);
+    } else {
+        return (EXIT_SUCCESS);
+    }
 }
 
 void createChanMask(int ain[], int *ch_on, chan_mask_t *chan_mask) {
@@ -324,7 +366,22 @@ int openAIN(int* fd_stream, int* fd_ain) {
     }
 }
 
-static struct iocb **alloc_iocb_buffers(int fd, int write, int numbuf, int buflen) {
+void free_iocb_buffers(struct iocb **iocbs, int num) {
+    if (!iocbs)
+        return;
+    while (--num >= 0)
+    {
+        if (iocbs[num])
+        {
+            if (iocbs[num]->aio_buf)
+                free ((void *)(uint32_t)iocbs[num]->aio_buf);
+            free (iocbs[num]);
+        }
+    }
+    free (iocbs);
+}
+
+struct iocb **alloc_iocb_buffers(int fd, int write, int numbuf, int buflen) {
     struct iocb **iocbs; //array of iocb pointers
     int i;
     int alignment = 32; //REQUIRED  

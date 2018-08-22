@@ -38,6 +38,37 @@ void ledIndicators(uint8_t status, int streaming) {
     ioctl(streaming, IOCTL_LED_SET, &led);    
 }
 
+#if (defined STATUS_LED) 
+void updateStatusLed(int fd, int reset) {
+    static uint32_t count = 0; //msb has status led on/off state
+    dt78xx_led_t led;
+    led.mask = (1<<STATUS_LED);  
+    if (reset)
+    {
+        count = 0;
+        led.state = 0;
+        ioctl(fd, IOCTL_LED_SET, &led);
+        return;
+    }
+    
+    ++count;
+    if ((count & INT32_MAX) < g_led_count)
+        return;
+    
+    if (count & ~INT32_MAX)
+    {
+        led.state = 0;
+        count = 0;
+    }
+    else
+    {
+        led.state = 0xff;
+        count = ~INT32_MAX;
+    }
+    ioctl(fd, IOCTL_LED_SET, &led);
+}
+#endif
+
 void getTime(struct tm **pres_time, struct timeval *clock_time) {
     gettimeofday(clock_time, NULL);
     *pres_time = gmtime(&(*clock_time).tv_sec);
@@ -335,15 +366,68 @@ int openAIN(int* fd_stream, int* fd_ain) {
     }
 }
 
-void waitBuffering(int num_buffers, int g_quit, struct aio_struct** aio) {
-    fprintf(stdout, "Buffering in progress...\n");
-    int buff_done = 0;
-    while (!g_quit && (buff_done < num_buffers)) {
-        int ret = aio_wait(*aio, 0);
-        if (ret < 0) /* Error */
-            break;
-        buff_done += ret;
+void free_iocb_buffers(struct iocb **iocbs, int num) {
+    if (!iocbs)
+        return;
+    while (--num >= 0)
+    {
+        if (iocbs[num])
+        {
+            if (iocbs[num]->aio_buf)
+                free ((void *)(uint32_t)iocbs[num]->aio_buf);
+            free (iocbs[num]);
+        }
     }
+    free (iocbs);
+}
+
+struct iocb **alloc_iocb_buffers(int fd, int write, int numbuf, int buflen) {
+    struct iocb **iocbs; //array of iocb pointers
+    int i;
+    int alignment = 32; //REQUIRED  
+    
+    //allocate array of pointers to iocb's
+    iocbs = (struct iocb **)malloc(sizeof(struct iocb *) * numbuf);
+    if (!iocbs)
+    {
+       fprintf(stderr, "[%s(%d)] ERROR malloc\n", __func__, __LINE__);
+       return NULL;
+    }
+    memset(iocbs, 0, (sizeof(struct iocb *) * numbuf));
+    
+    //allocate iocb for each buffer
+    for (i=0; i < numbuf; ++i)
+    {
+        struct iocb *cb = (struct iocb *)malloc(sizeof(struct iocb));
+        if (!cb)
+        {
+            fprintf(stderr, "[%s(%d)] ERROR malloc\n", __func__, __LINE__);
+            break;
+        }
+        memset(cb, 0, sizeof(struct iocb));
+        iocbs[i] = cb;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
+        cb->aio_buf = (__u64)memalign(alignment, buflen);
+#pragma GCC diagnostic pop        
+        if (!cb->aio_buf)
+        {
+            fprintf(stderr, "[%s(%d)] ERROR malloc\n", __func__, __LINE__);
+            break;
+        }
+        cb->aio_fildes = fd;
+        cb->aio_lio_opcode = write?IOCB_CMD_PWRITE:IOCB_CMD_PREAD;
+        cb->aio_nbytes = buflen;
+        cb->aio_data = write;
+    }
+    
+    if (i == numbuf) //no errors
+        return iocbs;
+    
+    //malloc failed
+    free_iocb_buffers(iocbs, numbuf);
+
+    return NULL;
 }
 
 void setMetadata(AIFF_Ref file, double lon, double lat, long sunset, long sunrise) {

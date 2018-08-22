@@ -37,6 +37,9 @@ extern "C" {
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
+#define __USE_GNU   (1)
+#include <signal.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <unistd.h>
@@ -44,25 +47,33 @@ extern "C" {
 #include <malloc.h>
 #include <math.h>
 #include <time.h>
-#include <sys/time.h>    
+#include <sys/time.h>  
+#include <sys/types.h>
+#include <sys/stat.h>  
+#include <linux/aio_abi.h>	/* for AIO types and constants */
     
 #include "dt78xx_aio.h"
+#include "aio_syscall.h"
 #include "dt78xx_ioctl.h"
 #include "dt78xx_misc.h"
     
 #ifdef DT7816
-    #define DEV_STREAM_IN   "/dev/dt7816-stream-in"
-    //AIN device file
-    #define DEV_AIN         "/dev/dt7816-ain"
-    #define DOUT_DEV        "/dev/dt7816-dout"
+    #define BOARD_STR       "dt7816"
+    #define CLK_MAX_HZ      (400000.0f)
+    #define CLK_MIN_HZ      (100.0f) //Minimum for AD
 #else
     #error Board not supported
 #endif
-    
-#include "sunriset.h"
+
+#define DEV_STREAM_IN   "/dev/"BOARD_STR"-stream-in"
+#define DEV_STREAM_OUT  "/dev/"BOARD_STR"-stream-out"
+#define DEV_AIN         "/dev/"BOARD_STR"-ain"
+#define TACH_DEV        "/dev/"BOARD_STR"-tach"
+
+#include "sunriset/sunriset.h"
 #define LIBAIFF_NOCOMPAT 1  /* do not use LibAiff 2 API compatibility */
-#include "libaiff.h"
-#include "RingBuf.h"
+#include "libaiff/libaiff.h"
+#include "RingBuf/RingBuf.h"
     
 /*
  * ==== Customisable Macros ====
@@ -82,11 +93,14 @@ extern "C" {
 #define AIN5                0
 #define AIN6                0
 #define AIN7                0
+
 #define PATH_TO_STORAGE     "/media/path/to/ssd/" /* Predefined write path */
-#define SAMPLE_RATE_HZ      400000.0
+
+#define SAMPLE_RATE_HZ      400000.0f
 #define DURATION_DAYS       21 /* Default number of days of sampling */
 #define SAFETY_MARGIN       3600 /* Buffers in seconds before sunset and after sunrise */
 #define NIGHT_CYCLE         0 /* Cycles recording on at night and off at day */
+
 #define DEFAULT_LATITUDE    47.655083 /* Latitude (N := +, S := -) */
 #define DEFAULT_LONGITUDE   -122.293194 /* Longitude (E := +, W := -) */
     
@@ -95,16 +109,49 @@ extern "C" {
 #define NUM_BUFFS           1 /* Number of buffers per file initialised */
 
 /*
+ * ===== Debug Options ====
+ */
+#define STATUS_LED          (7) /* Debug led blinks to indicate collecion status */
+#define OVERRUN_LED         (1) /* Debug led flashed on overrun  */
+#define BUFF_DONE_LED       (1) /*Debug led flashed on overrun  */
+
+#if (defined STATUS_LED) && ((STATUS_LED < 0) || (STATUS_LED > 7))
+    #error STATUS_LED
+#endif
+#if (defined OVERRUN_LED) && ((OVERRUN_LED < 0) || (OVERRUN_LED > 7))
+    #error OVERRUN_LED
+#endif
+#if (defined BUFF_DONE_LED) && ((BUFF_DONE_LED < 0) || (BUFF_DONE_LED > 7))
+    #error BUFF_DONE_LED
+#endif
+
+#if (defined STATUS_LED) 
+    /* turn on/off indicator led after this count based on sampling rate & buffer */
+    uint32_t g_led_count;
+#endif
+
+/*
  * ==== Defaults: Change at own risk ====
  */
 
-#define NUM_CHANNELS        AIN0+AIN1+AIN2+AIN3+AIN4+AIN5+AIN6+AIN7 /* max ch: 8 */
+#define NUM_CHANNELS        (AIN0+AIN1+AIN2+AIN3+AIN4+AIN5+AIN6+AIN7) /* max ch: 8 */
 #define SAMPLE_RATE         SAMPLE_RATE_HZ
 #define AUTO_TRIG           1
 #define LEN                 512 /* Default character array size */
+#define SAMPLES_PER_CHAN    (SAMPLES_PER_FILE / NUM_CHANNELS)
+#define MAX_AIO_EVENTS      64
+#define WAIT_MS             5
+
+#if (SAMPLES_PER_CHAN > 65536)
+    (EXIT_FAILURE)
+#endif
 
 #define xstr(s) str(s)
 #define str(s) #s
+
+#ifndef ARRAY_SIZE
+    #define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))
+#endif
 
 #define TRIG_LEVEL_V        0.0
 #define DEFAULT_GAIN        1 /* gain 1 => +/- 10 V; must be 1 for DT7816 */
@@ -194,13 +241,21 @@ struct circ_buffer {
  * PIN6 := AGRD0, PIN8 := AGRD1, PIN10 := AGRD2, PIN12 := AGRD3
  * PIN14 := AGRD4, PIN16 := AGRD5, PIN18 := AGRD6, PIN20 := AGRD7
  * 
- * @param status        Whether each hannel is active
+ * @param status        Whether each channel is active
  * @param streaming     1 if presently streaming
  */        
 void ledIndicators(uint8_t status, int streaming);
 
 /**
- * Retrives present time as Unix Epoch and UTC; readily formatted in ISO 8601.
+ * Blinking status LED approximately once a second
+ * 
+ * @param fd     File directory
+ * @param reset  
+ */
+void updateStatusLed(int fd, int reset);
+
+/**
+ * Retrieves present time as Unix Epoch and UTC; readily formatted in ISO 8601.
  * UTC = Universal Coordinated Time (aka GMT = Greenwich Mean Time): Zulu
  * 
  * @param pres_time     Present UTC time
@@ -403,6 +458,13 @@ int openAIN(int* fd_stream, int* fd_ain);
  */
 void waitBuffering(int num_buffers, int g_quit, struct aio_struct**);
 
+/**
+ * Free allocated iocbs
+ * @param iocbs
+ * @param num
+ */
+void free_iocb_buffers(struct iocb **iocbs, int num);
+
 /** 
  * Sets AIFF file metadata.
  * 
@@ -412,6 +474,19 @@ void waitBuffering(int num_buffers, int g_quit, struct aio_struct**);
  * @param   sunrise sunrise time set as annotation attribute
  */
 void setMetadata(AIFF_Ref file, double lon, double lat, long sunset, long sunrise);
+
+
+/**
+ * Allocate array of iocbs and buffers in each. BUFFERS MUST BE MULTIPLE OF
+ * 32-BYTES AND ALIGNED AT 32-BYTE BOUNDARY
+ * 
+ * @param fd        : stream
+ * @param write     : 1=output stream, 0=input stream
+ * @param numbuf    : Number of buffers
+ * @param buflen    : Length of each buffer in bytes
+ * @return          : NULL=error, >0=pointer to array of icob pointers 
+ */
+struct iocb **alloc_iocb_buffers(int fd, int write, int numbuf, int buflen);
 
 #ifdef __cplusplus
 }

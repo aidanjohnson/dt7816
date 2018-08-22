@@ -70,10 +70,10 @@ extern "C" {
 #define DEV_AIN         "/dev/"BOARD_STR"-ain"
 #define TACH_DEV        "/dev/"BOARD_STR"-tach"
 
-#include "sunriset.h"
+#include "sunriset/sunriset.h"
 #define LIBAIFF_NOCOMPAT 1  /* do not use LibAiff 2 API compatibility */
-#include "libaiff.h"
-#include "RingBuf.h"
+#include "libaiff/libaiff.h"
+#include "RingBuf/RingBuf.h"
     
 /*
  * ==== Customisable Macros ====
@@ -125,6 +125,11 @@ extern "C" {
     #error BUFF_DONE_LED
 #endif
 
+#if (defined STATUS_LED) 
+    /* turn on/off indicator led after this count based on sampling rate & buffer */
+    uint32_t g_led_count;
+#endif
+
 /*
  * ==== Defaults: Change at own risk ====
  */
@@ -135,11 +140,10 @@ extern "C" {
 #define LEN                 512 /* Default character array size */
 #define SAMPLES_PER_CHAN    (SAMPLES_PER_FILE / NUM_CHANNELS)
 #define MAX_AIO_EVENTS      64
+#define WAIT_MS             5
 
-#if SAMPLES_PER_CHAN > 65536
-    EXIT_FAILURE
-#else
-    EXIT_SUCCESS
+#if (SAMPLES_PER_CHAN > 65536)
+    (EXIT_FAILURE)
 #endif
 
 #define xstr(s) str(s)
@@ -237,13 +241,21 @@ struct circ_buffer {
  * PIN6 := AGRD0, PIN8 := AGRD1, PIN10 := AGRD2, PIN12 := AGRD3
  * PIN14 := AGRD4, PIN16 := AGRD5, PIN18 := AGRD6, PIN20 := AGRD7
  * 
- * @param status        Whether each hannel is active
+ * @param status        Whether each channel is active
  * @param streaming     1 if presently streaming
  */        
 void ledIndicators(uint8_t status, int streaming);
 
 /**
- * Retrives present time as Unix Epoch and UTC; readily formatted in ISO 8601.
+ * Blinking status LED approximately once a second
+ * 
+ * @param fd     File directory
+ * @param reset  
+ */
+void updateStatusLed(int fd, int reset);
+
+/**
+ * Retrieves present time as Unix Epoch and UTC; readily formatted in ISO 8601.
  * UTC = Universal Coordinated Time (aka GMT = Greenwich Mean Time): Zulu
  * 
  * @param pres_time     Present UTC time
@@ -295,6 +307,15 @@ void timestamp(char *file_path, char **argv, char *path_to_storage);
  * @return Present time (s)
  */
 long getPresentTime();
+
+/**
+ * Checks that selected samples not in excess of 65536.
+ * gross_samples <= 65536 samples = 2^(16 bits)
+ * 
+ * @param gross_samples     SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS
+ * @return                  1 if successful, 0 if failure
+ */
+int checkFatal(int gross_samples);
 
 /**
  * Creates channel mask for each active channel determined by ain.
@@ -429,18 +450,6 @@ int openStream(int* fd_stream);
 int openAIN(int* fd_stream, int* fd_ain);
 
 /**
- * Allocate array of iocbs and buffers in each. BUFFERS MUST BE MULTIPLE OF
- * 32-BYTES AND ALIGNED AT 32-BYTE BOUNDARY
- * 
- * @param fd        : stream
- * @param write     : 1=output stream, 0=input stream
- * @param numbuf    : Number of buffers
- * @param buflen    : Length of each buffer in bytes
- * @return          : NULL=error, >0=pointer to array of icob pointers 
- */
-static struct iocb **alloc_iocb_buffers(int fd, int write, int numbuf, int buflen);
-
-/**
  * Waits for all buffers to complete.
  * 
  * @param num_buffers   number of active buffers
@@ -448,6 +457,13 @@ static struct iocb **alloc_iocb_buffers(int fd, int write, int numbuf, int bufle
  * @param aio_struct    analog input/output API
  */
 void waitBuffering(int num_buffers, int g_quit, struct aio_struct**);
+
+/**
+ * Free allocated iocbs
+ * @param iocbs
+ * @param num
+ */
+void free_iocb_buffers(struct iocb **iocbs, int num);
 
 /** 
  * Sets AIFF file metadata.
@@ -458,6 +474,19 @@ void waitBuffering(int num_buffers, int g_quit, struct aio_struct**);
  * @param   sunrise sunrise time set as annotation attribute
  */
 void setMetadata(AIFF_Ref file, double lon, double lat, long sunset, long sunrise);
+
+
+/**
+ * Allocate array of iocbs and buffers in each. BUFFERS MUST BE MULTIPLE OF
+ * 32-BYTES AND ALIGNED AT 32-BYTE BOUNDARY
+ * 
+ * @param fd        : stream
+ * @param write     : 1=output stream, 0=input stream
+ * @param numbuf    : Number of buffers
+ * @param buflen    : Length of each buffer in bytes
+ * @return          : NULL=error, >0=pointer to array of icob pointers 
+ */
+struct iocb **alloc_iocb_buffers(int fd, int write, int numbuf, int buflen);
 
 #ifdef __cplusplus
 }

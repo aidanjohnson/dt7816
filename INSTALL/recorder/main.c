@@ -46,7 +46,6 @@ static void forceQuit_handler(int i) {
 
 int main (int argc, char** argv) {
     
-    uint8_t sys_status = 0x00;
     int ret = EXIT_SUCCESS;
     int auto_trig = AUTO_TRIG;
     int samples_per_file = SAMPLES_PER_FILE;
@@ -69,6 +68,9 @@ int main (int argc, char** argv) {
     int ain[8] = {AIN0, AIN1, AIN2, AIN3, AIN4, AIN5, AIN6, AIN7};
     int ch_code; /* 8 bit binary; channel on := 1, channel off := 0 */
 
+    aio_context_t ioctx = 0;
+    struct iocb **in_iocb = NULL;
+    
     //Specifying the expected options
     static struct option long_options[] = {
         {"buffers",     required_argument,  0,  'b' },
@@ -108,7 +110,7 @@ int main (int argc, char** argv) {
             case 'b' :
                 num_buffers = atoi(optarg);
                 if (num_buffers <= 0) {
-                    printf(usage, argv[0]); 
+                    fprintf(stderr, "Number of buffers must be positive and non-zero\n");
                     exit(EXIT_FAILURE);
                 }
                 if (num_buffers > MAX_AIO_EVENTS) {
@@ -149,7 +151,7 @@ int main (int argc, char** argv) {
     }
          
 #if (defined STATUS_LED) 
-    g_led_count = (uint32_t)(sample_clk/samples);
+    g_led_count = (uint32_t)(clk.clk_freq / samples_per_file);
     g_led_count /= 2;
 #endif   
     
@@ -159,6 +161,9 @@ int main (int argc, char** argv) {
     int *ch_on = malloc(sizeof(int)*channels_per_file);
     createChanMask(ain, ch_on, &chan_mask);
    
+    int samples_per_chan = SAMPLES_PER_CHAN;
+    checkFatal(SAMPLES_PER_FILE * NUM_BUFFS);
+    
     dt78xx_ain_config_t ain_cfg[8] = {};
     configChan(ain_cfg);
     
@@ -171,10 +176,10 @@ int main (int argc, char** argv) {
     openAIN(&in_strm, &a_in);
             
     //Set up AIO context
-    if ((err = io_setup(MAX_AIO_EVENTS, &ioctx)))
+    if (io_setup(MAX_AIO_EVENTS, &ioctx))
     {
         fprintf(stderr, "io_setup ERROR %d \"%s\"\n", 
-                err, strerror(err));
+                errno, strerror(errno));
         goto _exit;
     }
 
@@ -232,10 +237,10 @@ int main (int argc, char** argv) {
     
     /* Create and initialise AIO stream buffers/structures */
     fprintf(stdout, "Initialising...\n");
-    struct aio_struct *aio = alloc_iocb_buffers(in_strm, 0, num_buffers, buflen);
-    if (!aio) {
+    in_iocb = alloc_iocb_buffers(in_strm, 0, num_buffers, buflen);
+    if (!in_iocb) {
         fprintf(stderr, "alloc_queue_buffers ERROR %d \"%s\"\n", 
-                err, strerror(err));
+                errno, strerror(errno));
         goto _exit;
     }
 
@@ -247,7 +252,7 @@ int main (int argc, char** argv) {
         goto _exit;
     }
     fprintf(stdout, "Clock %.3f Queued %d buffers each %d samples (%d bytes)\n", 
-                        sample_clk, num_buffers, samples, buflen);
+                        clk.clk_freq, num_buffers, samples_per_file, buflen);
 
     /* ARM */
     if ((ioctl(in_strm, IOCTL_ARM_SUBSYS, 0))) {
@@ -267,7 +272,10 @@ int main (int argc, char** argv) {
 #ifdef FILE_DUMP    
     int buff_write = 0;
 #endif   
-
+    struct timespec tmo;
+    tmo.tv_sec = WAIT_MS/1000;
+    tmo.tv_nsec = (WAIT_MS - tmo.tv_sec*1000)*1000;
+    
     /* Allocate a circular/ring buffer/queue to hold the recorded values in Volts */
     const int vbuf_len = samples_per_chan * channels_per_file;
     buffer_object.vbuf = RingBuf_new(sizeof(float), vbuf_len);
@@ -383,7 +391,7 @@ int main (int argc, char** argv) {
                     
                     /* Writes buffer to intermediate circular buffer to be written to file */
                     if (!writeBuffer(file, buffer_object, channels_per_file, 
-                                    num_buffers, ch_on, buf_array, ain_cfg)) {
+                                    num_buffers, ch_on, buf, ain_cfg)) {
                         fprintf(stderr, "ERROR writing .aiff file");
                         goto _exit;
                     }
@@ -419,7 +427,7 @@ int main (int argc, char** argv) {
                     cb->aio_lio_opcode = IOCB_CMD_PREAD;
                 }
 #ifdef STATUS_LED
-                update_status_led(in_strm, 0);
+                updateStatusLed(in_strm, 0);
 #endif    
                 /* Re-submits the buffer */
                 done[0] = cb;
@@ -439,13 +447,11 @@ int main (int argc, char** argv) {
 /* Exit protocol and procedure */
 _exit :
     fprintf(stdout,"\n");
-    aio_stop(aio);
-    aio_destroy(aio);
     if (a_in > 0)
         close(a_in);
     if (in_strm > 0)
         ioctl(in_strm, IOCTL_STOP_SUBSYS, 0); 
-    free_iocb_buffers(in_iocb, num_buffers);
+    updateStatusLed(in_strm, num_buffers);
     if (ioctx)
        io_destroy(ioctx);
     if (in_strm > 0)

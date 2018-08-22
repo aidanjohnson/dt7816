@@ -23,14 +23,23 @@
 
 # Path to Rules.make. Edit if this Makefile is moved elsewhere or assign the
 # path in the command line
-RULES_DIR = ../../..
+RULES_DIR = ../..
 # Path to directory with DT78xx header file. Edit if this Makefile is 
 # moved elsewhere or assign the path in the command line
 DT78xx_DIR = ../../board-support/extra-drivers/dt78xx/
 # Path to common files
-COMN_DIR = ../common
+COMN_DIR = ../../example-applications/dt78xx-examples/common/
 # Board type
 BOARD_TYPE = DT7816
+# Path to LibAiff files
+AIFF_DIR = libaiff/
+# Path to sunrise and set calculator
+SUN_DIR = sunriset/
+# Path to ring buffer library
+BUFF_DIR = RingBuf/
+# Path to tests
+TESTS_DIR = tests/
+
 #----------------------------------------------------------------------------
 include $(RULES_DIR)/Rules.make
 VPATH = $(COMN_DIR)
@@ -46,7 +55,13 @@ CC := $(CROSS_COMPILE)gcc
 #   General options, sources and libraries
 #   ----------------------------------------------------------------------------
 NAME := recorder
-SRCS := tests/testRecorder.c main.c dt78xx_aio.c dt78xx_misc.c libaiff.c aifx.c extended.c float32.c g711.c iff.c lpcm.c pascal.c RingBuf.c sunriset.c recorder_helpers.c
+TESTS := $(TESTS_DIR)testRecorder.c
+COMN := dt78xx_aio.c dt78xx_misc.c
+AIFF := $(AIFF_DIR)libaiff.c $(AIFF_DIR)aifx.c $(AIFF_DIR)extended.c $(AIFF_DIR)float32.c $(AIFF_DIR)g711.c $(AIFF_DIR)iff.c $(AIFF_DIR)lpcm.c $(AIFF_DIR)pascal.c
+BUFF := $(BUFF_DIR)RingBuf.c 
+SUN := 	$(SUN_DIR)sunriset.c
+MAIN := main.c recorder_helpers.c
+SRCS := $(MAIN) $(COMN) $(AIFF) $(BUFF) $(SUN) $(TESTS)
 HDRS := 
 OBJS :=
 DEBUG :=
@@ -116,7 +131,11 @@ $(BINDIR)/$(BIN): banner $(OBJS) Makefile
 	$(CC) -o $@ $(OBJS) $(LIBS) $(LDFLAGS)  -Wl,-Map,$(BINDIR)/$(NAME).map
 
 $(OBJDIR)/%.o : %.c $(HDRS)
-	@mkdir -p $(OBJDIR)/tests
+	@mkdir -p $(OBJDIR)	
+	@mkdir -p $(OBJDIR)/$(TESTS_DIR)
+	@mkdir -p $(OBJDIR)/$(BUFF_DIR)
+	@mkdir -p $(OBJDIR)/$(AIFF_DIR)	
+	@mkdir -p $(OBJDIR)/$(SUN_DIR)	
 	$(CC) $(DEFS) $(ALL_CFLAGS) -o $@ $<
 
 clean:

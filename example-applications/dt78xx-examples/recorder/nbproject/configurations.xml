@@ -1,43 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configurationDescriptor version="100">
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
-    <logicalFolder name="HeaderFiles"
-                   displayName="Header Files"
-                   projectFiles="true">
-      <itemPath>/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/RingBuf.h</itemPath>
-      <itemPath>/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/config.h</itemPath>
-      <itemPath>/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/endian.h</itemPath>
-      <itemPath>/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/libaiff.h</itemPath>
-      <itemPath>/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/private.h</itemPath>
-      <itemPath>/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/recorder_helpers.h</itemPath>
-      <itemPath>/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/sunriset.h</itemPath>
-    </logicalFolder>
-    <logicalFolder name="ResourceFiles"
-                   displayName="Resource Files"
-                   projectFiles="true">
-    </logicalFolder>
-    <logicalFolder name="SourceFiles"
-                   displayName="Source Files"
-                   projectFiles="true">
-      <itemPath>/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/RingBuf.c</itemPath>
-      <itemPath>/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/aifx.c</itemPath>
-      <itemPath>/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/extended.c</itemPath>
-      <itemPath>/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/float32.c</itemPath>
-      <itemPath>/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/g711.c</itemPath>
-      <itemPath>/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/iff.c</itemPath>
-      <itemPath>/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/libaiff.c</itemPath>
-      <itemPath>/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/lpcm.c</itemPath>
-      <itemPath>/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/main.c</itemPath>
-      <itemPath>/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/pascal.c</itemPath>
-      <itemPath>/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/recorder_helpers.c</itemPath>
-      <itemPath>/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/sunriset.c</itemPath>
-    </logicalFolder>
     <logicalFolder name="TestFiles"
                    displayName="Test Files"
                    projectFiles="false"
                    kind="TEST_LOGICAL_FOLDER">
       <logicalFolder name="f1"
-                     displayName="recorderTests"
+                     displayName="New Test 1"
                      projectFiles="true"
                      kind="TEST">
         <itemPath>tests/testRecorder.c</itemPath>
@@ -47,12 +16,22 @@
                    displayName="Important Files"
                    projectFiles="false"
                    kind="IMPORTANT_FILES_FOLDER">
-      <itemPath>/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/Makefile</itemPath>
+      <itemPath>Makefile</itemPath>
     </logicalFolder>
+    <itemPath>README.txt</itemPath>
+    <itemPath>RingBuf</itemPath>
+    <itemPath>common</itemPath>
+    <itemPath>dt78xx</itemPath>
+    <itemPath>libaiff</itemPath>
+    <itemPath>main.c</itemPath>
+    <itemPath>recorder_helpers.c</itemPath>
+    <itemPath>recorder_helpers.h</itemPath>
+    <itemPath>sunriset</itemPath>
   </logicalFolder>
   <sourceFolderFilter>^(nbproject)$</sourceFolderFilter>
   <sourceRootList>
     <Elem>/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder</Elem>
+    <Elem>.</Elem>
   </sourceRootList>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
@@ -78,133 +57,41 @@
         <ccTool>
           <standard>8</standard>
         </ccTool>
-        <linkerTool>
-          <linkerCopySharedLibs>true</linkerCopySharedLibs>
-          <linkerLibItems>
-            <linkerLibLibItem>cunit</linkerLibLibItem>
-          </linkerLibItems>
-        </linkerTool>
       </compileType>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/RingBuf.c"
-            ex="false"
-            tool="0"
-            flavor2="0">
+      <item path="README.txt" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/RingBuf.h"
-            ex="false"
-            tool="3"
-            flavor2="0">
+      <item path="RingBuf" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/aifx.c"
-            ex="false"
-            tool="0"
-            flavor2="0">
+      <item path="common" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/config.h"
-            ex="false"
-            tool="3"
-            flavor2="0">
-      </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/endian.h"
-            ex="false"
-            tool="3"
-            flavor2="0">
-      </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/extended.c"
-            ex="false"
-            tool="0"
-            flavor2="0">
-      </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/float32.c"
-            ex="false"
-            tool="0"
-            flavor2="0">
-      </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/g711.c"
-            ex="false"
-            tool="0"
-            flavor2="0">
-      </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/iff.c"
-            ex="false"
-            tool="0"
-            flavor2="0">
-      </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/libaiff.c"
-            ex="false"
-            tool="0"
-            flavor2="0">
-      </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/libaiff.h"
-            ex="false"
-            tool="3"
-            flavor2="0">
-      </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/lpcm.c"
-            ex="false"
-            tool="0"
-            flavor2="0">
-      </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/main.c"
-            ex="false"
-            tool="0"
-            flavor2="0">
-      </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/pascal.c"
-            ex="false"
-            tool="0"
-            flavor2="0">
-      </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/private.h"
-            ex="false"
-            tool="3"
-            flavor2="0">
-      </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/recorder_helpers.c"
-            ex="false"
-            tool="0"
-            flavor2="0">
-      </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/recorder_helpers.h"
-            ex="false"
-            tool="3"
-            flavor2="0">
-      </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/sunriset.c"
-            ex="false"
-            tool="0"
-            flavor2="0">
-      </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/sunriset.h"
-            ex="false"
-            tool="3"
-            flavor2="0">
+      <item path="dt78xx" ex="false" tool="3" flavor2="0">
       </item>
       <folder path="TestFiles/f1">
         <cTool>
           <incDir>
-            <pElem>../../../board-support/linux-3.12.10-ti2013.12.01/include/linux</pElem>
-            <pElem>../../../board-support/linux-3.12.10-ti2013.12.01/include</pElem>
-            <pElem>../../../board-support/extra-drivers/dt78xx</pElem>
-            <pElem>../common</pElem>
+            <pElem>.</pElem>
           </incDir>
-          <preprocessorList>
-            <Elem>DT7816</Elem>
-          </preprocessorList>
         </cTool>
+        <ccTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </ccTool>
         <linkerTool>
           <output>${TESTDIR}/TestFiles/f1</output>
-          <linkerLibItems>
-            <linkerOptionItem>cunit</linkerOptionItem>
-          </linkerLibItems>
         </linkerTool>
       </folder>
+      <item path="libaiff" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="main.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="recorder_helpers.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="recorder_helpers.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="sunriset" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="tests/testRecorder.c" ex="false" tool="0" flavor2="0">
-        <cTool>
-          <incDir>
-            <pElem>/usr/lib/cunit/include</pElem>
-          </incDir>
-        </cTool>
       </item>
     </conf>
     <conf name="Release" type="1">
@@ -227,109 +114,39 @@
           <developmentMode>5</developmentMode>
         </asmTool>
       </compileType>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/RingBuf.c"
-            ex="false"
-            tool="0"
-            flavor2="0">
+      <item path="README.txt" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/RingBuf.h"
-            ex="false"
-            tool="3"
-            flavor2="0">
+      <item path="RingBuf" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/aifx.c"
-            ex="false"
-            tool="0"
-            flavor2="0">
+      <item path="common" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/config.h"
-            ex="false"
-            tool="3"
-            flavor2="0">
-      </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/endian.h"
-            ex="false"
-            tool="3"
-            flavor2="0">
-      </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/extended.c"
-            ex="false"
-            tool="0"
-            flavor2="0">
-      </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/float32.c"
-            ex="false"
-            tool="0"
-            flavor2="0">
-      </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/g711.c"
-            ex="false"
-            tool="0"
-            flavor2="0">
-      </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/iff.c"
-            ex="false"
-            tool="0"
-            flavor2="0">
-      </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/libaiff.c"
-            ex="false"
-            tool="0"
-            flavor2="0">
-      </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/libaiff.h"
-            ex="false"
-            tool="3"
-            flavor2="0">
-      </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/lpcm.c"
-            ex="false"
-            tool="0"
-            flavor2="0">
-      </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/main.c"
-            ex="false"
-            tool="0"
-            flavor2="0">
-      </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/pascal.c"
-            ex="false"
-            tool="0"
-            flavor2="0">
-      </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/private.h"
-            ex="false"
-            tool="3"
-            flavor2="0">
-      </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/recorder_helpers.c"
-            ex="false"
-            tool="0"
-            flavor2="0">
-      </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/recorder_helpers.h"
-            ex="false"
-            tool="3"
-            flavor2="0">
-      </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/sunriset.c"
-            ex="false"
-            tool="0"
-            flavor2="0">
-      </item>
-      <item path="/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/sunriset.h"
-            ex="false"
-            tool="3"
-            flavor2="0">
+      <item path="dt78xx" ex="false" tool="3" flavor2="0">
       </item>
       <folder path="TestFiles/f1">
+        <cTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </cTool>
+        <ccTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </ccTool>
         <linkerTool>
           <output>${TESTDIR}/TestFiles/f1</output>
-          <linkerLibItems>
-            <linkerOptionItem>-lcunit</linkerOptionItem>
-          </linkerLibItems>
         </linkerTool>
       </folder>
+      <item path="libaiff" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="main.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="recorder_helpers.c" ex="false" tool="0" flavor2="0">
+      </item>
+      <item path="recorder_helpers.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="sunriset" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="tests/testRecorder.c" ex="false" tool="0" flavor2="0">
       </item>
     </conf>
