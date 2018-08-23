@@ -20,8 +20,6 @@
     </logicalFolder>
     <itemPath>README.txt</itemPath>
     <itemPath>RingBuf</itemPath>
-    <itemPath>common</itemPath>
-    <itemPath>dt78xx</itemPath>
     <itemPath>libaiff</itemPath>
     <itemPath>main.c</itemPath>
     <itemPath>recorder_helpers.c</itemPath>
@@ -61,10 +59,6 @@
       <item path="README.txt" ex="false" tool="3" flavor2="0">
       </item>
       <item path="RingBuf" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="common" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="dt78xx" ex="false" tool="3" flavor2="0">
       </item>
       <folder path="TestFiles/f1">
         <cTool>
@@ -117,10 +111,6 @@
       <item path="README.txt" ex="false" tool="3" flavor2="0">
       </item>
       <item path="RingBuf" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="common" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="dt78xx" ex="false" tool="3" flavor2="0">
       </item>
       <folder path="TestFiles/f1">
         <cTool>
