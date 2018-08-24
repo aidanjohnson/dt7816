@@ -35,18 +35,11 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
-	${OBJECTDIR}/_ext/28d545ba/RingBuf.o \
-	${OBJECTDIR}/_ext/28d545ba/aifx.o \
-	${OBJECTDIR}/_ext/28d545ba/extended.o \
-	${OBJECTDIR}/_ext/28d545ba/float32.o \
-	${OBJECTDIR}/_ext/28d545ba/g711.o \
-	${OBJECTDIR}/_ext/28d545ba/iff.o \
-	${OBJECTDIR}/_ext/28d545ba/libaiff.o \
-	${OBJECTDIR}/_ext/28d545ba/lpcm.o \
-	${OBJECTDIR}/_ext/28d545ba/main.o \
-	${OBJECTDIR}/_ext/28d545ba/pascal.o \
-	${OBJECTDIR}/_ext/28d545ba/recorder_helpers.o \
-	${OBJECTDIR}/_ext/28d545ba/sunriset.o
+	${OBJECTDIR}/ctrtmr.o \
+	${OBJECTDIR}/digio.o \
+	${OBJECTDIR}/in-stream.o \
+	${OBJECTDIR}/main.o \
+	${OBJECTDIR}/mongoose.o
 
 
 # C Compiler Flags
@@ -67,71 +60,36 @@ LDLIBSOPTIONS=
 
 # Build Targets
 .build-conf: ${BUILD_SUBPROJECTS}
-	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/recorder
+	"${MAKE}"  -f nbproject/Makefile-${CND_CONF}.mk ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/web-server
 
-${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/recorder: ${OBJECTFILES}
+${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/web-server: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/recorder ${OBJECTFILES} ${LDLIBSOPTIONS}
+	${LINK.c} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/web-server ${OBJECTFILES} ${LDLIBSOPTIONS}
 
-${OBJECTDIR}/_ext/28d545ba/RingBuf.o: /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/RingBuf.c
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
+${OBJECTDIR}/ctrtmr.o: ctrtmr.c
+	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/RingBuf.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/RingBuf.c
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/ctrtmr.o ctrtmr.c
 
-${OBJECTDIR}/_ext/28d545ba/aifx.o: /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/aifx.c
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
+${OBJECTDIR}/digio.o: digio.c
+	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/aifx.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/aifx.c
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/digio.o digio.c
 
-${OBJECTDIR}/_ext/28d545ba/extended.o: /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/extended.c
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
+${OBJECTDIR}/in-stream.o: in-stream.c
+	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/extended.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/extended.c
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/in-stream.o in-stream.c
 
-${OBJECTDIR}/_ext/28d545ba/float32.o: /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/float32.c
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
+${OBJECTDIR}/main.o: main.c
+	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/float32.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/float32.c
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/main.o main.c
 
-${OBJECTDIR}/_ext/28d545ba/g711.o: /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/g711.c
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
+${OBJECTDIR}/mongoose.o: mongoose.c
+	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/g711.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/g711.c
-
-${OBJECTDIR}/_ext/28d545ba/iff.o: /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/iff.c
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
-	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/iff.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/iff.c
-
-${OBJECTDIR}/_ext/28d545ba/libaiff.o: /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/libaiff.c
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
-	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/libaiff.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/libaiff.c
-
-${OBJECTDIR}/_ext/28d545ba/lpcm.o: /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/lpcm.c
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
-	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/lpcm.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/lpcm.c
-
-${OBJECTDIR}/_ext/28d545ba/main.o: /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/main.c
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
-	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/main.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/main.c
-
-${OBJECTDIR}/_ext/28d545ba/pascal.o: /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/pascal.c
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
-	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/pascal.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/pascal.c
-
-${OBJECTDIR}/_ext/28d545ba/recorder_helpers.o: /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/recorder_helpers.c
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
-	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/recorder_helpers.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/recorder_helpers.c
-
-${OBJECTDIR}/_ext/28d545ba/sunriset.o: /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/sunriset.c
-	${MKDIR} -p ${OBJECTDIR}/_ext/28d545ba
-	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/_ext/28d545ba/sunriset.o /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder/sunriset.c
+	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/mongoose.o mongoose.c
 
 # Subprojects
 .build-subprojects:
