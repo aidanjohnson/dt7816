@@ -50,7 +50,7 @@ extern "C" {
 #include <sys/time.h>  
 #include <sys/types.h>
 #include <sys/stat.h>  
-#include <linux/aio_abi.h>	/* for AIO types and constants */
+#include <linux/aio_abi.h>	// for AIO types and constants
     
 #include "dt78xx_aio.h"
 #include "aio_syscall.h"
@@ -60,15 +60,15 @@ extern "C" {
 #ifdef DT7816
     #define BOARD_STR       "dt7816"
     #define CLK_MAX_HZ      (400000.0f)
-    #define CLK_MIN_HZ      (100.0f) //Minimum for AD
+    #define CLK_MIN_HZ      (100.0f) // Minimum for AD
 #else
     #error Board not supported
 #endif
 
+/* Device files */
 #define DEV_STREAM_IN   "/dev/"BOARD_STR"-stream-in"
 #define DEV_STREAM_OUT  "/dev/"BOARD_STR"-stream-out"
 #define DEV_AIN         "/dev/"BOARD_STR"-ain"
-#define TACH_DEV        "/dev/"BOARD_STR"-tach"
 
 #include "sunriset/sunriset.h"
 #define LIBAIFF_NOCOMPAT 1  /* do not use LibAiff 2 API compatibility */
@@ -79,7 +79,7 @@ extern "C" {
  * ==== Customisable Macros ====
  */
 
-/**
+/*
  * @brief The sample rate, active channels, number of buffers, and samples per channel
  * can be set with command line flags in a terminal shell used to run this program.
  * 
@@ -94,26 +94,26 @@ extern "C" {
 #define AIN6                0
 #define AIN7                0
 
-#define PATH_TO_STORAGE     "/media/path/to/ssd/" /* Predefined write path */
+#define PATH_TO_STORAGE     "/media/path/to/ssd/" // Predefined write path
 
 #define SAMPLE_RATE_HZ      400000.0f
-#define DURATION_DAYS       21 /* Default number of days of sampling */
-#define SAFETY_MARGIN       3600 /* Buffers in seconds before sunset and after sunrise */
-#define NIGHT_CYCLE         0 /* Cycles recording on at night and off at day */
+#define DURATION_DAYS       21 // Default number of days of sampling
+#define SAFETY_MARGIN       3600 // Buffers in seconds before sunset and after sunrise
+#define NIGHT_CYCLE         0 // Cycles recording on at night and off at day
 
-#define DEFAULT_LATITUDE    47.655083 /* Latitude (N := +, S := -) */
-#define DEFAULT_LONGITUDE   -122.293194 /* Longitude (E := +, W := -) */
+#define DEFAULT_LATITUDE    47.655083 // Latitude (N := +, S := -)
+#define DEFAULT_LONGITUDE   -122.293194 // Longitude (E := +, W := -)
     
 /* Constraint: SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS <= 65536 samples = 2^(16 bits) */
-#define SAMPLES_PER_FILE    65536 /* SAMPLES_PER_CHAN = SAMPLES_PER_FILE / NUM_CHANNELS */
-#define NUM_BUFFS           1 /* Number of buffers per file initialised */
+#define SAMPLES_PER_FILE    65536 // SAMPLES_PER_CHAN = SAMPLES_PER_FILE / NUM_CHANNELS
+#define NUM_BUFFS           1 // Number of buffers per file initialised
 
 /*
  * ===== Debug Options ====
  */
-#define STATUS_LED          7 /* Debug led blinks to indicate collecion status */
-#define OVERRUN_LED         1 /* Debug led flashed on overrun  */
-#define BUFF_DONE_LED       1 /*Debug led flashed on overrun  */
+#define STATUS_LED          7 // Debug led blinks to indicate collecion status
+#define OVERRUN_LED         1 // Debug led flashed on overrun
+#define BUFF_DONE_LED       1 // Debug led flashed on overrun
 
 #if (defined STATUS_LED) && ((STATUS_LED < 0) || (STATUS_LED > 7))
     #error STATUS_LED
@@ -126,7 +126,7 @@ extern "C" {
 #endif
 
 #if (defined STATUS_LED) 
-    /* turn on/off indicator led after this count based on sampling rate & buffer */
+    // turn on/off indicator led after this count based on sampling rate & buffer
     uint32_t g_led_count;
 #endif
 
@@ -134,10 +134,10 @@ extern "C" {
  * ==== Defaults: Change at own risk ====
  */
 
-#define NUM_CHANNELS        (AIN0+AIN1+AIN2+AIN3+AIN4+AIN5+AIN6+AIN7) /* max ch: 8 */
+#define NUM_CHANNELS        (AIN0+AIN1+AIN2+AIN3+AIN4+AIN5+AIN6+AIN7) // max ch: 8 
 #define SAMPLE_RATE         SAMPLE_RATE_HZ
 #define AUTO_TRIG           1
-#define LEN                 512 /* Default character array size */
+#define LEN                 512 // Default character array size 
 #define SAMPLES_PER_CHAN    (SAMPLES_PER_FILE / NUM_CHANNELS)
 #define MAX_AIO_EVENTS      64
 #define WAIT_MS             5
@@ -154,8 +154,8 @@ extern "C" {
 #endif
 
 #define TRIG_LEVEL_V        0.0
-#define DEFAULT_GAIN        1 /* gain 1 => +/- 10 V; must be 1 for DT7816 */
-#define LIBAIFF_NOCOMPAT    1 /* Do not use LibAiff 2 API compatibility */
+#define DEFAULT_GAIN        1 // gain 1 => +/- 10 V; must be 1 for DT7816
+#define LIBAIFF_NOCOMPAT    1 // Do not use LibAiff 2 API compatibility
 
 /*
  * ==== Command line arguments with help ====
@@ -195,22 +195,67 @@ static const char usage[] = {
 "               Eastern hemisphere coordinates are positive, and western negative.\n"
 "\n"
 };
+    
+/* 
+ * ==== Global Variables & Structures ====
+ */
+
+extern struct aio_struct *inAIO;
+    
+extern int autoTrigger;
+extern int fileSamples;
+extern int chanSamples;
+extern int numBuffers;
+extern int numChannels;
+extern int durationDays;
+extern int nightCycle;
+extern double lat;
+extern double lon;
+extern long safetyMargin;
+
+extern chan_mask_t chanMask;
+
+extern int inStream;
+extern int aInput;
+extern int outStream;
 
 /*
  * ==== Circular (ring) buffer (queue) data type ====
  */
 
-struct circ_buffer {
+struct circular_queue {
     float sample_rate;  
     int32_t num_samples;
-    RingBuf *vbuf;  /* Buffer with raw values converted to voltage */
+    RingBuf *buffer;  /* Buffer with raw values converted to voltage */
 };
 
- /*
-  * ==== Helper functions for recorder (DT7816) ====
-  */
+/*
+ * ==== Helper functions for recorder (DT7816) ====
+ */
 
-/**
+/*
+ * Input stream empty signal handler
+ * @param i   : signal number set by 
+ */
+void isInStreamEmpty();
+
+/*
+ * AIO buffer done callback. An AIO buffer streams like this:
+ * 
+ * --------------------------------------------------------------------------------------> time
+ * |________16-bit_2's_complement_raw_A/D_________||_32-bit_unsigned_||_16-bit_unsigned_|
+ * [AIN0][AIN1][AIN2][AIN3][AIN4][AIN5][AIN6][AIN7][TACH][COUNT]......[DIN]..............
+ *  
+ * @param buff : pointer to buffer with samples from enabled channels
+ * @param len  : length of buffer; this is an integral multiple of equal number
+ *               of samples from all enabled channels
+ * @return     : The return value determines whether this buffer will be 
+ *               resubmitted for continued AIO operations 
+ *               0 = do not requeue, 1= requeue 
+ */
+int isInAIODone(void *buff, int len);
+
+/*
  * Updates debug LEDs (8 in total), LED ON (1) := CHANNEL is READING/WRITING. 
  * Viewing the DT7816 such that the debug pin row is above the user LEDs:
  *  ______ ______ ______ ______ ______ ______ ______ ______ ______ _______\n
@@ -246,7 +291,7 @@ struct circ_buffer {
  */        
 void ledIndicators(uint8_t status, int streaming);
 
-/**
+/*
  * Blinking status LED approximately once a second
  * 
  * @param fd     File directory
@@ -254,7 +299,7 @@ void ledIndicators(uint8_t status, int streaming);
  */
 void updateStatusLed(int fd, int reset);
 
-/**
+/*
  * Retrieves present time as Unix Epoch and UTC; readily formatted in ISO 8601.
  * UTC = Universal Coordinated Time (aka GMT = Greenwich Mean Time): Zulu
  * 
@@ -263,7 +308,7 @@ void updateStatusLed(int fd, int reset);
  */
 void getTime(struct tm **presentUTC, struct timeval *clockTime);
 
-/**
+/*
  * Converts given date and time (assuming in UTC) to Unix Epoch time.
  * 
  * @param  year
@@ -276,7 +321,7 @@ void getTime(struct tm **presentUTC, struct timeval *clockTime);
  */
 long getTimeEpoch(long year, int month, int day, int hour, int minute, int second);
 
-/**
+/*
  * Creates string of file path a using given directory path to storage with the
  * file name a timestamp in ISO 8601 format. It gets the present time in UTC
  * (GMT/Zulu). The timestamp corresponds to the first sample of the file (i.e., 
@@ -301,72 +346,48 @@ long getTimeEpoch(long year, int month, int day, int hour, int minute, int secon
  */
 void timestamp(char *filePath, char **argv, char *storagePath);
 
-/**
+/*
  * Returns the present time in Unix Epoch (UTC) seconds since 1 Jan 1970
  * 
  * @return Present time (s)
  */
 long getPresentTime();
 
-/**
+/*
  * Checks that selected samples not in excess of 65536. grossSamples =
  * SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS <= 65536 samples = 2^(16 bits)
  * 
- * @param fileSamples     
- * @param numBuffers
  * @return                  1 if successful, 0 if failure
  */
-int checkFatal(int fileSamples, int numBuffers);
+int checkFatal();
 
-/**
- * Creates channel mask for each active channel determined by ain.
+/*
+ * Creates channel mask for each active channel determined by AIN. The mask is
+ * a 32-bit number where bits 0 to 7 of the channel mask correspond to 
+ * analog input channels 0 to 7, bit 8 with the tachometer, bit 10 with the 
+ * measure counter, and bit 11 with the digital input port. Bits 16 to 19 
+ * correspond to analog outputs 0 to 3, and bits 24 to 31 with digital 
+ * outputs 0 to 7. That is, the mask is in bit-wise format, or in hex:
+ * 
+ * 0x00000001 := AIN0, 0x00000002 := AIN1, 0x00000004 := AIN2, 
+ * 0x00000008 := AIN3, 0x00000010 := AIN4, 0x00000020 := AIN5,
+ * 0x00000040 := AIN6, 0x00000080 := AIN7, 0x00000100 := TACH,
+ * 0x00000200 := ~RESERVED~, 0x00000400 := MEASURE COUNTER,
+ * 0x00000800 := DIN, 0x00001000 := ~RESERVED~, 0x00002000 := ~RESERVED~,
+ * 0x00004000 := ~RESERVED~, 0x00008000 := ~RESERVED~, 0x00010000 := AOUT0, 
+ * 0x00020000 := AOUT1, 0x00040000 := AOUT2, 0x00080000 := AOUT3,
+ * 0x00100000 := ~UNUSED~, 0x00200000 := ~UNUSED~, 0x00400000 := ~UNUSED~,
+ * 0x00800000 := ~UNUSED~, 0x01000000 := DOUT0, 0x02000000 := DOUT1, 
+ * 0x04000000 := DOUT2, 0x08000000 := DOUT3, 0x10000000 := DOUT4,
+ * 0x20000000 := DOUT5, 0x40000000 := DOUT6, 0x80000000 := DOUT7
  * 
  * @param ain       Array of channel states (1 = on, 0 = off) for analog input
  *                  channels 1, 2, 3, 4, 5, 6, 7
  * @param chOn      Array of the active/enabled/on channels given by their index
- * @param chMask    Channel mask with a bitwise format. (A 32-bit number where
- *                  bits 0 to 7 of the channel mask correspond to analog input 
- *                  channels 0 to 7, bit 8 with the tachometer, bit 10 with the 
- *                  measure counter, and bit 11 with the digital input port.
- *                  Bits 16 to 19 correspond to analog outputs 0 to 3, and bits
- *                  24 to 31 with digital outputs 0 to 7.) That is in hex:
- * 
- *                  0x00000001 := AIN0
- *                  0x00000002 := AIN1
- *                  0x00000004 := AIN2
- *                  0x00000008 := AIN3
- *                  0x00000010 := AIN4
- *                  0x00000020 := AIN5
- *                  0x00000040 := AIN6
- *                  0x00000080 := AIN7
- *                  0x00000100 := TACH
- *                  0x00000200 := ~RESERVED~
- *                  0x00000400 := MEASURE COUNTER
- *                  0x00000800 := DIN
- *                  0x00001000 := ~RESERVED~
- *                  0x00002000 := ~RESERVED~
- *                  0x00004000 := ~RESERVED~
- *                  0x00008000 := ~RESERVED~
- *                  0x00010000 := AOUT0
- *                  0x00020000 := AOUT1
- *                  0x00040000 := AOUT2
- *                  0x00080000 := AOUT3
- *                  0x00100000 := ~UNUSED~
- *                  0x00200000 := ~UNUSED~
- *                  0x00400000 := ~UNUSED~
- *                  0x00800000 := ~UNUSED~
- *                  0x01000000 := DOUT0
- *                  0x02000000 := DOUT1
- *                  0x04000000 := DOUT2
- *                  0x08000000 := DOUT3
- *                  0x10000000 := DOUT4
- *                  0x20000000 := DOUT5
- *                  0x40000000 := DOUT6
- *                  0x80000000 := DOUT7
  */
-void createChanMask(int ain[], int *chOn, chan_mask_t *chMask);
+void createChanMask(int ain[], int *chOn);
 
-/**
+/*
  * Configures all channels even if not enabled and used. Configuration in
  * comprised of its number, gain, DC or AC coupling, current source, and 
  * differential.
@@ -375,24 +396,22 @@ void createChanMask(int ain[], int *chOn, chan_mask_t *chMask);
  */
 void configChan(dt78xx_ain_config_t ainConfig[]);
 
-/**
- * Initialises the software trigger for all enabled channles individually.
+/*
+ * Initialises the software trigger for all enabled channels individually.
  * 
  * @param ainTrigConfig   Array of trigger configurations for all channels
  */
 void initTrig(dt78xx_trig_config_t ainTrigConfig[]);
 
-/**
+/*
  * Configures the passed channel individually (of the ones enabled).
  * 
- * @param inStream     Input stream
- * @param trigConfig      Trigger configuration
- * @param autoTrig     If automatically triggered or not
+ * @param trigConfig    Trigger configuration
  * @return              1 if successful, 0 if failure
  */
-int configTrig(int* inStream, dt78xx_trig_config_t trigConfig, int autoTrig);
+int configTrig(dt78xx_trig_config_t trigConfig);
 
-/**
+/*
  * Calculates the sunset and sunrise time (offset by a safety margin) according
  * to a location on Earth given by longitude and latitude coordinates. 
  * 
@@ -403,16 +422,10 @@ int configTrig(int* inStream, dt78xx_trig_config_t trigConfig, int autoTrig);
  * 
  * @param sunsets       Array of sunset times in Unix Epoch time
  * @param sunrises      Array of sunrise times in Unix Epoch time
- * @param durationDays Number of days for sampling/recording
- * @param safetyMargin Increases sampling duration by 2*safetyMargin (in s)
- * @param lon           Longitude coordinate
- * @param lat           Latitude coordinate
- * @param nightCycle   On = 1, sampling only after dusk and before dawn
  */
-void calcSunUpDown(long *sunsets, long *sunrises, int durationDays, 
-                   long safetyMargin, double lon, double lat, int nightCycle);
+void calcSunUpDown(long *sunsets, long *sunrises);
 
-/**
+/*
  * Writes input samples to AIFF files
  * 
  * 1) Reads input data from linear array buffer
@@ -441,19 +454,16 @@ void calcSunUpDown(long *sunsets, long *sunrises, int durationDays,
  *      Sample frame 1          Sample frame 2  
  * 
  * @param file              File opject/reference
- * @param ringBuffer     Circular buffer object
- * @param fileChannels Number of (enabled) channels per file
- * @param numBuffers       Number of buffers set
- * @param chOn             Indices of channels that are on/enabled
- * @param bufferArray         Linear input buffer array
- * @param ainConfig           Configuration of analog input
+ * @param ringBuffer        Circular buffer object
+ * @param chOn              Indices of channels that are on/enabled
+ * @param bufferArray       Linear input buffer array
+ * @param ainConfig         Configuration of analog input
  * @return                  1 if successful, 0 if failure
  */
-int writeBuffer(AIFF_Ref file, struct circ_buffer ringBuffer, 
-                int fileChannels, int numBuffers, int* chOn, 
+int writeBuffer(AIFF_Ref file, struct circular_queue ringBuffer, int* chOn, 
                 void** bufferArray, dt78xx_ain_config_t* ainConfig);
 
-/**
+/*
  * Checks for missing AIFF file identifier.
  * 
  * @param argc
@@ -462,74 +472,43 @@ int writeBuffer(AIFF_Ref file, struct circ_buffer ringBuffer,
  */
 int checkID(int argc, char** argv);
 
-/**
+/*
  * Checks that sample rate is positive and non-zero.
  * 
  * @param ringBuffer     Sample rate for input buffer
  * @param argv
- * @return                  1 if successful, 0 if failure
+ * @return               1 if successful, 0 if failure
  */
-int checkRate(struct circ_buffer ringBuffer, char** argv);   
+int checkRate(struct circular_queue buffer, char** argv);   
 
-/**
+/*
  * Opens input stream.
  * 
- * @param   inStream       Input stream
- * @return  1 if successful, 0 if failure
+ * @return                 1 if successful, 0 if failure
  */
-int openStream(int* inStream);
+int openStream();
 
-/**
+/*
  * Opens analog input.
  * 
- * @param    inStream
- * @param    chIndex
  * @return   1 if successful, 0 if failure
  */
-int openAIN(int* inStream, int* chIndex);
+int openAIN();
 
-/**
- * Waits for all buffers to complete.
- * 
- * @param numBuffers   number of active buffers
- * @param g_quit        
- * @param aio_struct    analog input/output API
- */
-void waitBuffering(int numBuffers, int g_quit, struct aio_struct**);
-
-/**
- * Free allocated iocbs
- * @param iocbs
- * @param num
- */
-void free_iocb_buffers(struct iocb **iocbs, int num);
-
-/** 
+/*
  * Sets AIFF file metadata.
  * 
- * @param   lon     longitude set as name attribute
- * @param   lat     latitude set as author attribute
  * @param   sunset  sunset time (in Unix Epoch time, seconds) set as copyright attribute
  * @param   sunrise sunrise time set as annotation attribute
  */
-void setMetadata(AIFF_Ref file, double lon, double lat, long sunset, long sunrise);
+void setMetadata(AIFF_Ref file, long sunset, long sunrise);
 
-
-/**
- * Allocate array of iocbs and buffers in each. BUFFERS MUST BE MULTIPLE OF
- * 32-BYTES AND ALIGNED AT 32-BYTE BOUNDARY. The order of input data is:
+/* 
+ * Creates a circular/ring buffer/queue to hold the recorded values in Volts.
  * 
- * --------------------------------------------------------------------------------------> time
- * |________16-bit_2's_complement_raw_A/D_________||_32-bit_unsigned_||_16-bit_unsigned_|
- * [AIN0][AIN1][AIN2][AIN3][AIN4][AIN5][AIN6][AIN7][TACH][COUNT]......[DIN]..............
- * 
- * @param fd        : stream
- * @param write     : 1=output stream, 0=input stream
- * @param numbuf    : Number of buffers
- * @param buflen    : Length of each buffer in bytes
- * @return          : NULL=error, >0=pointer to array of icob pointers 
+ * @param RingBuf type circular queue
  */
-struct iocb **alloc_iocb_buffers(int fd, int write, int numbuf, int buflen);
+void getCircularQueue(RingBuf *circularQueue);
 
 #ifdef __cplusplus
 }

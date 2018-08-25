@@ -27,9 +27,64 @@
  */
 #include "recorder_helpers.h"
 
+/*
+ * ==== Global variables & constants ====
+ * 
+ */
+
+static int overrunStop = 1;  // Stop on buffer overrun
+static int requeue = 0;      // Requeue buffers after processing      
+static int overruns = 0;       // Number of times buffer overran while acquiring
+static int buffersDone = 0;    // Number of buffers done
+
  /*
  * ==== Helper functions for recorder (DT7816) ====
  */
+
+void isInStreamEmpty() {
+    ++overruns;
+#if (defined OVERRUN_LED) && (OVERRUN_LED > -1) && (OVERRUN_LED < 8)
+    dt78xx_led_t led;
+    led.mask = (1<<OVERRUN_LED);    
+    led.state = (1<<OVERRUN_LED);
+    ioctl(inStream, IOCTL_LED_SET, &led);
+#endif    
+    if (overrunStop && (buffersDone==numBuffers)) //Stop on queue empty
+    {
+        if (ioctl(inStream, IOCTL_STOP_SUBSYS, 0))
+           perror("IOCTL_STOP_SUBSYS");
+        aio_stop(inAIO);
+    }
+}
+
+int isInAIODone(void *buff, int len) {
+    ++buffersDone;
+    
+    //If operation was stopped on queue empty, clean up after all buffers have
+    //been dequeued and processed
+    if (overrunStop && overruns && (buffersDone==numBuffers)) 
+    {
+        if (ioctl(inStream, IOCTL_STOP_SUBSYS, 0))
+           perror("IOCTL_STOP_SUBSYS");
+        aio_stop(inAIO);
+    }
+    
+    // Buffer processing here
+#if (defined BUFF_DONE_LED) && (BUFF_DONE_LED > -1) && (BUFF_DONE_LED < 8)
+    dt78xx_led_t led;
+    led.mask = (1<<BUFF_DONE_LED);    
+    led.state = (1<<BUFF_DONE_LED);
+    ioctl(inStream, IOCTL_LED_SET, &led);
+#endif    
+    
+    //Process completed buffers here  
+        
+#if (defined BUFF_DONE_LED) && (BUFF_DONE_LED > -1) && (BUFF_DONE_LED < 8)
+    led.state = 0;
+    ioctl(inStream, IOCTL_LED_SET, &led);
+#endif  
+    return requeue;
+}
 
 void ledIndicators(uint8_t status, int streaming) {   
     dt78xx_led_t led;
@@ -111,7 +166,7 @@ long getPresentTime() {
     return (long) timeEpoch.tv_sec;
 }
 
-int checkFatal(int fileSamples, int numBuffers) {
+int checkFatal() {
     int grossSamples = fileSamples * numBuffers;
     if(grossSamples > 65536) {
         fprintf(stderr, "Fatal Error: exceeded 16-bits!\n");
@@ -123,98 +178,98 @@ int checkFatal(int fileSamples, int numBuffers) {
     }
 }
 
-void createChanMask(int ain[], int *chOn, chan_mask_t *chMask) {
+void createChanMask(int ain[], int *chOn) {
     int chIndex = 0;
     if (ain[0]) {
-        *chMask |= chan_mask_ain0;
+        chanMask |= chan_mask_ain0;
         chOn[chIndex++] = 0;
     }
     if (ain[1]) {
-        *chMask |= chan_mask_ain1;
+        chanMask |= chan_mask_ain1;
         chOn[chIndex++] = 1;    
     }
     if (ain[2]) {
-        *chMask |= chan_mask_ain2;
+        chanMask |= chan_mask_ain2;
         chOn[chIndex++] = 2;
     }
     if (ain[3]) {
-        *chMask |= chan_mask_ain3;
+        chanMask |= chan_mask_ain3;
         chOn[chIndex++] = 3;
     }
     if (ain[4]) {
-        *chMask |= chan_mask_ain4;
+        chanMask |= chan_mask_ain4;
         chOn[chIndex++] = 4;
     }
     if (ain[5]) {
-        *chMask |= chan_mask_ain5;
+        chanMask |= chan_mask_ain5;
         chOn[chIndex++] = 5;
     }
     if (ain[6]) {
-        *chMask |= chan_mask_ain6;
+        chanMask |= chan_mask_ain6;
         chOn[chIndex++] = 6;
     }
     if (ain[7]) {
-        *chMask |= chan_mask_ain7;
+        chanMask |= chan_mask_ain7;
         chOn[chIndex++] = 7;
     }
 }
 
 void configChan(dt78xx_ain_config_t ainConfig[]) {
-    dt78xx_ain_config_t ain0Config ={.ain=0, /* AIN0 */
-                                  .gain=1, /* Default gain */
-                                  .ac_coupling=0, /* DC coupling */
-                                  .current_on=0, /* Current source off */
-                                  .differential=0
-                                  }; 
+    dt78xx_ain_config_t ain0Config = {.ain=0, /* AIN0 */
+                                      .gain=1, /* Default gain */
+                                      .ac_coupling=0, /* DC coupling */
+                                      .current_on=0, /* Current source off */
+                                      .differential=0
+                                     }; 
     ainConfig[0] = ain0Config;
-    dt78xx_ain_config_t ain1Config ={.ain=1, /* AIN1 */
-                                   .gain=1, /* Default gain */
-                                   .ac_coupling=0, /* DC coupling */
-                                   .current_on=0, /* Current source off */
-                                   .differential=0
-                                  }; 
+    dt78xx_ain_config_t ain1Config = {.ain=1, /* AIN1 */
+                                      .gain=1, /* Default gain */
+                                      .ac_coupling=0, /* DC coupling */
+                                      .current_on=0, /* Current source off */
+                                      .differential=0
+                                     }; 
     ainConfig[1] = ain1Config;
-    dt78xx_ain_config_t ain2Config ={.ain=2, /* AIN2 */
-                                   .gain=1, /* Default gain */
-                                   .ac_coupling=0, /* DC coupling */
-                                   .current_on=0, /* Current source off */
-                                   .differential=0
-                                  }; 
+    dt78xx_ain_config_t ain2Config = {.ain=2, /* AIN2 */
+                                      .gain=1, /* Default gain */
+                                      .ac_coupling=0, /* DC coupling */
+                                      .current_on=0, /* Current source off */
+                                      .differential=0
+                                     }; 
     ainConfig[2] = ain2Config;
-    dt78xx_ain_config_t ain3Config ={.ain=3, /* AIN3 */
-                                   .gain=1, /* Default gain */
-                                   .ac_coupling=0, /* DC coupling */
-                                   .current_on=0, /* Current source off */
-                                   .differential=0
-                                  }; 
+    dt78xx_ain_config_t ain3Config = {.ain=3, /* AIN3 */
+                                      .gain=1, /* Default gain */
+                                      .ac_coupling=0, /* DC coupling */
+                                      .current_on=0, /* Current source off */
+                                      .differential=0
+                                     }; 
     ainConfig[3] = ain3Config;
-    dt78xx_ain_config_t ain4Config ={.ain=4, /* AIN4 */
-                                   .gain=1, /* Default gain */
-                                   .ac_coupling=0, /* DC coupling */
-                                   .current_on=0, /* Current source off */
-                                   .differential=0
-                                  }; 
+    dt78xx_ain_config_t ain4Config = {.ain=4, /* AIN4 */
+                                      .gain=1, /* Default gain */
+                                      .ac_coupling=0, /* DC coupling */
+                                      .current_on=0, /* Current source off */
+                                      .differential=0
+                                     }; 
     ainConfig[4] = ain4Config;
-    dt78xx_ain_config_t ain5Config ={.ain=5, /* AIN5 */
-                                   .gain=1, /* Default gain */
-                                   .ac_coupling=0, /* DC coupling */
-                                   .current_on=0, /* Current source off */
-                                   .differential=0
-                                  }; 
+    dt78xx_ain_config_t ain5Config = {.ain=5, /* AIN5 */
+                                      .gain=1, /* Default gain */
+                                      .ac_coupling=0, /* DC coupling */
+                                      .current_on=0, /* Current source off */
+                                      .differential=0
+                                     }; 
     ainConfig[5] = ain5Config;
-    dt78xx_ain_config_t ain6Config ={.ain=6, /* AIN6 */
-                                   .gain=1, /* Default gain */
-                                   .ac_coupling=0, /* DC coupling */
-                                   .current_on=0, /* Current source off */
-                                   .differential=0
-                                  }; 
+    dt78xx_ain_config_t ain6Config = {.ain=6, /* AIN6 */
+                                      .gain=1, /* Default gain */
+                                      .ac_coupling=0, /* DC coupling */
+                                      .current_on=0, /* Current source off */
+                                      .differential=0
+                                     }; 
     ainConfig[6] = ain6Config;
-    dt78xx_ain_config_t ain7Config ={.ain=7, /* AIN7 */
-                                   .gain=1, /* Default gain */
-                                   .ac_coupling=0, /* DC coupling */
-                                   .current_on=0, /* Current source off */
-                                   .differential=0
-                                  }; 
+    dt78xx_ain_config_t ain7Config = {.ain=7, /* AIN7 */
+                                      .gain=1, /* Default gain */
+                                      .ac_coupling=0, /* DC coupling */
+                                      .current_on=0, /* Current source off */
+                                      .differential=0
+                                     }; 
     ainConfig[7] = ain7Config;
 }
 
@@ -237,19 +292,18 @@ void initTrig(dt78xx_trig_config_t ainTrigConfig[]) {
     ainTrigConfig[7] = trig7Config;
 }
 
-int configTrig(int* inStream, dt78xx_trig_config_t trigConfig, int autoTrig) {
-    if (autoTrig) /* default trigger == auto or software trigger */
+int configTrig(dt78xx_trig_config_t trigConfig) {
+    if (autoTrigger) /* default trigger == auto or software trigger */
         trigConfig.src = trig_src_sw;
     else { /* threshold trigger */
         trigConfig.src = trig_src_threshold;
         trigConfig.src_cfg.threshold.edge_rising = 1;
         trigConfig.src_cfg.threshold.level = volts2raw(TRIG_LEVEL_V,DEFAULT_GAIN);
     }
-    return ioctl(*inStream, IOCTL_START_TRIG_CFG_SET, &trigConfig);
+    return ioctl(inStream, IOCTL_START_TRIG_CFG_SET, &trigConfig);
 }
 
-void calcSunUpDown(long *sunsets, long *sunrises, int durationDays, 
-                   long safetyMargin, double lon, double lat, int nightCycle) {
+void calcSunUpDown(long *sunsets, long *sunrises) {
     struct timeval epochPresent;  /* Seconds UTC relative to 1 Jan 1970 (epoch) */
     struct tm *presentTime = malloc(sizeof(struct tm)); /* Time in accordance to ISO 8601 */
     gettimeofday(&epochPresent, NULL); /* Gets current system time */
@@ -290,10 +344,8 @@ void calcSunUpDown(long *sunsets, long *sunrises, int durationDays,
     }
 }
 
-int writeBuffer(AIFF_Ref file, struct circ_buffer ringBuffer, 
-                int fileChannels, int numBuffers, int* chOn, 
+int writeBuffer(AIFF_Ref file, struct circular_queue bufferQueue, int* chOn, 
                 void** bufferArray, dt78xx_ain_config_t* ainConfig) {
-
     int success = 0;
     int rwBuffer;
     for (rwBuffer=0; rwBuffer < numBuffers; ++rwBuffer) { 
@@ -303,20 +355,20 @@ int writeBuffer(AIFF_Ref file, struct circ_buffer ringBuffer,
 
         int queue, ch;
         /* Circular buffer write and read pointers lead and follow */
-        for (queue = 0; queue < ringBuffer.num_samples + 1; queue++) {  
-            for (ch = 0; ch < fileChannels; ch++, ++raw) {
+        for (queue = 0; queue < bufferQueue.num_samples + 1; queue++) {  
+            for (ch = 0; ch < numChannels; ch++, ++raw) {
                 /* Decouples input from output with circular buffer */
                 int chIndex = chOn[ch];
-                /* Write pointer leads read pointer by fileChannels */
-                if (queue < ringBuffer.num_samples) { 
+                /* Write pointer leads read pointer by numChannels */
+                if (queue < bufferQueue.num_samples) { 
                     float sampleVolt = raw2volts(*raw, ainConfig[chIndex].gain);
                     float* writePointer = &sampleVolt; //write pointer for input
-                    ringBuffer.vbuf->add(ringBuffer.vbuf, writePointer);
+                    bufferQueue.buffer->add(bufferQueue.buffer, writePointer);
                 }
-                /* Read pointer lags write pointer by fileChannels */
+                /* Read pointer lags write pointer by numChannels */
                 if (queue > 0) {
                     float* readPointer = NULL; /* Read pointer for writing to file */
-                    ringBuffer.vbuf->pull(ringBuffer.vbuf, &readPointer);
+                    bufferQueue.buffer->pull(bufferQueue.buffer, &readPointer);
                     success = AIFF_WriteSamples32Bit(file, (int32_t*) &readPointer, 1);
                     if (!success) break;
                 }
@@ -334,8 +386,8 @@ int checkID(int argc, char** argv) {
         return (EXIT_SUCCESS);
     }
 }
-int checkRate(struct circ_buffer ringBuffer, char** argv) { 
-    if (ringBuffer.sample_rate <= 0.0f) {
+int checkRate(struct circular_queue buffer, char** argv) { 
+    if (buffer.sample_rate <= 0.0f) {
         printf(usage, argv[0]);
         return (EXIT_FAILURE);
     } else {
@@ -354,84 +406,20 @@ int openStream(int* inStream) {
         return (EXIT_SUCCESS);
     }    
 }
-int openAIN(int* inStream, int* chIndex) {
+int openAIN() {
     fprintf(stdout, "Opening analog input...\n");
-    *chIndex = open(DEV_AIN, O_RDONLY);
-    if (*chIndex < 0) {
+    aInput = open(DEV_AIN, O_RDONLY);
+    if (aInput < 0) {
         fprintf(stderr, "ERROR %d \"%s\" open %s\n", 
                 errno, strerror(errno), DEV_AIN);
-        close(*inStream);
+        close(inStream);
         return (EXIT_FAILURE);
     } else {
         return (EXIT_SUCCESS);
     }
 }
 
-void free_iocb_buffers(struct iocb **iocbs, int num) {
-    if (!iocbs)
-        return;
-    while (--num >= 0)
-    {
-        if (iocbs[num])
-        {
-            if (iocbs[num]->aio_buf)
-                free ((void *)(uint32_t)iocbs[num]->aio_buf);
-            free (iocbs[num]);
-        }
-    }
-    free (iocbs);
-}
-
-struct iocb **alloc_iocb_buffers(int fd, int write, int numbuf, int buflen) {
-    struct iocb **iocbs; //array of iocb pointers
-    int i;
-    int alignment = 32; //REQUIRED  
-    
-    //allocate array of pointers to iocb's
-    iocbs = (struct iocb **)malloc(sizeof(struct iocb *) * numbuf);
-    if (!iocbs)
-    {
-       fprintf(stderr, "[%s(%d)] ERROR malloc\n", __func__, __LINE__);
-       return NULL;
-    }
-    memset(iocbs, 0, (sizeof(struct iocb *) * numbuf));
-    
-    //allocate iocb for each buffer
-    for (i=0; i < numbuf; ++i)
-    {
-        struct iocb *cb = (struct iocb *)malloc(sizeof(struct iocb));
-        if (!cb)
-        {
-            fprintf(stderr, "[%s(%d)] ERROR malloc\n", __func__, __LINE__);
-            break;
-        }
-        memset(cb, 0, sizeof(struct iocb));
-        iocbs[i] = cb;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
-        cb->aio_buf = (__u64)memalign(alignment, buflen);
-#pragma GCC diagnostic pop        
-        if (!cb->aio_buf)
-        {
-            fprintf(stderr, "[%s(%d)] ERROR malloc\n", __func__, __LINE__);
-            break;
-        }
-        cb->aio_fildes = fd;
-        cb->aio_lio_opcode = write?IOCB_CMD_PWRITE:IOCB_CMD_PREAD;
-        cb->aio_nbytes = buflen;
-        cb->aio_data = write;
-    }
-    
-    if (i == numbuf) //no errors
-        return iocbs;
-    
-    //malloc failed
-    free_iocb_buffers(iocbs, numbuf);
-
-    return NULL;
-}
-
-void setMetadata(AIFF_Ref file, double lon, double lat, long sunset, long sunrise) {
+void setMetadata(AIFF_Ref file, long sunset, long sunrise) {
     char metadata[LEN];
     sprintf(metadata, "%f", lon);
     AIFF_SetAttribute(file, AIFF_NAME, metadata);
@@ -442,3 +430,11 @@ void setMetadata(AIFF_Ref file, double lon, double lat, long sunset, long sunris
     sprintf(metadata, "%ld", sunrise);
     AIFF_SetAttribute(file, AIFF_COPY, metadata);
 }
+
+void getCircularQueue(RingBuf *circularQueue) {
+    const int size = chanSamples * numChannels;
+    circularQueue = RingBuf_new(sizeof(float), size);
+}
+
+
+    
