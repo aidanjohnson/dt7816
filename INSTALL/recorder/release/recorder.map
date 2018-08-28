@@ -14,7 +14,7 @@ Common symbol       size              file
 
 inAIO               0x4               release/main.o
 g_led_count         0x4               release/main.o
-bufferArray         0x4               release/main.o
+inBuffer            0x4               release/main.o
 chanMask            0x4               release/main.o
 
 Discarded input sections
@@ -141,33 +141,33 @@ LOAD /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/u
 .hash
  *(.hash)
 
-.gnu.hash       0x00008194      0x2fc
+.gnu.hash       0x00008194      0x300
  *(.gnu.hash)
- .gnu.hash      0x00008194      0x2fc /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
+ .gnu.hash      0x00008194      0x300 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
 
-.dynsym         0x00008490      0x3d0
+.dynsym         0x00008494      0x3e0
  *(.dynsym)
- .dynsym        0x00008490      0x3d0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
+ .dynsym        0x00008494      0x3e0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
 
-.dynstr         0x00008860      0x1f3
+.dynstr         0x00008874      0x1fa
  *(.dynstr)
- .dynstr        0x00008860      0x1f3 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
+ .dynstr        0x00008874      0x1fa /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
 
-.gnu.version    0x00008a54       0x7a
+.gnu.version    0x00008a6e       0x7c
  *(.gnu.version)
- .gnu.version   0x00008a54       0x7a /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
+ .gnu.version   0x00008a6e       0x7c /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
 
-.gnu.version_d  0x00008ad0        0x0
+.gnu.version_d  0x00008aec        0x0
  *(.gnu.version_d)
  .gnu.version_d
                 0x00000000        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
 
-.gnu.version_r  0x00008ad0       0x60
+.gnu.version_r  0x00008aec       0x60
  *(.gnu.version_r)
  .gnu.version_r
-                0x00008ad0       0x60 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
+                0x00008aec       0x60 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
 
-.rel.dyn        0x00008b30       0x30
+.rel.dyn        0x00008b4c       0x30
  *(.rel.init)
  *(.rel.text .rel.text.* .rel.gnu.linkonce.t.*)
  *(.rel.fini)
@@ -179,17 +179,17 @@ LOAD /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/u
  *(.rel.ctors)
  *(.rel.dtors)
  *(.rel.got)
- .rel.got       0x00008b30        0x8 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
+ .rel.got       0x00008b4c        0x8 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
  *(.rel.bss .rel.bss.* .rel.gnu.linkonce.b.*)
- .rel.bss       0x00008b38       0x28 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
-                0x00008b60                PROVIDE (__rel_iplt_start, .)
+ .rel.bss       0x00008b54       0x28 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
+                0x00008b7c                PROVIDE (__rel_iplt_start, .)
  *(.rel.iplt)
  .rel.iplt      0x00000000        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
-                0x00008b60                PROVIDE (__rel_iplt_end, .)
-                0x00008b60                PROVIDE (__rela_iplt_start, .)
-                0x00008b60                PROVIDE (__rela_iplt_end, .)
+                0x00008b7c                PROVIDE (__rel_iplt_end, .)
+                0x00008b7c                PROVIDE (__rela_iplt_start, .)
+                0x00008b7c                PROVIDE (__rela_iplt_end, .)
 
-.rela.dyn       0x00008b60        0x0
+.rela.dyn       0x00008b7c        0x0
  *(.rela.init)
  *(.rela.text .rela.text.* .rela.gnu.linkonce.t.*)
  *(.rela.fini)
@@ -201,226 +201,228 @@ LOAD /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/u
  *(.rela.dtors)
  *(.rela.got)
  *(.rela.bss .rela.bss.* .rela.gnu.linkonce.b.*)
-                0x00008b60                PROVIDE (__rel_iplt_start, .)
-                0x00008b60                PROVIDE (__rel_iplt_end, .)
-                0x00008b60                PROVIDE (__rela_iplt_start, .)
+                0x00008b7c                PROVIDE (__rel_iplt_start, .)
+                0x00008b7c                PROVIDE (__rel_iplt_end, .)
+                0x00008b7c                PROVIDE (__rela_iplt_start, .)
  *(.rela.iplt)
-                0x00008b60                PROVIDE (__rela_iplt_end, .)
+                0x00008b7c                PROVIDE (__rela_iplt_end, .)
 
-.rel.plt        0x00008b60      0x1b0
+.rel.plt        0x00008b7c      0x1b8
  *(.rel.plt)
- .rel.plt       0x00008b60      0x1b0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
+ .rel.plt       0x00008b7c      0x1b8 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
 
 .rela.plt
  *(.rela.plt)
 
-.init           0x00008d10        0xa
+.init           0x00008d34        0xa
  *(SORT(.init))
- .init          0x00008d10        0x8 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crti.o
-                0x00008d10                _init
- .init          0x00008d18        0x2 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crtn.o
+ .init          0x00008d34        0x8 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crti.o
+                0x00008d34                _init
+ .init          0x00008d3c        0x2 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crtn.o
 
-.plt            0x00008d1c      0x2a0
+.plt            0x00008d40      0x2ac
  *(.plt)
- .plt           0x00008d1c      0x2a0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
-                0x00008d30                raise@@GLIBC_2.4
-                0x00008d3c                setbuf@@GLIBC_2.4
-                0x00008d48                strtol@@GLIBC_2.4
-                0x00008d54                memalign@@GLIBC_2.4
-                0x00008d60                printf@@GLIBC_2.4
-                0x00008d6c                fopen@@GLIBC_2.4
-                0x00008d78                memmove@@GLIBC_2.4
-                0x00008d84                free@@GLIBC_2.4
-                0x00008d90                memcpy@@GLIBC_2.4
-                0x00008d9c                _IO_getc@@GLIBC_2.4
-                0x00008da8                sincos@@GLIBC_2.4
-                0x00008db4                stpcpy@@GLIBC_2.4
-                0x00008dc0                perror@@GLIBC_2.4
-                0x00008dcc                sigaction@@GLIBC_2.4
-                0x00008dd8                fwrite@@GLIBC_2.4
-                0x00008de4                ioctl@@GLIBC_2.4
-                0x00008df0                tcsetattr@@GLIBC_2.4
-                0x00008dfc                gettimeofday@@GLIBC_2.4
-                0x00008e08                fread@@GLIBC_2.4
-                0x00008e14                floor@@GLIBC_2.4
-                0x00008e20                acos@@GLIBC_2.4
-                0x00008e2c                malloc@@GLIBC_2.4
-                0x00008e38                __libc_start_main@@GLIBC_2.4
-                0x00008e44                strerror@@GLIBC_2.4
-                0x00008e60                open@@GLIBC_2.4
-                0x00008e6c                getopt_long@@GLIBC_2.4
-                0x00008e78                getpid@@GLIBC_2.4
-                0x00008e84                exit@@GLIBC_2.4
-                0x00008e90                syscall@@GLIBC_2.4
-                0x00008e9c                sin@@GLIBC_2.4
-                0x00008ea8                strtoul@@GLIBC_2.4
-                0x00008eb4                strlen@@GLIBC_2.4
-                0x00008ec0                fprintf@@GLIBC_2.4
-                0x00008ecc                fcntl@@GLIBC_2.4
-                0x00008ed8                sqrt@@GLIBC_2.4
-                0x00008ee4                __errno_location@@GLIBC_2.4
-                0x00008ef0                memset@@GLIBC_2.4
-                0x00008efc                gmtime@@GLIBC_2.4
-                0x00008f08                fgetc@@GLIBC_2.4
-                0x00008f14                strtod@@GLIBC_2.4
-                0x00008f20                fileno@@GLIBC_2.4
-                0x00008f2c                fclose@@GLIBC_2.4
-                0x00008f38                frexp@@GLIBC_2.4
-                0x00008f44                sigemptyset@@GLIBC_2.4
-                0x00008f50                fputc@@GLIBC_2.4
-                0x00008f5c                sprintf@@GLIBC_2.4
-                0x00008f68                timegm@@GLIBC_2.4
-                0x00008f74                ldexp@@GLIBC_2.4
-                0x00008f80                fseek@@GLIBC_2.4
-                0x00008f8c                abort@@GLIBC_2.4
-                0x00008f98                close@@GLIBC_2.4
-                0x00008fa4                atan2@@GLIBC_2.4
-                0x00008fb0                tcgetattr@@GLIBC_2.4
+ .plt           0x00008d40      0x2ac /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
+                0x00008d54                raise@@GLIBC_2.4
+                0x00008d60                setbuf@@GLIBC_2.4
+                0x00008d6c                strtol@@GLIBC_2.4
+                0x00008d78                memalign@@GLIBC_2.4
+                0x00008d84                printf@@GLIBC_2.4
+                0x00008d90                fopen@@GLIBC_2.4
+                0x00008d9c                fflush@@GLIBC_2.4
+                0x00008da8                memmove@@GLIBC_2.4
+                0x00008db4                free@@GLIBC_2.4
+                0x00008dc0                memcpy@@GLIBC_2.4
+                0x00008dcc                _IO_getc@@GLIBC_2.4
+                0x00008dd8                sincos@@GLIBC_2.4
+                0x00008de4                stpcpy@@GLIBC_2.4
+                0x00008df0                perror@@GLIBC_2.4
+                0x00008dfc                sigaction@@GLIBC_2.4
+                0x00008e08                fwrite@@GLIBC_2.4
+                0x00008e14                ioctl@@GLIBC_2.4
+                0x00008e20                tcsetattr@@GLIBC_2.4
+                0x00008e2c                gettimeofday@@GLIBC_2.4
+                0x00008e38                fread@@GLIBC_2.4
+                0x00008e44                floor@@GLIBC_2.4
+                0x00008e50                acos@@GLIBC_2.4
+                0x00008e5c                malloc@@GLIBC_2.4
+                0x00008e68                __libc_start_main@@GLIBC_2.4
+                0x00008e74                strerror@@GLIBC_2.4
+                0x00008e90                open@@GLIBC_2.4
+                0x00008e9c                getopt_long@@GLIBC_2.4
+                0x00008ea8                getpid@@GLIBC_2.4
+                0x00008eb4                exit@@GLIBC_2.4
+                0x00008ec0                syscall@@GLIBC_2.4
+                0x00008ecc                sin@@GLIBC_2.4
+                0x00008ed8                strtoul@@GLIBC_2.4
+                0x00008ee4                strlen@@GLIBC_2.4
+                0x00008ef0                fprintf@@GLIBC_2.4
+                0x00008efc                fcntl@@GLIBC_2.4
+                0x00008f08                sqrt@@GLIBC_2.4
+                0x00008f14                __errno_location@@GLIBC_2.4
+                0x00008f20                memset@@GLIBC_2.4
+                0x00008f2c                gmtime@@GLIBC_2.4
+                0x00008f38                fgetc@@GLIBC_2.4
+                0x00008f44                strtod@@GLIBC_2.4
+                0x00008f50                fileno@@GLIBC_2.4
+                0x00008f5c                fclose@@GLIBC_2.4
+                0x00008f68                frexp@@GLIBC_2.4
+                0x00008f74                sigemptyset@@GLIBC_2.4
+                0x00008f80                fputc@@GLIBC_2.4
+                0x00008f8c                sprintf@@GLIBC_2.4
+                0x00008f98                timegm@@GLIBC_2.4
+                0x00008fa4                ldexp@@GLIBC_2.4
+                0x00008fb0                fseek@@GLIBC_2.4
+                0x00008fbc                abort@@GLIBC_2.4
+                0x00008fc8                close@@GLIBC_2.4
+                0x00008fd4                atan2@@GLIBC_2.4
+                0x00008fe0                tcgetattr@@GLIBC_2.4
 
-.iplt           0x00008fbc        0x0
+.iplt           0x00008fec        0x0
  *(.iplt)
  .iplt          0x00000000        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
 
-.text           0x00008fc0     0x72e4
+.text           0x00008ff0     0x7704
  *(.text.unlikely .text.*_unlikely)
  *(.text.exit .text.exit.*)
  *(.text.startup .text.startup.*)
- .text.startup  0x00008fc0      0x86c release/main.o
-                0x00008fc0                main
+ .text.startup  0x00008ff0      0xc88 release/main.o
+                0x00008ff0                main
  *(.text.hot .text.hot.*)
  *(.text .stub .text.* .gnu.linkonce.t.*)
- .text          0x0000982c       0x38 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
-                0x0000982c                _start
- .text          0x00009864       0x18 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crti.o
- .text          0x0000987c       0x88 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/crtbegin.o
- .text          0x00009904       0x14 release/main.o
- .text          0x00009918     0x1010 release/recorder_helpers.o
-                0x00009918                isInStreamEmpty
-                0x000099bc                isInAIODone
-                0x00009a8c                ledIndicators
-                0x00009abc                updateStatusLed
-                0x00009b60                getTime
-                0x00009b88                getTimeEpoch
-                0x00009bd0                timestamp
-                0x00009ca0                getPresentTime
-                0x00009cc8                checkFatal
-                0x00009d34                createChanMask
-                0x00009f5c                configChan
-                0x0000a0c0                initTrig
-                0x0000a1a0                configTrig
-                0x0000a200                calcSunUpDown
-                0x0000a41c                writeBuffer
-                0x0000a674                checkID
-                0x0000a6ac                checkRate
-                0x0000a6f0                openStream
-                0x0000a788                openAIN
-                0x0000a834                setMetadata
-                0x0000a900                getCircularQueue
- .text          0x0000a928      0x9d8 release/dt78xx_aio.o
-                0x0000a928                aio_wait
-                0x0000ab30                aio_start
-                0x0000abd0                aio_stop
-                0x0000acb8                aio_buff_free
-                0x0000ad54                aio_buff_alloc
-                0x0000b064                aio_create
-                0x0000b124                aio_destroy
-                0x0000b1d8                aio_buff_size
- .text          0x0000b300      0x228 release/dt78xx_misc.o
-                0x0000b300                sigaction_register
-                0x0000b35c                file_sigaction_register
-                0x0000b438                kbhit
-                0x0000b4e8                kbfini
- .text          0x0000b528     0x1e48 release/libaiff/libaiff.o
-                0x0000b528                AIFF_OpenFile
-                0x0000b7a8                AIFF_CloseFile
-                0x0000b908                AIFF_GetAttribute
-                0x0000b998                AIFF_ReadMarker
-                0x0000ba3c                AIFF_GetInstrumentData
-                0x0000bad0                AIFF_GetAudioFormat
-                0x0000bb4c                AIFF_ReadSamples
-                0x0000bc44                AIFF_ReadSamplesFloat
-                0x0000bd54                AIFF_Seek
-                0x0000be80                AIFF_ReadSamples32Bit
-                0x0000c3b0                AIFF_SetAttribute
-                0x0000c3d0                AIFF_SetAudioFormat
-                0x0000c594                AIFF_StartWritingSamples
-                0x0000c658                AIFF_WriteSamples
-                0x0000c79c                AIFF_WriteSamples32Bit
-                0x0000cbe0                AIFF_EndWritingSamples
-                0x0000ce70                AIFF_StartWritingMarkers
-                0x0000cf30                AIFF_WriteMarker
-                0x0000d04c                AIFF_EndWritingMarkers
-                0x0000d15c                AIFF_CloneAttributes
-                0x0000d314                AIFFAssertionFailed
- .text          0x0000d370      0x828 release/libaiff/aifx.o
-                0x0000d370                init_aifx
-                0x0000d690                read_aifx_marker
-                0x0000d828                get_aifx_instrument
-                0x0000da24                do_aifx_prepare
-                0x0000db14                get_aifx_enc_name
- .text          0x0000db98      0x2b0 release/libaiff/extended.o
-                0x0000db98                ieee754_write_extended
-                0x0000dd30                ieee754_read_extended
- .text          0x0000de48      0x440 release/libaiff/float32.o
- .text          0x0000e288      0x2ec release/libaiff/g711.o
- .text          0x0000e574      0x4b4 release/libaiff/iff.o
-                0x0000e574                find_iff_chunk
-                0x0000e6a4                get_iff_attribute
-                0x0000e72c                set_iff_attribute
-                0x0000e7f8                clone_iff_attributes
- .text          0x0000ea28      0x5b4 release/libaiff/lpcm.o
-                0x0000ea88                lpcm_swap_samples
-                0x0000edbc                lpcm_dequant
- .text          0x0000efdc      0x134 release/libaiff/pascal.o
-                0x0000efdc                PASCALInGetLength
-                0x0000effc                PASCALInRead
-                0x0000f08c                PASCALOutGetLength
-                0x0000f0b0                PASCALOutWrite
- .text          0x0000f110      0x3c8 release/RingBuf/RingBuf.o
-                0x0000f110                RingBufNextEndIndex
-                0x0000f15c                RingBufIncrEnd
-                0x0000f180                RingBufIncrStart
-                0x0000f1a4                RingBufPeek
-                0x0000f1f8                RingBufNumElements
-                0x0000f200                RingBufIsFull
-                0x0000f218                RingBufIsEmpty
-                0x0000f228                RingBufPull
-                0x0000f2a0                RingBufAdd
-                0x0000f30c                RingBuf_new
-                0x0000f3f4                RingBuf_init
-                0x0000f4b8                RingBuf_delete
- .text          0x0000f4d8      0x850 release/sunriset/sunriset.o
-                0x0000f4d8                sunpos
-                0x0000f650                __daylen__
-                0x0000f830                day_astronomical_twilight_length
-                0x0000f83c                day_nautical_twilight_length
-                0x0000f848                day_civil_twilight_length
-                0x0000f854                day_length
-                0x0000f868                sun_RA_dec
-                0x0000f968                __sunriset__
-                0x0000fba0                astronomical_twilight
-                0x0000fbc8                nautical_twilight
-                0x0000fbf0                civil_twilight
-                0x0000fc18                sun_rise_set
-                0x0000fc48                revolution
-                0x0000fc88                rev180
-                0x0000fcd0                GMST0
- .text          0x0000fd28      0x278 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/libgcc.a(_udivsi3.o)
-                0x0000fd28                __aeabi_uidiv
-                0x0000fd28                __udivsi3
-                0x0000ff84                __aeabi_uidivmod
- .text          0x0000ffa0      0x2b0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/libgcc.a(_divsi3.o)
-                0x0000ffa0                __divsi3
-                0x0000ffa0                __aeabi_idiv
-                0x00010234                __aeabi_idivmod
- .text          0x00010250        0xc /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/libgcc.a(_dvmd_lnx.o)
-                0x00010250                __aeabi_ldiv0
-                0x00010250                __aeabi_idiv0
- .text          0x0001025c       0x48 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/./libc_nonshared.a(elf-init.oS)
-                0x0001025c                __libc_csu_init
-                0x000102a0                __libc_csu_fini
- .text          0x000102a4        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/crtend.o
- .text          0x000102a4        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crtn.o
+ .text          0x00009c78       0x38 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
+                0x00009c78                _start
+ .text          0x00009cb0       0x18 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crti.o
+ .text          0x00009cc8       0x88 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/crtbegin.o
+ .text          0x00009d50       0x14 release/main.o
+ *fill*         0x00009d64        0x4 
+ .text          0x00009d68     0x1010 release/recorder_helpers.o
+                0x00009d68                isInStreamEmpty
+                0x00009e0c                isInAIODone
+                0x00009edc                ledIndicators
+                0x00009f0c                updateStatusLed
+                0x00009fb0                getTime
+                0x00009fd8                getTimeEpoch
+                0x0000a020                timestamp
+                0x0000a0f0                getPresentTime
+                0x0000a118                checkFatal
+                0x0000a184                createChanMask
+                0x0000a3ac                configChan
+                0x0000a510                initTrig
+                0x0000a5f0                configTrig
+                0x0000a650                calcSunUpDown
+                0x0000a86c                writeBuffer
+                0x0000aac4                checkID
+                0x0000aafc                checkRate
+                0x0000ab40                openStream
+                0x0000abd8                openAIN
+                0x0000ac84                setMetadata
+                0x0000ad50                getCircularQueue
+ .text          0x0000ad78      0x9d8 release/dt78xx_aio.o
+                0x0000ad78                aio_wait
+                0x0000af80                aio_start
+                0x0000b020                aio_stop
+                0x0000b108                aio_buff_free
+                0x0000b1a4                aio_buff_alloc
+                0x0000b4b4                aio_create
+                0x0000b574                aio_destroy
+                0x0000b628                aio_buff_size
+ .text          0x0000b750      0x228 release/dt78xx_misc.o
+                0x0000b750                sigaction_register
+                0x0000b7ac                file_sigaction_register
+                0x0000b888                kbhit
+                0x0000b938                kbfini
+ .text          0x0000b978     0x1e48 release/libaiff/libaiff.o
+                0x0000b978                AIFF_OpenFile
+                0x0000bbf8                AIFF_CloseFile
+                0x0000bd58                AIFF_GetAttribute
+                0x0000bde8                AIFF_ReadMarker
+                0x0000be8c                AIFF_GetInstrumentData
+                0x0000bf20                AIFF_GetAudioFormat
+                0x0000bf9c                AIFF_ReadSamples
+                0x0000c094                AIFF_ReadSamplesFloat
+                0x0000c1a4                AIFF_Seek
+                0x0000c2d0                AIFF_ReadSamples32Bit
+                0x0000c800                AIFF_SetAttribute
+                0x0000c820                AIFF_SetAudioFormat
+                0x0000c9e4                AIFF_StartWritingSamples
+                0x0000caa8                AIFF_WriteSamples
+                0x0000cbec                AIFF_WriteSamples32Bit
+                0x0000d030                AIFF_EndWritingSamples
+                0x0000d2c0                AIFF_StartWritingMarkers
+                0x0000d380                AIFF_WriteMarker
+                0x0000d49c                AIFF_EndWritingMarkers
+                0x0000d5ac                AIFF_CloneAttributes
+                0x0000d764                AIFFAssertionFailed
+ .text          0x0000d7c0      0x828 release/libaiff/aifx.o
+                0x0000d7c0                init_aifx
+                0x0000dae0                read_aifx_marker
+                0x0000dc78                get_aifx_instrument
+                0x0000de74                do_aifx_prepare
+                0x0000df64                get_aifx_enc_name
+ .text          0x0000dfe8      0x2b0 release/libaiff/extended.o
+                0x0000dfe8                ieee754_write_extended
+                0x0000e180                ieee754_read_extended
+ .text          0x0000e298      0x440 release/libaiff/float32.o
+ .text          0x0000e6d8      0x2ec release/libaiff/g711.o
+ .text          0x0000e9c4      0x4b4 release/libaiff/iff.o
+                0x0000e9c4                find_iff_chunk
+                0x0000eaf4                get_iff_attribute
+                0x0000eb7c                set_iff_attribute
+                0x0000ec48                clone_iff_attributes
+ .text          0x0000ee78      0x5b4 release/libaiff/lpcm.o
+                0x0000eed8                lpcm_swap_samples
+                0x0000f20c                lpcm_dequant
+ .text          0x0000f42c      0x134 release/libaiff/pascal.o
+                0x0000f42c                PASCALInGetLength
+                0x0000f44c                PASCALInRead
+                0x0000f4dc                PASCALOutGetLength
+                0x0000f500                PASCALOutWrite
+ .text          0x0000f560      0x3c8 release/RingBuf/RingBuf.o
+                0x0000f560                RingBufNextEndIndex
+                0x0000f5ac                RingBufIncrEnd
+                0x0000f5d0                RingBufIncrStart
+                0x0000f5f4                RingBufPeek
+                0x0000f648                RingBufNumElements
+                0x0000f650                RingBufIsFull
+                0x0000f668                RingBufIsEmpty
+                0x0000f678                RingBufPull
+                0x0000f6f0                RingBufAdd
+                0x0000f75c                RingBuf_new
+                0x0000f844                RingBuf_init
+                0x0000f908                RingBuf_delete
+ .text          0x0000f928      0x850 release/sunriset/sunriset.o
+                0x0000f928                sunpos
+                0x0000faa0                __daylen__
+                0x0000fc80                day_astronomical_twilight_length
+                0x0000fc8c                day_nautical_twilight_length
+                0x0000fc98                day_civil_twilight_length
+                0x0000fca4                day_length
+                0x0000fcb8                sun_RA_dec
+                0x0000fdb8                __sunriset__
+                0x0000fff0                astronomical_twilight
+                0x00010018                nautical_twilight
+                0x00010040                civil_twilight
+                0x00010068                sun_rise_set
+                0x00010098                revolution
+                0x000100d8                rev180
+                0x00010120                GMST0
+ .text          0x00010178      0x278 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/libgcc.a(_udivsi3.o)
+                0x00010178                __aeabi_uidiv
+                0x00010178                __udivsi3
+                0x000103d4                __aeabi_uidivmod
+ .text          0x000103f0      0x2b0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/libgcc.a(_divsi3.o)
+                0x000103f0                __divsi3
+                0x000103f0                __aeabi_idiv
+                0x00010684                __aeabi_idivmod
+ .text          0x000106a0        0xc /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/libgcc.a(_dvmd_lnx.o)
+                0x000106a0                __aeabi_ldiv0
+                0x000106a0                __aeabi_idiv0
+ .text          0x000106ac       0x48 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/./libc_nonshared.a(elf-init.oS)
+                0x000106ac                __libc_csu_init
+                0x000106f0                __libc_csu_fini
+ .text          0x000106f4        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/crtend.o
+ .text          0x000106f4        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crtn.o
  *(.gnu.warning)
  *(.glue_7t)
  .glue_7t       0x00000000        0x0 linker stubs
@@ -431,74 +433,74 @@ LOAD /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/u
  *(.v4_bx)
  .v4_bx         0x00000000        0x0 linker stubs
 
-.fini           0x000102a4        0x6
+.fini           0x000106f4        0x6
  *(SORT(.fini))
- .fini          0x000102a4        0x4 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crti.o
-                0x000102a4                _fini
- .fini          0x000102a8        0x2 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crtn.o
-                0x000102aa                PROVIDE (__etext, .)
-                0x000102aa                PROVIDE (_etext, .)
-                0x000102aa                PROVIDE (etext, .)
+ .fini          0x000106f4        0x4 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crti.o
+                0x000106f4                _fini
+ .fini          0x000106f8        0x2 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crtn.o
+                0x000106fa                PROVIDE (__etext, .)
+                0x000106fa                PROVIDE (_etext, .)
+                0x000106fa                PROVIDE (etext, .)
 
-.rodata         0x000102b0     0x16f0
+.rodata         0x00010700     0x1848
  *(.rodata .rodata.* .gnu.linkonce.r.*)
- .rodata.cst4   0x000102b0        0x4 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
-                0x000102b0                _IO_stdin_used
- *fill*         0x000102b4        0x4 
- .rodata        0x000102b8      0x8b0 release/main.o
+ .rodata.cst4   0x00010700        0x4 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
+                0x00010700                _IO_stdin_used
+ *fill*         0x00010704        0x4 
+ .rodata        0x00010708      0x8b0 release/main.o
  .rodata.str1.4
-                0x00010b68      0x22b release/main.o
-                                0x22c (size before relaxing)
- *fill*         0x00010d93        0x5 
- .rodata        0x00010d98      0x8b0 release/recorder_helpers.o
+                0x00010fb8      0x383 release/main.o
+                                0x384 (size before relaxing)
+ *fill*         0x0001133b        0x5 
+ .rodata        0x00011340      0x8b0 release/recorder_helpers.o
  .rodata.str1.4
-                0x00011648      0x12c release/recorder_helpers.o
- *fill*         0x00011774        0x4 
- .rodata        0x00011778       0x10 release/dt78xx_aio.o
+                0x00011bf0      0x12c release/recorder_helpers.o
+ *fill*         0x00011d1c        0x4 
+ .rodata        0x00011d20       0x10 release/dt78xx_aio.o
  .rodata.str1.4
-                0x00011788       0x85 release/dt78xx_aio.o
+                0x00011d30       0x85 release/dt78xx_aio.o
                                  0x88 (size before relaxing)
- *fill*         0x0001180d        0x3 
+ *fill*         0x00011db5        0x3 
  .rodata.str1.4
-                0x00011810       0x20 release/dt78xx_misc.o
- .rodata        0x00011830        0x4 release/libaiff/libaiff.o
+                0x00011db8       0x20 release/dt78xx_misc.o
+ .rodata        0x00011dd8        0x4 release/libaiff/libaiff.o
  .rodata.str1.4
-                0x00011834       0x6e release/libaiff/libaiff.o
+                0x00011ddc       0x6e release/libaiff/libaiff.o
                                  0x70 (size before relaxing)
- *fill*         0x000118a2        0x2 
+ *fill*         0x00011e4a        0x2 
  .rodata.str1.4
-                0x000118a4       0xe8 release/libaiff/aifx.o
- *fill*         0x0001198c        0x4 
- .rodata        0x00011990       0x10 release/libaiff/iff.o
+                0x00011e4c       0xe8 release/libaiff/aifx.o
+ *fill*         0x00011f34        0x4 
+ .rodata        0x00011f38       0x10 release/libaiff/iff.o
 
 .rodata1
  *(.rodata1)
 
-.ARM.extab      0x000119a0        0x0
+.ARM.extab      0x00011f48        0x0
  *(.ARM.extab* .gnu.linkonce.armextab.*)
- .ARM.extab     0x000119a0        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
-                0x000119a0                PROVIDE (__exidx_start, .)
+ .ARM.extab     0x00011f48        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
+                0x00011f48                PROVIDE (__exidx_start, .)
 
-.ARM.exidx      0x000119a0        0x8
+.ARM.exidx      0x00011f48        0x8
  *(.ARM.exidx* .gnu.linkonce.armexidx.*)
- .ARM.exidx     0x000119a0        0x8 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
-                0x000119a8                PROVIDE (__exidx_end, .)
+ .ARM.exidx     0x00011f48        0x8 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
+                0x00011f50                PROVIDE (__exidx_end, .)
 
-.eh_frame_hdr   0x000119a8        0x0
+.eh_frame_hdr   0x00011f50        0x0
  *(.eh_frame_hdr)
  .eh_frame_hdr  0x00000000        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crtn.o
 
-.eh_frame       0x000119a8        0x4
+.eh_frame       0x00011f50        0x4
  *(.eh_frame)
- .eh_frame      0x000119a8        0x4 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/crtend.o
+ .eh_frame      0x00011f50        0x4 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/crtend.o
 
 .gcc_except_table
  *(.gcc_except_table .gcc_except_table.*)
 
 .exception_ranges
  *(.exception_ranges .exception_ranges*)
-                0x000119ac                . = (ALIGN (0x8000) - ((0x8000 - .) & 0x7fff))
-                0x000199ac                . = DATA_SEGMENT_ALIGN (0x8000, 0x1000)
+                0x00011f54                . = (ALIGN (0x8000) - ((0x8000 - .) & 0x7fff))
+                0x0001a000                . = DATA_SEGMENT_ALIGN (0x8000, 0x1000)
 
 .eh_frame
  *(.eh_frame)
@@ -516,24 +518,24 @@ LOAD /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/u
  *(.tbss .tbss.* .gnu.linkonce.tb.*)
  *(.tcommon)
 
-.preinit_array  0x000199ac        0x0
-                0x000199ac                PROVIDE (__preinit_array_start, .)
+.preinit_array  0x0001a000        0x0
+                0x0001a000                PROVIDE (__preinit_array_start, .)
  *(.preinit_array)
-                0x000199ac                PROVIDE (__preinit_array_end, .)
+                0x0001a000                PROVIDE (__preinit_array_end, .)
 
-.init_array     0x000199ac        0x4
-                0x000199ac                PROVIDE (__init_array_start, .)
+.init_array     0x0001a000        0x4
+                0x0001a000                PROVIDE (__init_array_start, .)
  *(SORT(.init_array.*))
  *(.init_array)
- .init_array    0x000199ac        0x4 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/crtbegin.o
-                0x000199b0                PROVIDE (__init_array_end, .)
+ .init_array    0x0001a000        0x4 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/crtbegin.o
+                0x0001a004                PROVIDE (__init_array_end, .)
 
-.fini_array     0x000199b0        0x4
-                0x000199b0                PROVIDE (__fini_array_start, .)
+.fini_array     0x0001a004        0x4
+                0x0001a004                PROVIDE (__fini_array_start, .)
  *(SORT(.fini_array.*))
  *(.fini_array)
- .fini_array    0x000199b0        0x4 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/crtbegin.o
-                0x000199b4                PROVIDE (__fini_array_end, .)
+ .fini_array    0x0001a004        0x4 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/crtbegin.o
+                0x0001a008                PROVIDE (__fini_array_end, .)
 
 .ctors
  *crtbegin.o(.ctors)
@@ -549,141 +551,141 @@ LOAD /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/u
  *(SORT(.dtors.*))
  *(.dtors)
 
-.jcr            0x000199b4        0x4
+.jcr            0x0001a008        0x4
  *(.jcr)
- .jcr           0x000199b4        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/crtbegin.o
- .jcr           0x000199b4        0x4 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/crtend.o
+ .jcr           0x0001a008        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/crtbegin.o
+ .jcr           0x0001a008        0x4 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/crtend.o
 
 .data.rel.ro
  *(.data.rel.ro.local* .gnu.linkonce.d.rel.ro.local.*)
  *(.data.rel.ro .data.rel.ro.* .gnu.linkonce.d.rel.ro.*)
 
-.dynamic        0x000199b8       0xf8
+.dynamic        0x0001a00c       0xf8
  *(.dynamic)
- .dynamic       0x000199b8       0xf8 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
-                0x000199b8                _DYNAMIC
-                0x00019ab0                . = DATA_SEGMENT_RELRO_END (., 0x0)
+ .dynamic       0x0001a00c       0xf8 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
+                0x0001a00c                _DYNAMIC
+                0x0001a104                . = DATA_SEGMENT_RELRO_END (., 0x0)
 
-.got            0x00019ab0       0xe8
+.got            0x0001a104       0xec
  *(.got.plt)
- .got.plt       0x00019ab0       0xe4 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
-                0x00019ab0                _GLOBAL_OFFSET_TABLE_
+ .got.plt       0x0001a104       0xe8 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
+                0x0001a104                _GLOBAL_OFFSET_TABLE_
  *(.igot.plt)
  .igot.plt      0x00000000        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
  *(.got)
- .got           0x00019b94        0x4 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
+ .got           0x0001a1ec        0x4 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
  *(.igot)
 
-.data           0x00019b98      0x198
-                0x00019b98                PROVIDE (__data_start, .)
+.data           0x0001a1f0      0x198
+                0x0001a1f0                PROVIDE (__data_start, .)
  *(.data .data.* .gnu.linkonce.d.*)
- .data          0x00019b98        0x4 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
-                0x00019b98                data_start
-                0x00019b98                __data_start
- .data          0x00019b9c        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crti.o
- .data          0x00019b9c        0x4 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/crtbegin.o
-                0x00019b9c                __dso_handle
- .data          0x00019ba0       0xe8 release/main.o
-                0x00019ba0                fileSamples
-                0x00019ba4                durationDays
-                0x00019ba8                numBuffers
-                0x00019bac                autoTrigger
-                0x00019bb0                numChannels
-                0x00019bb4                safetyMargin
-                0x00019bb8                lat
-                0x00019bc0                lon
-                0x00019c78                inStream
-                0x00019c7c                aInput
-                0x00019c80                chanSamples
-                0x00019c84                outStream
- .data          0x00019c88        0x0 release/recorder_helpers.o
- .data          0x00019c88        0x0 release/dt78xx_aio.o
- .data          0x00019c88        0x0 release/dt78xx_misc.o
- .data          0x00019c88       0x18 release/libaiff/libaiff.o
- .data          0x00019ca0       0x30 release/libaiff/aifx.o
- .data          0x00019cd0        0x0 release/libaiff/extended.o
- .data          0x00019cd0       0x18 release/libaiff/float32.o
-                0x00019cd0                float32
- .data          0x00019ce8       0x30 release/libaiff/g711.o
-                0x00019ce8                alaw
-                0x00019d00                ulaw
- .data          0x00019d18        0x0 release/libaiff/iff.o
- .data          0x00019d18       0x18 release/libaiff/lpcm.o
-                0x00019d18                lpcm
- .data          0x00019d30        0x0 release/libaiff/pascal.o
- .data          0x00019d30        0x0 release/RingBuf/RingBuf.o
- .data          0x00019d30        0x0 release/sunriset/sunriset.o
- .data          0x00019d30        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/libgcc.a(_udivsi3.o)
- .data          0x00019d30        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/libgcc.a(_divsi3.o)
- .data          0x00019d30        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/libgcc.a(_dvmd_lnx.o)
- .data          0x00019d30        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/./libc_nonshared.a(elf-init.oS)
- .data          0x00019d30        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/crtend.o
- .data          0x00019d30        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crtn.o
+ .data          0x0001a1f0        0x4 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
+                0x0001a1f0                data_start
+                0x0001a1f0                __data_start
+ .data          0x0001a1f4        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crti.o
+ .data          0x0001a1f4        0x4 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/crtbegin.o
+                0x0001a1f4                __dso_handle
+ .data          0x0001a1f8       0xe8 release/main.o
+                0x0001a1f8                fileSamples
+                0x0001a1fc                durationDays
+                0x0001a200                numBuffers
+                0x0001a204                autoTrigger
+                0x0001a208                numChannels
+                0x0001a20c                safetyMargin
+                0x0001a210                lat
+                0x0001a218                lon
+                0x0001a2d0                inStream
+                0x0001a2d4                aInput
+                0x0001a2d8                chanSamples
+                0x0001a2dc                outStream
+ .data          0x0001a2e0        0x0 release/recorder_helpers.o
+ .data          0x0001a2e0        0x0 release/dt78xx_aio.o
+ .data          0x0001a2e0        0x0 release/dt78xx_misc.o
+ .data          0x0001a2e0       0x18 release/libaiff/libaiff.o
+ .data          0x0001a2f8       0x30 release/libaiff/aifx.o
+ .data          0x0001a328        0x0 release/libaiff/extended.o
+ .data          0x0001a328       0x18 release/libaiff/float32.o
+                0x0001a328                float32
+ .data          0x0001a340       0x30 release/libaiff/g711.o
+                0x0001a340                alaw
+                0x0001a358                ulaw
+ .data          0x0001a370        0x0 release/libaiff/iff.o
+ .data          0x0001a370       0x18 release/libaiff/lpcm.o
+                0x0001a370                lpcm
+ .data          0x0001a388        0x0 release/libaiff/pascal.o
+ .data          0x0001a388        0x0 release/RingBuf/RingBuf.o
+ .data          0x0001a388        0x0 release/sunriset/sunriset.o
+ .data          0x0001a388        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/libgcc.a(_udivsi3.o)
+ .data          0x0001a388        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/libgcc.a(_divsi3.o)
+ .data          0x0001a388        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/libgcc.a(_dvmd_lnx.o)
+ .data          0x0001a388        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/./libc_nonshared.a(elf-init.oS)
+ .data          0x0001a388        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/crtend.o
+ .data          0x0001a388        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crtn.o
 
 .tm_clone_table
-                0x00019d30        0x0
+                0x0001a388        0x0
  .tm_clone_table
-                0x00019d30        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/crtbegin.o
+                0x0001a388        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/crtbegin.o
  .tm_clone_table
-                0x00019d30        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/crtend.o
+                0x0001a388        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/crtend.o
 
 .data1
  *(.data1)
-                0x00019d30                _edata = .
-                0x00019d30                PROVIDE (edata, .)
-                0x00019d30                . = .
-                0x00019d30                __bss_start = .
-                0x00019d30                __bss_start__ = .
+                0x0001a388                _edata = .
+                0x0001a388                PROVIDE (edata, .)
+                0x0001a388                . = .
+                0x0001a388                __bss_start = .
+                0x0001a388                __bss_start__ = .
 
-.bss            0x00019d30       0x84
+.bss            0x0001a388       0x84
  *(.dynbss)
- .dynbss        0x00019d30       0x1c /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
-                0x00019d30                optind@@GLIBC_2.4
-                0x00019d38                stderr@@GLIBC_2.4
-                0x00019d40                stdin@@GLIBC_2.4
-                0x00019d44                stdout@@GLIBC_2.4
-                0x00019d48                optarg@@GLIBC_2.4
+ .dynbss        0x0001a388       0x1c /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
+                0x0001a388                optind@@GLIBC_2.4
+                0x0001a390                stderr@@GLIBC_2.4
+                0x0001a398                stdin@@GLIBC_2.4
+                0x0001a39c                stdout@@GLIBC_2.4
+                0x0001a3a0                optarg@@GLIBC_2.4
  *(.bss .bss.* .gnu.linkonce.b.*)
- .bss           0x00019d4c        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
- .bss           0x00019d4c        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crti.o
- .bss           0x00019d4c        0x1 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/crtbegin.o
- *fill*         0x00019d4d        0x3 
- .bss           0x00019d50        0x8 release/main.o
-                0x00019d54                nightCycle
- .bss           0x00019d58        0xc release/recorder_helpers.o
- .bss           0x00019d64        0x0 release/dt78xx_aio.o
- .bss           0x00019d64       0x40 release/dt78xx_misc.o
- .bss           0x00019da4        0x0 release/libaiff/libaiff.o
- .bss           0x00019da4        0x0 release/libaiff/aifx.o
- .bss           0x00019da4        0x0 release/libaiff/extended.o
- .bss           0x00019da4        0x0 release/libaiff/float32.o
- .bss           0x00019da4        0x0 release/libaiff/g711.o
- .bss           0x00019da4        0x0 release/libaiff/iff.o
- .bss           0x00019da4        0x0 release/libaiff/lpcm.o
- .bss           0x00019da4        0x0 release/libaiff/pascal.o
- .bss           0x00019da4        0x0 release/RingBuf/RingBuf.o
- .bss           0x00019da4        0x0 release/sunriset/sunriset.o
- .bss           0x00019da4        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/libgcc.a(_udivsi3.o)
- .bss           0x00019da4        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/libgcc.a(_divsi3.o)
- .bss           0x00019da4        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/libgcc.a(_dvmd_lnx.o)
- .bss           0x00019da4        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/./libc_nonshared.a(elf-init.oS)
- .bss           0x00019da4        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/crtend.o
- .bss           0x00019da4        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crtn.o
+ .bss           0x0001a3a4        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crt1.o
+ .bss           0x0001a3a4        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crti.o
+ .bss           0x0001a3a4        0x1 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/crtbegin.o
+ *fill*         0x0001a3a5        0x3 
+ .bss           0x0001a3a8        0x8 release/main.o
+                0x0001a3ac                nightCycle
+ .bss           0x0001a3b0        0xc release/recorder_helpers.o
+ .bss           0x0001a3bc        0x0 release/dt78xx_aio.o
+ .bss           0x0001a3bc       0x40 release/dt78xx_misc.o
+ .bss           0x0001a3fc        0x0 release/libaiff/libaiff.o
+ .bss           0x0001a3fc        0x0 release/libaiff/aifx.o
+ .bss           0x0001a3fc        0x0 release/libaiff/extended.o
+ .bss           0x0001a3fc        0x0 release/libaiff/float32.o
+ .bss           0x0001a3fc        0x0 release/libaiff/g711.o
+ .bss           0x0001a3fc        0x0 release/libaiff/iff.o
+ .bss           0x0001a3fc        0x0 release/libaiff/lpcm.o
+ .bss           0x0001a3fc        0x0 release/libaiff/pascal.o
+ .bss           0x0001a3fc        0x0 release/RingBuf/RingBuf.o
+ .bss           0x0001a3fc        0x0 release/sunriset/sunriset.o
+ .bss           0x0001a3fc        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/libgcc.a(_udivsi3.o)
+ .bss           0x0001a3fc        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/libgcc.a(_divsi3.o)
+ .bss           0x0001a3fc        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/libgcc.a(_dvmd_lnx.o)
+ .bss           0x0001a3fc        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/./libc_nonshared.a(elf-init.oS)
+ .bss           0x0001a3fc        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../lib/gcc/arm-linux-gnueabihf/4.7.3/crtend.o
+ .bss           0x0001a3fc        0x0 /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/../arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/4.7.3/crtn.o
  *(COMMON)
- COMMON         0x00019da4       0x10 release/main.o
-                0x00019da4                inAIO
-                0x00019da8                g_led_count
-                0x00019dac                bufferArray
-                0x00019db0                chanMask
-                0x00019db4                . = ALIGN ((. != 0x0)?0x4:0x1)
-                0x00019db4                _bss_end__ = .
-                0x00019db4                __bss_end__ = .
-                0x00019db4                . = ALIGN (0x4)
-                0x00019db4                . = ALIGN (0x4)
-                0x00019db4                __end__ = .
-                0x00019db4                _end = .
-                0x00019db4                PROVIDE (end, .)
-                0x00019db4                . = DATA_SEGMENT_END (.)
+ COMMON         0x0001a3fc       0x10 release/main.o
+                0x0001a3fc                inAIO
+                0x0001a400                g_led_count
+                0x0001a404                inBuffer
+                0x0001a408                chanMask
+                0x0001a40c                . = ALIGN ((. != 0x0)?0x4:0x1)
+                0x0001a40c                _bss_end__ = .
+                0x0001a40c                __bss_end__ = .
+                0x0001a40c                . = ALIGN (0x4)
+                0x0001a40c                . = ALIGN (0x4)
+                0x0001a40c                __end__ = .
+                0x0001a40c                _end = .
+                0x0001a40c                PROVIDE (end, .)
+                0x0001a40c                . = DATA_SEGMENT_END (.)
 
 .stab
  *(.stab)
