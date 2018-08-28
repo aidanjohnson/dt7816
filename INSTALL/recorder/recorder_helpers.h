@@ -98,7 +98,7 @@ extern "C" {
 
 #define SAMPLE_RATE_HZ      400000.0f
 #define DURATION_DAYS       21 // Default number of days of sampling
-#define SAFETY_MARGIN       3600 // Buffers in seconds before sunset and after sunrise
+#define SAFETY_MARGIN       3600 // Pillow in seconds before sunset and after sunrise
 #define NIGHT_CYCLE         0 // Cycles recording on at night and off at day
 
 #define DEFAULT_LATITUDE    47.655083 // Latitude (N := +, S := -)
@@ -106,7 +106,7 @@ extern "C" {
     
 /* Constraint: SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS <= 65536 samples = 2^(16 bits) */
 #define SAMPLES_PER_FILE    65536 // SAMPLES_PER_CHAN = SAMPLES_PER_FILE / NUM_CHANNELS
-#define NUM_BUFFS           1 // Number of buffers per file initialised
+#define NUM_BUFFS           2 // Number of buffers initialised (2 for double buffering)
 
 /*
  * ===== Debug Options ====
@@ -140,7 +140,6 @@ extern "C" {
 #define LEN                 512 // Default character array size 
 #define SAMPLES_PER_CHAN    (SAMPLES_PER_FILE / NUM_CHANNELS)
 #define MAX_AIO_EVENTS      64
-#define WAIT_MS             5
 
 #if (SAMPLES_PER_CHAN > 65536)
     (EXIT_FAILURE)

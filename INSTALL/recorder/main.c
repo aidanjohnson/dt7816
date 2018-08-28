@@ -49,7 +49,7 @@ int inStream = -1; // Device file handle for input stream
 int aInput = -1; // Device file handle for analog input channels
 int outStream = -1; // Device file handle for output stream
 
-void **bufferArray;
+void **inBuffer;
 
 /*
  * ==== Signal handler for ctrl-c prevents the abrupt termination of processes ====
@@ -69,10 +69,10 @@ int main (int argc, char** argv) {
     int opt = 0;
     int exitStatus = EXIT_SUCCESS;
     
-    struct circular_queue ping = {.sample_rate = SAMPLE_RATE, 
-                                  .buffer = NULL};
-    struct circular_queue pong = {.sample_rate = SAMPLE_RATE, 
-                                  .buffer = NULL};
+//    struct circular_queue ping = {.sample_rate = SAMPLE_RATE, 
+//                                  .buffer = NULL};
+//    struct circular_queue pong = {.sample_rate = SAMPLE_RATE, 
+//                                  .buffer = NULL};
         
     dt78xx_clk_config_t clk = {.ext_clk=0, // Internal clock
                                .ext_clk_din=0, 
@@ -107,8 +107,8 @@ int main (int argc, char** argv) {
                 break;
             case 'c':
                 clk.clk_freq = atof(optarg);
-                ping.sample_rate = clk.clk_freq;
-                pong.sample_rate = clk.clk_freq;
+//                ping.sample_rate = clk.clk_freq;
+//                pong.sample_rate = clk.clk_freq;
                 if ((clk.clk_freq < CLK_MIN_HZ) || (clk.clk_freq > CLK_MAX_HZ)) {
                     fprintf(stderr, "Sample must be %.3f - %.3f\n", 
                             CLK_MIN_HZ, CLK_MAX_HZ);
@@ -177,8 +177,8 @@ int main (int argc, char** argv) {
     
     /* Second fatal error check: channel identity and sampling rate */
     exitStatus = checkID(argc, argv);
-    exitStatus = checkRate(ping, argv);
-    exitStatus = checkRate(pong, argv);
+//    exitStatus = checkRate(ping, argv);
+//    exitStatus = checkRate(pong, argv);
     
     /* Third fatal error check: opening the input stream */
     exitStatus = openStream();
@@ -199,8 +199,8 @@ int main (int argc, char** argv) {
                 errno, strerror(errno));
         goto _exit;
     }
-    ping.sample_rate = clk.clk_freq; // Actual sampling frequency
-    pong.sample_rate = clk.clk_freq;
+//    ping.sample_rate = clk.clk_freq; // Actual sampling frequency
+//    pong.sample_rate = clk.clk_freq;
        
     dt78xx_trig_config_t ainTrigConfig[8] = {}; // Array of analog input configurations
     initTrig(ainTrigConfig); // Initialises trigger
@@ -240,14 +240,14 @@ int main (int argc, char** argv) {
      */
     int actualSamples;
     int buffSize = aio_buff_size(chanSamples, chanMask, &actualSamples);
-    ping.num_samples = actualSamples;
-    pong.num_samples = actualSamples;
+//    ping.num_samples = actualSamples;
+//    pong.num_samples = actualSamples;
     fprintf(stdout,"Sampling at %f Hz to buffer of %d samples for %d channels...\n", 
                     clk.clk_freq, actualSamples, numChannels);
     
     /* Creates and initialises AIO stream buffers/structures */
     fprintf(stdout, "Initialising...\n");
-    if ((bufferArray = aio_buff_alloc(inAIO, numBuffers, buffSize)) == NULL) {
+    if ((inBuffer = aio_buff_alloc(inAIO, numBuffers, buffSize)) == NULL) {
         fprintf(stderr, "alloc_queue_buffers ERROR %d \"%s\"\n", 
                 errno, strerror(errno));
         goto _exit;
@@ -259,33 +259,17 @@ int main (int argc, char** argv) {
         goto _exit;
     }
 
-    /* Arms the input stream */
-    if ((ioctl(inStream, IOCTL_ARM_SUBSYS, 0))) {
-        fprintf(stderr, "IOCTL_ARM_SUBSYS ERROR %d \"%s\"\n", 
-                errno, strerror(errno));
-        goto _exit;
-    }
-
-    /* Issues a software start for continuous input operation; this is 
-     * redundant if trigger source is threshold or externally triggered 
-     */
-    if ((ioctl(inStream, IOCTL_START_SUBSYS, 0))) {
-        fprintf(stderr, "IOCTL_START_SUBSYS ERROR %d \"%s\"\n", 
-                errno, strerror(errno));
-        goto _exit;
-    }
-
-    /* Allocates a circular/ring buffer/queue to hold the recorded values in Volts */
-    getCircularQueue(ping.buffer);
-    getCircularQueue(pong.buffer);
-    if (!ping.buffer) {
-        fprintf(stderr, "ERROR ping circular_queue buffer\n");
-        goto _exit;
-    }
-    if (!pong.buffer) {
-        fprintf(stderr, "ERROR pong circular_queue buffer\n");
-        goto _exit;
-    }
+//    /* Allocates a circular/ring buffer/queue to hold the recorded values in Volts */
+//    getCircularQueue(ping.buffer);
+//    getCircularQueue(pong.buffer);
+//    if (!ping.buffer) {
+//        fprintf(stderr, "ERROR ping circular_queue buffer\n");
+//        goto _exit;
+//    }
+//    if (!pong.buffer) {
+//        fprintf(stderr, "ERROR pong circular_queue buffer\n");
+//        goto _exit;
+//    }
     
     /* Waits for user input to start or abort */
     fprintf(stdout,"Press s to start, any other key to quit\n");
@@ -297,6 +281,9 @@ int main (int argc, char** argv) {
         goto _exit;
     }
     
+//    /* Calculates timeout wait in ms */
+//    const int wait = 1000 / (SAMPLE_RATE * chanSamples * numChannels);
+    
     /* Calculates sunset (sunsclipse) and sunrise (sunsight) times based on: */
     /* (1) Date and (2) Latitude and Longitude coordinates */
     long *sunsets = malloc(sizeof(long)*durationDays);
@@ -305,6 +292,9 @@ int main (int argc, char** argv) {
     
     int elapsedDays = 0; // Resets day counter
     int fileNum = 0; // Diagnostic/debugging file counter
+    char filePath[LEN]; // String for output file path
+    
+    const int fileBuffers = 10;
     
     /* Infinite loop until aborted by ctrl-C or q/Q entered */
     fprintf(stdout, "Press q or Q or ctrl-C to exit\n"); 
@@ -329,11 +319,41 @@ int main (int argc, char** argv) {
                     break;
                 fflush(stdin);
             }
-            
-            /* Gets time of first sample recording for timestamp */
-            char filePath[LEN];
-            timestamp(filePath, argv, PATH_TO_STORAGE);
 
+            int bufferCount = 0;
+
+            if (bufferCount == 0) {
+                /* Arms the input stream */
+                if ((ioctl(inStream, IOCTL_ARM_SUBSYS, 0))) {
+                    fprintf(stderr, "IOCTL_ARM_SUBSYS ERROR %d \"%s\"\n", 
+                          errno, strerror(errno));
+                    goto _exit;
+                }   
+                       
+                /* 
+                 * Issues a software start for continuous input operation; this is 
+                 * redundant if trigger source is threshold or externally triggered 
+                 */
+                if ((ioctl(inStream, IOCTL_START_SUBSYS, 0))) {
+                    fprintf(stderr, "IOCTL_START_SUBSYS ERROR %d \"%s\"\n", 
+                            errno, strerror(errno));
+                    goto _exit;
+                }
+                
+                /* Gets time of first sample recording for timestamp */
+                timestamp(filePath, argv, PATH_TO_STORAGE);
+            }            
+
+            while (!forceQuit & bufferCount < fileBuffers) {
+                /* Continuous sampling of input stream begins */
+    //            aio_wait(inAIO, wait); // Waits for time to fill buffer in ms
+                if (aio_wait(inAIO, -1) > 0) { // Timeout when one buffer completely filled
+                    ++bufferCount;
+                } else {
+                    break; // error
+                }
+            }
+            
             /* Write acquired data to the specified .aiff output file */
             AIFF_Ref file = malloc(sizeof(AIFF_Ref));
 
@@ -363,8 +383,6 @@ int main (int argc, char** argv) {
                 goto _exit;
             }
                     
-/* Writes buffer to intermediate circular buffer to be written to file */
-
 /******************************************************************************
  * AIO API flow diagram. API marked with * must be called only once.
  * 
@@ -382,9 +400,6 @@ int main (int argc, char** argv) {
  *          :                                   |
  *      aio_wait ()<-------->buffer_done_cb_t   |
  *          :                                   |loop
- *          :                                   |
- *      aio_wait ()<-------->buffer_done_cb_t   |
- *          :                                   |
  *          :                                   |
  *          |                                   |
  *      aio_stop()                              |
@@ -404,7 +419,7 @@ int main (int argc, char** argv) {
                     
             int nBuffer;
             for (nBuffer = 0; nBuffer < numBuffers; ++nBuffer) {
-                void *raw = bufferArray[nBuffer];
+                void *raw = inBuffer[nBuffer];
                 int sample;
                 for (sample = 0; sample < chanSamples; ++sample) {
                     if (chanMask & chan_mask_ain0) {
@@ -462,6 +477,9 @@ int main (int argc, char** argv) {
             present = getPresentTime(); /* Updates time for while loop check */
         }
         if (night) elapsedDays++; /* If after dawn (leaving night), 1 day elapsed */
+        
+        // Stop stream 
+        ioctl(inStream, IOCTL_STOP_SUBSYS, 0); 
     }
 
 /* Exit protocol and procedure */

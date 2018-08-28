@@ -1,0 +1,236 @@
+/*
+ * Device tree for the DT78xx board. 
+ * This device tree configures the h/w for programming the eeprom for the 
+ * fpga. 
+ *
+ * Copyright (C) 2014 Data Translation Inc
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ * ---------------------------------------------------------------------------
+ */
+/dts-v1/;
+
+#include "am33xx.dtsi"
+#include "am335x-bone-common.dtsi"
+#include "dt78xx_dts.h"
+
+&ldo3_reg {
+	regulator-min-microvolt = <1800000>;
+	regulator-max-microvolt = <1800000>;
+	regulator-always-on;
+};
+
+&mmc1 {
+	vmmc-supply = <&vmmcsd_fixed>;
+};
+
+&mmc2 {
+	status = "disabled"; /* disabled for DT78xx use */
+};
+
+&epwmss0 {
+	status = "disabled"; /* disabled for DT78xx use */
+};
+
+&am33xx_pinmux {
+
+/* By default, the spi0 port is disabled and no gpio pins are assigned 
+   To reprogram the mtd flash used by the FPGA, gpio pins are assigned to spi0
+ */
+#ifdef _FPGA_PROG_
+	/* SPI0 master mode interface to AT45DB041D flash for the fpga.
+       IMPORTANT : sclk must have receiver enabled for read re-timing */
+	dt78xx_fpga_eeprom_pins: dt78xx_fpga_eeprom_pins {
+		pinctrl-single,pins = <
+			PINCTRL_SPI0_SCLK     (IEN | OFF | MODE0) /* spi0_sclk -> SCK*/
+			PINCTRL_SPI0_D0       (IEN | OFF | MODE0) /* spi0_d0 <- SO*/
+			PINCTRL_SPI0_D1       (IEN | OFF | MODE0) /* spi0_d1 -> SI*/
+			PINCTRL_SPI0_CS0      (IEN | OFF | MODE0) /* spi0_cs0 -> CS/ */
+		>;
+       };
+#endif
+	dt78xx_pins: dt78xx_pins {
+		pinctrl-single,pins = <
+            /* gpio output to hold the fpga reset while spi0 programs eeprom */
+            PINCTRL_GPMC_A0       (IDIS | OFF |MODE7) /* gpio1_16->fpga reset */
+		>;
+	};
+    dt78xx_gpmc_pins: dt78xx_gpmc_pins  {
+        pinctrl-single,pins = <
+            /* gpmc address/data multiplexd signals */
+            PINCTRL_GPMC_AD0    (IEN | PD | MODE0)  /* gpmc_ad0 */
+            PINCTRL_GPMC_AD1    (IEN | PD | MODE0)  /* gpmc_ad1 */
+            PINCTRL_GPMC_AD2    (IEN | PD | MODE0)  /* gpmc_ad2 */
+            PINCTRL_GPMC_AD3    (IEN | PD | MODE0)  /* gpmc_ad3 */
+            PINCTRL_GPMC_AD4    (IEN | PD | MODE0)  /* gpmc_ad4 */
+            PINCTRL_GPMC_AD5    (IEN | PD | MODE0)  /* gpmc_ad5 */
+            PINCTRL_GPMC_AD6    (IEN | PD | MODE0)  /* gpmc_ad6 */
+            PINCTRL_GPMC_AD7    (IEN | PD | MODE0)  /* gpmc_ad7 */
+            PINCTRL_GPMC_AD8    (IEN | PD | MODE0)  /* gpmc_ad8 */
+            PINCTRL_GPMC_AD9    (IEN | PD | MODE0)  /* gpmc_ad9 */
+            PINCTRL_GPMC_AD10   (IEN | PD | MODE0)  /* gpmc_ad10 */
+            PINCTRL_GPMC_AD11   (IEN | PD | MODE0)  /* gpmc_ad11 */
+            PINCTRL_GPMC_AD12   (IEN | PD | MODE0)  /* gpmc_ad12 */
+            PINCTRL_GPMC_AD13   (IEN | PD | MODE0)  /* gpmc_ad13 */
+            PINCTRL_GPMC_AD14   (IEN | PD | MODE0)  /* gpmc_ad14 */
+            PINCTRL_GPMC_AD15   (IEN | PD | MODE0)  /* gpmc_ad15 */
+
+            PINCTRL_GPMC_WAIT0  (IEN | PU | MODE0 ) /* gpmc_wait0 */
+            PINCTRL_GPMC_WPN    (IDIS | PU | MODE0 )/* gpmc_wpn  */
+            PINCTRL_GPMC_BEN1   (IDIS | PU | MODE0 )/* gpmc_be1n */
+            PINCTRL_GPMC_CSN0   (IDIS | PU | MODE0 )/* gpmc_csn0 */
+            PINCTRL_GPMC_CSN1   (IDIS | PU | MODE0 )/* gpmc_csn1  */
+            PINCTRL_GPMC_CSN2   (IDIS | PU | MODE0 )/* gpmc_csn2 */
+            PINCTRL_GPMC_CSN3   (IDIS | PU | MODE0 )/* gpmc_csn3 Not on P8/P9 */
+            PINCTRL_GPMC_CLK    (IEN | PD | MODE0 ) /* gpmc_clk_mux0 */
+            PINCTRL_GPMC_ADVN_ALE (IEN | PU | MODE0 )/* gpmc_advn_ale */
+            PINCTRL_GPMC_OEN_REN (IEN | PU | MODE0 ) /* gpmc_oen_ren */
+            PINCTRL_GPMC_WEN    (IEN | PU | MODE0 ) /* gpmc_wen */
+            PINCTRL_GPMC_BEN0_CLE (IEN | PU | MODE0 )   /* gpmc_be0n_cle */
+        >;
+	};
+     };
+
+/* By default, the spi0 port is disabled. 
+   To reprogram the mtd flash used by the FPGA, spi0 must be enabled
+ */
+#ifdef _FPGA_PROG_
+&spi0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&dt78xx_fpga_eeprom_pins>;
+	status = "okay";
+
+	fpga_flash@0 {
+		status = "okay";
+		compatible = "atmel,at45";
+		spi-max-frequency = <15000000>; /* Mandatory */
+		reg = <0>; /* Mandatory chip select */
+
+		#address-cells = <1>;
+		#size-cells = <1>;
+		partition@0 {
+			label = "fpga_flash";
+			reg = <0x00000000 0x00084000>; /* 540672 bytes */
+ 		};
+	};
+};
+#endif
+
+/* Required for NAND ECC */
+&elm {
+    status = "okay";
+};
+&gpmc {
+    status = "okay";
+    pinctrl-names = "default";
+    pinctrl-0 = <&dt78xx_gpmc_pins>;
+
+    /* chip select ranges */
+    ranges = <0 0 0x08000000 0x10000000>;   /* CS0: NAND */
+   
+    nand@0,0 
+    {
+            reg = <0 0 0>; /* CS0, offset 0 */
+            ti,nand-ecc-opt = "bch16";
+            ti,elm-id = <&elm>;
+            nand-bus-width = <16>;
+            gpmc,device-width = <2>;
+            gpmc,sync-clk-ps = <0>;
+            gpmc,cs-on-ns = <0>;
+            gpmc,cs-rd-off-ns = <80>;
+            gpmc,cs-wr-off-ns = <80>;
+            gpmc,adv-on-ns = <0>;
+            gpmc,adv-rd-off-ns = <80>;
+            gpmc,adv-wr-off-ns = <80>;
+            gpmc,we-on-ns = <20>;
+            gpmc,we-off-ns = <60>;
+            gpmc,oe-on-ns = <20>;
+            gpmc,oe-off-ns = <60>;
+            gpmc,access-ns = <40>;
+            gpmc,rd-cycle-ns = <80>;
+            gpmc,wr-cycle-ns = <80>;
+            gpmc,wait-on-read = "true";
+            gpmc,wait-on-write = "true";
+            gpmc,bus-turnaround-ns = <0>;
+            gpmc,cycle2cycle-delay-ns = <0>;
+            gpmc,clk-activation-ns = <0>;
+            gpmc,wait-monitoring-ns = <0>;
+            gpmc,wr-access-ns = <40>;
+            gpmc,wr-data-mux-bus-ns = <0>;
+            /* MTD partition table 
+             * All SPL-* partitions are sized to minimal length which can be 
+             * independently programmable. For NAND flash this is equal to size 
+             * of 256KB erase-block */
+            #address-cells = <1>;
+            #size-cells = <1>;
+            partition@0 {
+                    label = "SPL";
+                    reg = <0x00000000 0x00040000>;
+            };
+            partition@1 {
+                    label = "SPL.backup1";
+                    reg = <0x00040000 0x00040000>;
+            };
+            partition@2 {
+                    label = "SPL.backup2";
+                    reg = <0x00080000 0x00040000>;
+            };
+            partition@3 {
+                    label = "SPL.backup3";
+                    reg = <0x000C0000 0x00040000>;
+            };
+            partition@4 {
+                    label = "u-boot";
+                    reg = <0x00100000 0x001C0000>;
+            };
+            partition@5 {
+                    label = "u-boot-spl-os";
+                    reg = <0x002C0000 0x00040000>;
+            };
+            partition@6 {
+                    label = "u-boot-env";
+                    reg = <0x00300000 0x00040000>;
+            };
+            partition@7 {
+                    label = "kernel";
+                    reg = <0x00340000 0x00500000>;
+            };
+            partition@9 {
+                    label = "rootfs";
+                    reg = <0x00840000 0x7f7c0000>;
+            };
+       };   
+    };
+/ {
+    dt78xx{
+	   pinctrl-names = "default";
+	   pinctrl-0 = <&dt78xx_pins>;
+	   status = "okay";
+
+       compatible = "dt78xx";
+
+      /* GPIO pin to hold FPGA reset. Third parameter in <> below, specifies
+         reset logic level
+       */
+      dt78xx,fpga_reset = <&gpio1 16 0>;
+    };
+	cpus {
+		cpu@0 {
+			cpu0-supply = <&dcdc2_reg>;
+			/*
+			 * To consider voltage drop between PMIC and SoC,
+			 * tolerance value is reduced to 2% from 4% and
+			 * voltage value is increased as a precaution.
+			 */
+			operating-points = <
+				/* kHz    uV */
+				1000000	1325000
+				800000	1300000
+				600000  1112000
+				300000   969000
+			>;
+		};
+	};
+};
