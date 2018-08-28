@@ -49,7 +49,7 @@ void isInStreamEmpty() {
     led.state = (1<<OVERRUN_LED);
     ioctl(inStream, IOCTL_LED_SET, &led);
 #endif    
-    if (overrunStop && (buffersDone==numBuffers)) //Stop on queue empty
+    if (overrunStop && (buffersDone==2)) //Stop on queue empty
     {
         if (ioctl(inStream, IOCTL_STOP_SUBSYS, 0))
            perror("IOCTL_STOP_SUBSYS");
@@ -62,7 +62,7 @@ int isInAIODone(void *buff, int len) {
     
     //If operation was stopped on queue empty, clean up after all buffers have
     //been dequeued and processed
-    if (overrunStop && overruns && (buffersDone==numBuffers)) 
+    if (overrunStop && overruns && (buffersDone==2)) 
     {
         if (ioctl(inStream, IOCTL_STOP_SUBSYS, 0))
            perror("IOCTL_STOP_SUBSYS");
@@ -167,7 +167,7 @@ long getPresentTime() {
 }
 
 int checkFatal() {
-    int grossSamples = fileSamples * numBuffers;
+    int grossSamples = fileSamples * 2;
     if(grossSamples > 65536) {
         fprintf(stderr, "Fatal Error: exceeded 16-bits!\n");
         fprintf(stderr, "SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS = %d > 65536\n", 
@@ -344,40 +344,6 @@ void calcSunUpDown(long *sunsets, long *sunrises) {
     }
 }
 
-int writeBuffer(AIFF_Ref file, struct circular_queue bufferQueue, int* chOn, 
-                void** bufferArray, dt78xx_ain_config_t* ainConfig) {
-    int success = 0;
-    int rwBuffer;
-    for (rwBuffer=0; rwBuffer < numBuffers; ++rwBuffer) { 
-        fprintf(stdout, "Reading buffer and writing file...\n");
-
-        int16_t *raw = bufferArray[rwBuffer];
-
-        int queue, ch;
-        /* Circular buffer write and read pointers lead and follow */
-        for (queue = 0; queue < bufferQueue.num_samples + 1; queue++) {  
-            for (ch = 0; ch < numChannels; ch++, ++raw) {
-                /* Decouples input from output with circular buffer */
-                int chIndex = chOn[ch];
-                /* Write pointer leads read pointer by numChannels */
-                if (queue < bufferQueue.num_samples) { 
-                    float sampleVolt = raw2volts(*raw, ainConfig[chIndex].gain);
-                    float* writePointer = &sampleVolt; //write pointer for input
-                    bufferQueue.buffer->add(bufferQueue.buffer, writePointer);
-                }
-                /* Read pointer lags write pointer by numChannels */
-                if (queue > 0) {
-                    float* readPointer = NULL; /* Read pointer for writing to file */
-                    bufferQueue.buffer->pull(bufferQueue.buffer, &readPointer);
-                    success = AIFF_WriteSamples32Bit(file, (int32_t*) &readPointer, 1);
-                    if (!success) break;
-                }
-            }
-        }
-    }
-    return success;
-}
-
 int checkID(int argc, char** argv) {
     if (optind >= argc) {
         printf(usage, argv[0]);
@@ -431,10 +397,69 @@ void setMetadata(AIFF_Ref file, long sunset, long sunrise) {
     AIFF_SetAttribute(file, AIFF_COPY, metadata);
 }
 
-void getCircularQueue(RingBuf *circularQueue) {
-    const int size = chanSamples * numChannels;
-    circularQueue = RingBuf_new(sizeof(float), size);
+struct circular_queue getFileQueue(dt78xx_ain_config_t ainConfig[8], dt78xx_clk_config_t clk) {
+        const int size = chanSamples * numChannels * fileBuffers;
+        struct circular_queue fileQueue;
+        fileQueue.buffer = RingBuf_new(sizeof(float), size);
+        fileQueue.chanConfig = ainConfig;
+        fileQueue.num_samples = size;
+        fileQueue.sample_rate = clk.clk_freq;
+        return fileQueue;
 }
 
-
+void writeFileQueue(void *raw, struct circular_queue writeQueue) {
+    int sample;
+    float volts;
+    void *vptr;
+    for (sample = 0; sample < chanSamples; ++sample) {
+        if (chanMask & chan_mask_ain0) {
+            volts = raw2volts(*(int16_t *)raw, writeQueue.chanConfig[0].gain);
+            vptr = &volts;
+            writeQueue.buffer->add(writeQueue.buffer, &vptr);
+            raw += sizeof(int16_t);
+        }
+        if (chanMask & chan_mask_ain1) {
+            volts = raw2volts(*(int16_t *)raw, writeQueue.chanConfig[1].gain);
+            vptr = &volts;
+            writeQueue.buffer->add(writeQueue.buffer, &vptr);
+            raw += sizeof(int16_t);  
+        }
+        if (chanMask & chan_mask_ain2) {
+            volts = raw2volts(*(int16_t *)raw, writeQueue.chanConfig[2].gain);
+            vptr = &volts;
+            writeQueue.buffer->add(writeQueue.buffer, &vptr);
+            raw += sizeof(int16_t); 
+        }
+        if (chanMask & chan_mask_ain3) {
+            volts = raw2volts(*(int16_t *)raw, writeQueue.chanConfig[3].gain);
+            vptr = &volts;
+            writeQueue.buffer->add(writeQueue.buffer, &vptr);
+            raw += sizeof(int16_t);
+        }
+        if (chanMask & chan_mask_ain4) {
+            volts = raw2volts(*(int16_t *)raw, writeQueue.chanConfig[4].gain);
+            vptr = &volts;
+            writeQueue.buffer->add(writeQueue.buffer, &vptr);
+            raw += sizeof(int16_t); 
+        }
+        if (chanMask & chan_mask_ain5) {
+            volts = raw2volts(*(int16_t *)raw, writeQueue.chanConfig[5].gain);
+            vptr = &volts;
+            writeQueue.buffer->add(writeQueue.buffer, &vptr);
+            raw += sizeof(int16_t); 
+        }
+        if (chanMask & chan_mask_ain6) {
+            volts = raw2volts(*(int16_t *)raw, writeQueue.chanConfig[6].gain);
+            vptr = &volts;
+            writeQueue.buffer->add(writeQueue.buffer, &vptr);
+            raw += sizeof(int16_t);  
+        }                    
+        if (chanMask & chan_mask_ain7) {
+            volts = raw2volts(*(int16_t *)raw, writeQueue.chanConfig[7].gain);
+            vptr = &volts;
+            writeQueue.buffer->add(writeQueue.buffer, &vptr);
+            raw += sizeof(int16_t);
+        }                    
+    }
+}
     

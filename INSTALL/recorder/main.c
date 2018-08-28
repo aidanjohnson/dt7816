@@ -35,7 +35,7 @@ struct aio_struct *inAIO; // Asynchronous I/O
 int autoTrigger = AUTO_TRIG;
 int fileSamples = SAMPLES_PER_FILE;
 int chanSamples = SAMPLES_PER_CHAN;
-int numBuffers = NUM_BUFFS;
+int fileBuffers = BUFFS_PER_FILE;
 int numChannels = NUM_CHANNELS;
 int durationDays = DURATION_DAYS; // Number of days for sampling/recording
 int nightCycle = NIGHT_CYCLE; // On = 1, sampling only after dusk and before dawn
@@ -64,6 +64,7 @@ static void forceQuitHandler(int i) {
 /*
  * ==== Simultaneous 8-channel analog input signal AIFF recorder ====
  */
+
 
 int main (int argc, char** argv) {
     int opt = 0;
@@ -112,13 +113,17 @@ int main (int argc, char** argv) {
                 durationDays = atoi(optarg);
                 break; 
             case 'b' :
-                numBuffers = atoi(optarg);
-                if (numBuffers <= 0) {
+                fileBuffers = atoi(optarg);
+                if (fileBuffers % 2 == 1) {
+                    fprintf(stderr, "Number of buffers must even; using one fewer\n");
+                    fileBuffers--;
+                }
+                if (fileBuffers <= 0) {
                     fprintf(stderr, "Number of buffers must be positive and non-zero\n");
                     exit(EXIT_FAILURE);
                 }
-                if (numBuffers > MAX_AIO_EVENTS) {
-                    fprintf(stderr, "Max number of buffers is %d\n", MAX_AIO_EVENTS);
+                if (fileBuffers > MAX_AIO_EVENTS * 2) {
+                    fprintf(stderr, "Max number of buffers is %d\n", MAX_AIO_EVENTS * 2);
                     exit(EXIT_FAILURE);
                 }
                 break;
@@ -162,7 +167,7 @@ int main (int argc, char** argv) {
     createChanMask(ain, chOn);
    
     /* First fatal error check: bit restriction */
-    exitStatus = checkFatal(fileSamples, numBuffers); // See recorder_helpers.h
+    exitStatus = checkFatal(fileSamples, 2); // See recorder_helpers.h
     
     /* Channel configuration */
     dt78xx_ain_config_t ainConfig[8] = {}; // Analog input configuration array
@@ -236,7 +241,7 @@ int main (int argc, char** argv) {
     
     /* Creates and initialises AIO stream buffers/structures */
     fprintf(stdout, "Initialising...\n");
-    if ((inBuffer = aio_buff_alloc(inAIO, numBuffers, buffSize)) == NULL) {
+    if ((inBuffer = aio_buff_alloc(inAIO, 2, buffSize)) == NULL) {
         fprintf(stderr, "alloc_queue_buffers ERROR %d \"%s\"\n", 
                 errno, strerror(errno));
         goto _exit;
@@ -267,9 +272,8 @@ int main (int argc, char** argv) {
     int elapsedDays = 0; // Resets day counter
     int fileNum = 0; // Diagnostic/debugging file counter
     char filePath[LEN]; // String for output file path
-    
-    const int fileCycles = 10; // cycles per file written
-    
+    const int fileCycles = fileBuffers / 2;
+        
     /* Infinite loop until aborted by ctrl-C or q/Q entered */
     fprintf(stdout, "Press q or Q or ctrl-C to exit\n"); 
     while (!forceQuit && durationDays > elapsedDays) {
@@ -320,8 +324,8 @@ int main (int argc, char** argv) {
                 /* Gets time of first sample recording for timestamp */
                 timestamp(filePath, argv, PATH_TO_STORAGE);
                 
+                struct circular_queue fileQueue = getFileQueue(ainConfig, clk);
                 AIFF_Ref file = malloc(sizeof(AIFF_Ref));
-
                 setMetadata(file, sunset, sunrise);
 
                 file = AIFF_OpenFile(filePath, F_WRONLY);
@@ -351,7 +355,7 @@ int main (int argc, char** argv) {
                 int numDone;
                 
                 /* Cycle 0: fills ping */
-                while (buffersDone < 2) {
+                while (buffersDone != 1) {
                     numDone = aio_wait(inAIO, -1); // Timeout when one buffer completely filled
                     if (numDone < 0) {
                         break; // error
@@ -367,11 +371,13 @@ int main (int argc, char** argv) {
                 while (cycles < fileCycles) {
                     if (buffersDone % 2 == 0) {
                         // TODO: read pong
+                        writeFileQueue(inBuffer[PONG], fileQueue);
                         while (!(aio_wait(inAIO, -1) > 0)) {
                             /* Sink, until ping full */
                         }
                     } else {
                         // TODO: read ping
+                        writeFileQueue(inBuffer[PING], fileQueue);
                         while (!(aio_wait(inAIO, -1) > 0)) {
                             /* sink, until pong full */
                         }
@@ -379,6 +385,7 @@ int main (int argc, char** argv) {
                     buffersDone++;
                     cycles++;
                 }
+                
                 /* exit from while loop signals single file written */
                                            
                 if (!AIFF_EndWritingSamples(file)) {
@@ -432,48 +439,8 @@ int main (int argc, char** argv) {
  *          v
  *      aio_destroy*
  */
-                    
-            int nBuffer;
-            for (nBuffer = 0; nBuffer < numBuffers; ++nBuffer) {
-                void *raw = inBuffer[nBuffer];
-                int sample;
-                for (sample = 0; sample < chanSamples; ++sample) {
-                    if (chanMask & chan_mask_ain0) {
-                        raw2volts(*(int16_t *)raw, ainConfig[0].gain);
-                        raw += sizeof(int16_t);
-                    }
-                    if (chanMask & chan_mask_ain1) {
-                        raw2volts(*(int16_t *)raw, ainConfig[1].gain);
-                        raw += sizeof(int16_t);   
-                    }
-                    if (chanMask & chan_mask_ain2) {
-                        raw2volts(*(int16_t *)raw, ainConfig[2].gain);
-                        raw += sizeof(int16_t);   
-                    }
-                    if (chanMask & chan_mask_ain3) {
-                        raw2volts(*(int16_t *)raw, ainConfig[3].gain);
-                        raw += sizeof(int16_t);   
-                    }
-                    if (chanMask & chan_mask_ain4) {
-                        raw2volts(*(int16_t *)raw, ainConfig[4].gain);
-                        raw += sizeof(int16_t);   
-                    }
-                    if (chanMask & chan_mask_ain5) {
-                        raw2volts(*(int16_t *)raw, ainConfig[5].gain);
-                        raw += sizeof(int16_t);   
-                    }
-                    if (chanMask & chan_mask_ain6) {
-                        raw2volts(*(int16_t *)raw, ainConfig[6].gain);
-                        raw += sizeof(int16_t);   
-                    }                    
-                    if (chanMask & chan_mask_ain7) {
-                        raw2volts(*(int16_t *)raw, ainConfig[7].gain);
-                        raw += sizeof(int16_t);   
-                    }                    
-                }
-            }
 
-            
+
         }
         if (night) elapsedDays++; /* If after dawn (leaving night), 1 day elapsed */
         

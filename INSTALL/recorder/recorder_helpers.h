@@ -104,9 +104,13 @@ extern "C" {
 #define DEFAULT_LATITUDE    47.655083 // Latitude (N := +, S := -)
 #define DEFAULT_LONGITUDE   -122.293194 // Longitude (E := +, W := -)
     
-/* Constraint: SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS <= 65536 samples = 2^(16 bits) */
+/* 
+ * Constraint: SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS <= 65536 samples = 2^(16 bits)
+ * Number of buffers initialised (2 for double buffering) = NUM_BUFFS
+ */
 #define SAMPLES_PER_FILE    65536 // SAMPLES_PER_CHAN = SAMPLES_PER_FILE / NUM_CHANNELS
-#define NUM_BUFFS           2 // Number of buffers initialised (2 for double buffering)
+    
+#define BUFFS_PER_FILE     10 // Twice the cycles of double buffering per file written
 
 /*
  * ===== Debug Options ====
@@ -155,6 +159,9 @@ extern "C" {
 #define TRIG_LEVEL_V        0.0
 #define DEFAULT_GAIN        1 // gain 1 => +/- 10 V; must be 1 for DT7816
 #define LIBAIFF_NOCOMPAT    1 // Do not use LibAiff 2 API compatibility
+    
+#define PING                0
+#define PONG                1    
 
 /*
  * ==== Command line arguments with help ====
@@ -204,7 +211,7 @@ extern struct aio_struct *inAIO;
 extern int autoTrigger;
 extern int fileSamples;
 extern int chanSamples;
-extern int numBuffers;
+extern int fileBuffers;
 extern int numChannels;
 extern int durationDays;
 extern int nightCycle;
@@ -225,7 +232,8 @@ extern int outStream;
 struct circular_queue {
     float sample_rate;  
     int32_t num_samples;
-    RingBuf *buffer;  /* Buffer with raw values converted to voltage */
+    dt78xx_ain_config_t* chanConfig;
+    RingBuf *buffer;  // Buffer of raw values converted to voltage
 };
 
 /*
@@ -425,44 +433,6 @@ int configTrig(dt78xx_trig_config_t trigConfig);
 void calcSunUpDown(long *sunsets, long *sunrises);
 
 /*
- * Writes input samples to AIFF files
- * 
- * 1) Reads input data from linear array buffer
- * 2) Writes data to (intermediate) circular buffer
- * 3) Writes advances by one value
- * 4) Continues to write until it has writtent number of channels per file data
- * 5) Reads first data written to circular buffer, and writes to file
- * 6) Reads advances by one value, simultaneously with writes
- * 7) Continues to write (simultaneously) for next input array buffer
- * 8) Continues to read, lagging behind writing by the number of channels per file
- * 
- * The order of the data in the input (AIN) buffer is as follows,
- * assuming that all channels are enabled in the input stream:
- * Analog input channels 0 through 7. Each analog input sample is a
- * 16-bit, two’s complement value.
- * 
- * Simultaneously analog input (channel) samples put 
- * inline and sequentially for AIFF recording like so:
- *  ___________ ___________ ___________ ___________
- * |           |           |           |           |
- * | Channel 1 | Channel 2 | Channel 1 | Channel 2 | ...
- * |___________|___________|___________|___________|
- *  <---------> <---------> <---------> <--------->  ...
- *    Segment     Segment     Segment     Segment
- *  <---------------------> <--------------------->  ...
- *      Sample frame 1          Sample frame 2  
- * 
- * @param file              File opject/reference
- * @param ringBuffer        Circular buffer object
- * @param chOn              Indices of channels that are on/enabled
- * @param bufferArray       Linear input buffer array
- * @param ainConfig         Configuration of analog input
- * @return                  1 if successful, 0 if failure
- */
-int writeBuffer(AIFF_Ref file, struct circular_queue ringBuffer, int* chOn, 
-                void** bufferArray, dt78xx_ain_config_t* ainConfig);
-
-/*
  * Checks for missing AIFF file identifier.
  * 
  * @param argc
@@ -505,9 +475,34 @@ void setMetadata(AIFF_Ref file, long sunset, long sunrise);
 /* 
  * Creates a circular/ring buffer/queue to hold the recorded values in Volts.
  * 
- * @param RingBuf type circular queue
+ * @param   input channel configuration
+ * @return  RingBuf type circular queue
  */
-void getCircularQueue(RingBuf *circularQueue);
+struct circular_queue getFileQueue(dt78xx_ain_config_t *ainConfig, dt78xx_clk_config_t clk);
+
+/* 
+ * Creates a circular/ring buffer/queue to hold the recorded values in Volts.
+ * 
+ * The order of the data in the input (AIN) buffer is as follows,
+ * assuming that all channels are enabled in the input stream:
+ * Analog input channels 0 through 7. Each analog input sample is a
+ * 16-bit, two’s complement value.
+ * 
+ * Simultaneously analog input (channel) samples put 
+ * inline and sequentially for AIFF recording like so:
+ *  ___________ ___________ ___________ ___________
+ * |           |           |           |           |
+ * | Channel 1 | Channel 2 | Channel 1 | Channel 2 | ...
+ * |___________|___________|___________|___________|
+ *  <---------> <---------> <---------> <--------->  ...
+ *    Segment     Segment     Segment     Segment
+ *  <---------------------> <--------------------->  ...
+ *      Sample frame 1          Sample frame 2  
+ * 
+ * @param   pointer to array of raw values
+ * @param   RingBuf type circular queue for file output
+ */
+void writeFileQueue(void *raw, struct circular_queue writeQueue);
 
 #ifdef __cplusplus
 }
