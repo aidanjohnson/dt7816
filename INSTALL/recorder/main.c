@@ -351,16 +351,14 @@ int main (int argc, char** argv) {
                     goto _exit;
                 }
                 
-                int buffersDone = 0; // Number of buffers completed per cycle
+                int buffersDone = 0; // Cumulative number of buffers completed so far per cycle
                 int cycles = 0; // Cycle counter
-                int numDone;
+                int numDone = 0; // Number of buffers completed in timeout/wait period
                 
                 /* Cycle 0: fills ping */
-                while (buffersDone != 1) {
+                while (numDone != 1) {
                     numDone = aio_wait(inAIO, -1); // Timeout when one buffer completely filled
-                    if (numDone < 0) {
-                        break; // error
-                    }
+                    if (numDone < 0) break; // error
                     buffersDone += numDone;
                 }
                 /* exit from while loop signals ping is full */
@@ -371,20 +369,24 @@ int main (int argc, char** argv) {
                  * The double buffering sink: producer is inBuffer, consumer is fileQueue
                  */
                 while (cycles < fileCycles) {
+                    numDone = 0;
                     if (buffersDone % 2 == 0) {
-                        // TODO: read pong
+                        // Read and write from pong
                         writeFileQueue(inBuffer[PONG], fileQueue);
-                        while (!(aio_wait(inAIO, -1) > 0)) {
-                            /* Sink, until ping full */
+                        while (numDone != 1) { // Sink, until ping full
+                           numDone = aio_wait(inAIO, -1);
+                           if (numDone < 0) break; // error
+                           buffersDone += numDone;
                         }
                     } else {
-                        // TODO: read ping
+                        // Read and write from ping
                         writeFileQueue(inBuffer[PING], fileQueue);
-                        while (!(aio_wait(inAIO, -1) > 0)) {
-                            /* sink, until pong full */
+                        while (numDone != 1) { // Sink, until pong full
+                           numDone = aio_wait(inAIO, -1);
+                           if (numDone < 0) break; // error
+                           buffersDone += numDone;
                         }
                     }
-                    buffersDone++;
                     cycles++;
                 }
                 /* exit from while loop signals to write single file */
