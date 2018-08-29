@@ -397,8 +397,7 @@ void setMetadata(AIFF_Ref file, long sunset, long sunrise) {
     AIFF_SetAttribute(file, AIFF_COPY, metadata);
 }
 
-struct circular_queue getFileQueue(dt78xx_ain_config_t ainConfig[8], dt78xx_clk_config_t clk) {
-        const int size = chanSamples * numChannels * fileBuffers;
+struct circular_queue getFileQueue(dt78xx_ain_config_t ainConfig[8], dt78xx_clk_config_t clk, int size) {
         struct circular_queue fileQueue;
         fileQueue.buffer = RingBuf_new(sizeof(float), size);
         fileQueue.chanConfig = ainConfig;

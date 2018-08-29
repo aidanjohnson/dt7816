@@ -272,7 +272,8 @@ int main (int argc, char** argv) {
     int elapsedDays = 0; // Resets day counter
     int fileNum = 0; // Diagnostic/debugging file counter
     char filePath[LEN]; // String for output file path
-    const int fileCycles = fileBuffers / 2;
+    const int fileCycles = fileBuffers / 2; // Number of cycles of double buffering per file
+    const int fileSize = chanSamples * numChannels * fileBuffers; // Size of file write queue
         
     /* Infinite loop until aborted by ctrl-C or q/Q entered */
     fprintf(stdout, "Press q or Q or ctrl-C to exit\n"); 
@@ -324,14 +325,14 @@ int main (int argc, char** argv) {
                 /* Gets time of first sample recording for timestamp */
                 timestamp(filePath, argv, PATH_TO_STORAGE);
                 
-                struct circular_queue fileQueue = getFileQueue(ainConfig, clk);
+                struct circular_queue fileQueue = getFileQueue(ainConfig, clk, fileSize);
                 AIFF_Ref file = malloc(sizeof(AIFF_Ref));
                 setMetadata(file, sunset, sunrise);
 
                 file = AIFF_OpenFile(filePath, F_WRONLY);
                 if (file) {
                     fileNum += 1;
-                    fprintf(stdout, "Opened .aiff file...\n");
+                    fprintf(stdout, "Opened the %d th .aiff file...\n", fileNum);
 
                     if (!AIFF_SetAudioFormat(file, numChannels, 
                                             (double) clk.clk_freq, 
@@ -366,7 +367,8 @@ int main (int argc, char** argv) {
 
                 /* 
                  * Last half of Cycle 0 (fills pong, reads ping); entirity of
-                 * Cycle 1, 2, ... fileCycles - 1 (alternates fill/read ping/pong)
+                 * Cycle 1, 2, ... fileCycles - 1 (alternates fill/read ping/pong).
+                 * The double buffering sink: producer is inBuffer, consumer is fileQueue
                  */
                 while (cycles < fileCycles) {
                     if (buffersDone % 2 == 0) {
@@ -385,16 +387,18 @@ int main (int argc, char** argv) {
                     buffersDone++;
                     cycles++;
                 }
+                /* exit from while loop signals to write single file */
                 
-                /* exit from while loop signals single file written */
-                                           
+                if (!AIFF_WriteSamples32Bit(file, (int32_t*) &(fileQueue.buffer), fileSize)) {
+                    fprintf(stderr, "ERROR writing .aiff file");
+                    goto _exit;
+                }                         
                 if (!AIFF_EndWritingSamples(file)) {
                     fprintf(stderr, "ERROR ending writing .aiff file");
                     goto _exit;
                 } else {
                     fprintf(stdout, "%do .aiff file written\n", fileNum);
                 }
-
                 if (AIFF_CloseFile(file)) {
                     fprintf(stdout, "Closed file...\n");
                     fprintf(stdout, "File at %s\n", filePath);
@@ -403,49 +407,12 @@ int main (int argc, char** argv) {
                     goto _exit;
                 }
                 
-                present = getPresentTime(); /* Updates time for while loop check */
+                present = getPresentTime(); // Updates time for while loop check
             }
-                            
-/******************************************************************************
- * AIO API flow diagram. API marked with * must be called only once.
- * 
- *      aio_create*
- *          |
- *          v
- *          +--<--------------------------------+
- *      aio_buff_alloc()                        |
- *          |                                   |
- *          |                                   |
- *      aio_start()                             |
- *          |                                   |
- *      aio_wait ()<-------->buffer_done_cb_t   |
- *          :                                   |
- *          :                                   |
- *      aio_wait ()<-------->buffer_done_cb_t   |
- *          :                                   |loop
- *          :                                   |
- *          |                                   |
- *      aio_stop()                              |
- *          |                                   |
- *          +-------------------------------->--+
- *          |            +----<-----+
- *          :            |          |
- *       aio_get_completed_buff     |
- *          :            |          |
- *          |            +---->-----+
- *          |
- *          |
- *          |
- *          v
- *      aio_destroy*
- */
-
-
         }
-        if (night) elapsedDays++; /* If after dawn (leaving night), 1 day elapsed */
+        if (night) elapsedDays++; // If after dawn (leaving night), 1 day elapsed
         
-        // Stop stream 
-        ioctl(inStream, IOCTL_STOP_SUBSYS, 0); 
+        ioctl(inStream, IOCTL_STOP_SUBSYS, 0); // Stop stream
     }
 
 /* Exit protocol and procedure */

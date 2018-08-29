@@ -476,9 +476,11 @@ void setMetadata(AIFF_Ref file, long sunset, long sunrise);
  * Creates a circular/ring buffer/queue to hold the recorded values in Volts.
  * 
  * @param   input channel configuration
+ * @param   sample clock configuration
+ * @param   size of request queue
  * @return  RingBuf type circular queue
  */
-struct circular_queue getFileQueue(dt78xx_ain_config_t *ainConfig, dt78xx_clk_config_t clk);
+struct circular_queue getFileQueue(dt78xx_ain_config_t *ainConfig, dt78xx_clk_config_t clk, int size);
 
 /* 
  * Creates a circular/ring buffer/queue to hold the recorded values in Volts.
