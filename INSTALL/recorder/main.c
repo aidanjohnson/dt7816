@@ -389,7 +389,7 @@ int main (int argc, char** argv) {
                 }
                 /* exit from while loop signals to write single file */
                 
-                if (!AIFF_WriteSamples32Bit(file, (int32_t*) &(fileQueue.buffer), fileSize)) {
+                if (!AIFF_WriteSamples32Bit(file, (int32_t*) &(fileQueue.buffer->buf), fileSize)) {
                     fprintf(stderr, "ERROR writing .aiff file");
                     goto _exit;
                 }                         
