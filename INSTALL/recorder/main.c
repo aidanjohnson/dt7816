@@ -168,21 +168,18 @@ int main (int argc, char** argv) {
     /* Creates mask for enabled channels, which has a bitwise format. */
     int *chOn = malloc(sizeof(int)*numChannels); // Array of enabled channel indices
     createChanMask(ain, chOn);
-   
-    /* First fatal error check: bit restriction */
-    checkFatal(fileSamples, 2); // See recorder_helpers.h
     
     /* Channel configuration */
     dt78xx_ain_config_t ainConfig[8] = {}; // Analog input configuration array
     configChan(ainConfig);
     
-    /* Second fatal error check: channel identity and sampling rate */
+    /* First fatal error check: channel identity and sampling rate */
     checkID(argc, argv);
     
-    /* Third fatal error check: opening the input stream */
+    /* Second fatal error check: opening the input stream */
     openStream();
     
-    /* Fourth fatal error check: opening analog input */
+    /* Third fatal error check: opening analog input */
     openAIN();
     
     /* 
