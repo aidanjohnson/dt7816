@@ -237,7 +237,7 @@ int main (int argc, char** argv) {
     int actualSamples;
     chanSamples = fileSamples / numChannels;
     int buffSize = aio_buff_size(chanSamples, chanMask, &actualSamples);
-    fprintf(stdout,"Sampling at %f Hz to buffer of %d samples for %d channels...\n", 
+    fprintf(stdout,"Sampling at %f Hz to 2 buffers of %d samples for %d channels...\n", 
                     clk.clk_freq, actualSamples, numChannels);
     chanSamples = actualSamples;
          
@@ -366,7 +366,7 @@ int main (int argc, char** argv) {
                 /* exit from while loop signals ping is full */
 
                 /* 
-                 * Last half of Cycle 0 (fills pong, reads ping); entirity of
+                 * Last half of Cycle 0 (fills pong, reads ping); entirety of
                  * Cycle 1, 2, ... fileCycles - 1 (alternates fill/read ping/pong).
                  * The double buffering sink: producer is inBuffer, consumer is fileQueue
                  */
