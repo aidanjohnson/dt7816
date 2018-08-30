@@ -361,10 +361,10 @@ int checkRate(struct circular_queue buffer, char** argv) {
     }
 }    
 
-int openStream(int* inStream) {
+int openStream() {
     fprintf(stdout, "Opening stream...\n");
-    *inStream = open(DEV_STREAM_IN, O_RDONLY);
-    if (*inStream < 0) {
+    inStream = open(DEV_STREAM_IN, O_RDONLY);
+    if (inStream < 0) {
         fprintf(stderr, "ERROR %d \"%s\" open %s\n", 
                 errno, strerror(errno), DEV_STREAM_IN);
         return (EXIT_FAILURE);
