@@ -32,11 +32,13 @@
 
 struct aio_struct *inAIO; // Asynchronous I/O  
          
-int autoTrigger = AUTO_TRIG;
-int fileSamples = SAMPLES_PER_FILE;
-int chanSamples = SAMPLES_PER_CHAN;
-int fileBuffers = BUFFS_PER_FILE;
-int numChannels = NUM_CHANNELS;
+int autoTrigger; // AUTO_TRIG
+int fileSeconds; // FILE_TIME_S
+int fileSamples; // SAMPLES_PER_FILE
+int chanSamples; // SAMPLES_PER_CHAN
+int fileBuffers; // BUFFERS_PER_FILE
+int bufferSamples; // SAMPLES_PER_BUFFER
+int numChannels; // NUM_CHANNELS
 int durationDays = DURATION_DAYS; // Number of days for sampling/recording
 int nightCycle = NIGHT_CYCLE; // On = 1, sampling only after dusk and before dawn
 double lat = DEFAULT_LATITUDE; // Latitude coordinate
@@ -94,11 +96,12 @@ int main (int argc, char** argv) {
     while ((opt = getopt_long(argc, argv, "s:c:d:t:i:m:n:p:l:", long_options, NULL)) != -1) {
         switch (opt) {
             case 's':
-                fileSamples = strtoul(optarg, NULL, 10);
-                if (fileSamples <= 0) {
+                fileSeconds = strtoul(optarg, NULL, 10);
+                if (fileSeconds <= 0) {
                     printf(usage, argv[0]);
                     exit(EXIT_FAILURE);
                 }
+                fileSamples = clk.clk_freq / fileSeconds;  
                 break;
             case 'c':
                 clk.clk_freq = atof(optarg);
@@ -107,6 +110,8 @@ int main (int argc, char** argv) {
                             CLK_MIN_HZ, CLK_MAX_HZ);
                     exit(EXIT_FAILURE);
                 }
+                fileSamples = clk.clk_freq / fileSeconds;  
+                fileBuffers = fileSamples / bufferSamples;
                 break;
             case 'd' :
                 durationDays = atoi(optarg);
@@ -123,6 +128,20 @@ int main (int argc, char** argv) {
                     ain[7-d] = digit;
                     if (digit) numChannels++;
                     ch_code /= 10;
+                }
+                chanSamples = bufferSamples / numChannels;
+                fileBuffers = fileSamples / bufferSamples;
+                if (fileBuffers % 2 == 1) {
+                    fprintf(stderr, "Number of buffers must even; using one fewer\n");
+                    fileBuffers--;
+                }
+                if (fileBuffers <= 0) {
+                    fprintf(stderr, "Number of buffers must be positive and non-zero\n");
+                    exit(EXIT_FAILURE);
+                }
+                if (fileBuffers > MAX_AIO_EVENTS) {
+                    fprintf(stderr, "Max number of buffers is %d\n", MAX_AIO_EVENTS);
+                    exit(EXIT_FAILURE);
                 }
                 break;
             case 'm' :
