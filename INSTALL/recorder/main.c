@@ -158,7 +158,7 @@ int main (int argc, char** argv) {
                 return EXIT_FAILURE;
         }
     }
-    
+             
     /* Sets up force quit handler to terminate process gracefully */
     sigaction_register(SIGINT, forceQuitHandler);
     
@@ -235,10 +235,12 @@ int main (int argc, char** argv) {
      * chanSamples multiple of 32)
      */
     int actualSamples;
+    chanSamples = fileSamples / numChannels;
     int buffSize = aio_buff_size(chanSamples, chanMask, &actualSamples);
     fprintf(stdout,"Sampling at %f Hz to buffer of %d samples for %d channels...\n", 
                     clk.clk_freq, actualSamples, numChannels);
-    
+    chanSamples = actualSamples;
+         
     /* Creates and initialises AIO stream buffers/structures */
     fprintf(stdout, "Initialising...\n");
     if ((inBuffer = aio_buff_alloc(inAIO, 2, buffSize)) == NULL) {
