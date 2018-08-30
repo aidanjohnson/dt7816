@@ -155,7 +155,7 @@ int main (int argc, char** argv) {
                 break;
             default :
                 printf(usage, argv[0]);
-                return EXIT_FAILURE;
+                exit(EXIT_FAILURE);
         }
     }
              
@@ -167,20 +167,20 @@ int main (int argc, char** argv) {
     createChanMask(ain, chOn);
    
     /* First fatal error check: bit restriction */
-    exitStatus = checkFatal(fileSamples, 2); // See recorder_helpers.h
+    checkFatal(fileSamples, 2); // See recorder_helpers.h
     
     /* Channel configuration */
     dt78xx_ain_config_t ainConfig[8] = {}; // Analog input configuration array
     configChan(ainConfig);
     
     /* Second fatal error check: channel identity and sampling rate */
-    exitStatus = checkID(argc, argv);
+    checkID(argc, argv);
     
     /* Third fatal error check: opening the input stream */
-    exitStatus = openStream();
+    openStream();
     
     /* Fourth fatal error check: opening analog input */
-    exitStatus = openAIN();
+    openAIN();
     
     /* 
      * Passes all fatal error checks; proceeds to setup.
