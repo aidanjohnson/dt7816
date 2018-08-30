@@ -86,7 +86,7 @@ extern "C" {
  * Default analog inputs (AINx) enabled/active/on (1) or disabled/inactive/off (0)
  */
 #define AIN0                1
-#define AIN1                0
+#define AIN1                1
 #define AIN2                0
 #define AIN3                0
 #define AIN4                0
@@ -94,7 +94,7 @@ extern "C" {
 #define AIN6                0
 #define AIN7                0
 
-#define PATH_TO_STORAGE     "/media/path/to/ssd/" // Predefined write path
+#define PATH_TO_STORAGE     "/usr/local/dt7816-nfs/" // Predefined write path
 
 #define SAMPLE_RATE_HZ      400000.0f
 #define DURATION_DAYS       21 // Default number of days of sampling
@@ -103,7 +103,7 @@ extern "C" {
 
 #define DEFAULT_LATITUDE    47.655083 // Latitude (N := +, S := -)
 #define DEFAULT_LONGITUDE   -122.293194 // Longitude (E := +, W := -)
-    
+
 #define FILE_TIME_S        60 // Length of AIFF file in seconds
 
 /*
@@ -131,8 +131,7 @@ extern "C" {
 /*
  * ==== Defaults: Change at own risk ====
  * Constraint: SAMPLES_PER_CHAN * NUM_CHANNELS * 2 = BUFFERS_SAMPLES <= 65536 samples = 2^(16 bits)
- */
-
+ */ 
 #define BUFFERS_SAMPLES     65536 // Do not exceed 65536
 #if (BUFFERS_SAMPLES > 65536)
     (EXIT_FAILURE)
@@ -165,7 +164,16 @@ extern "C" {
 #define SAMPLES_PER_BUFFER  (BUFFERS_SAMPLES / 2)
 #define SAMPLES_PER_CHAN    (SAMPLES_PER_BUFFER / NUM_CHANNELS)
 #define BUFFERS_PER_FILE    (SAMPLES_PER_FILE / SAMPLES_PER_BUFFER)
-
+#if (BUFFERS_PER_FILE <= 0) // Number of buffers must be positive and non-zero
+    (EXIT_FAILURE)
+#endif
+#if (BUFFERS_PER_FILE % 2 == 1) // Number of buffers must even; using one fewer
+    (BUFFERS_PER_FILE = BUFFERS_PER_FILE - 1)
+#endif
+#if (BUFFERS_PER_FILE > MAX_AIO_EVENTS) // Exceeds maximum
+    (EXIT_FAILURE)
+#endif 
+ 
 /*
  * ==== Command line arguments with help ====
  */
