@@ -364,9 +364,8 @@ long getPresentTime();
  * Checks that selected samples not in excess of 65536. grossSamples =
  * SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS <= 65536 samples = 2^(16 bits)
  * 
- * @return                  1 if successful, 0 if failure
  */
-int checkFatal();
+void checkFatal();
 
 /*
  * Creates channel mask for each active channel determined by AIN. The mask is
@@ -437,32 +436,28 @@ void calcSunUpDown(long *sunsets, long *sunrises);
  * 
  * @param argc
  * @param argv
- * @return      1 if successful, 0 if failure
  */
-int checkID(int argc, char** argv);
+void checkID(int argc, char** argv);
 
 /*
  * Checks that sample rate is positive and non-zero.
  * 
  * @param ringBuffer     Sample rate for input buffer
  * @param argv
- * @return               1 if successful, 0 if failure
  */
-int checkRate(struct circular_queue buffer, char** argv);   
+void checkRate(struct circular_queue buffer, char** argv);   
 
 /*
  * Opens input stream.
  * 
- * @return                 1 if successful, 0 if failure
  */
-int openStream();
+void openStream();
 
 /*
  * Opens analog input.
  * 
- * @return   1 if successful, 0 if failure
  */
-int openAIN();
+void openAIN();
 
 /*
  * Sets AIFF file metadata.
