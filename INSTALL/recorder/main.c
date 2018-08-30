@@ -353,49 +353,57 @@ int main (int argc, char** argv) {
                 }
                 
                 int buffersDone = 0; // Cumulative number of buffers completed so far per cycle
-                int cycles = 0; // Cycle counter
                 int numDone = 0; // Number of buffers completed in timeout/wait period
                 
                 /* Cycle 0: fills ping */
+                fprintf(stdout, "Cycle 0: filling ping\n");
                 while (numDone < 1) {
+                    fprintf(stdout, "buffersDone %d\n", buffersDone);
                     numDone = aio_wait(inAIO, -1); // Timeout when one buffer completely filled
+                    fprintf(stdout, "numDone %d\n", numDone);
                     if (numDone < 0) break; // error
                     buffersDone += numDone;
                 }
                 /* exit from while loop signals ping is full */
-
+                
                 /* 
                  * Last half of Cycle 0 (fills pong, reads ping); entirety of
                  * Cycle 1, 2, ... fileCycles - 1 (alternates fill/read ping/pong).
                  * The double buffering sink: producer is inBuffer, consumer is fileQueue
                  */
-                while (cycles < fileBuffers) {
+                while (buffersDone < fileBuffers) {
                     numDone = 0;
                     if (buffersDone % 2 == 0) {
                         // Read and write from pong
-                        exitStatus = AIFF_WriteSamples32Bit(file, (int32_t*) &(inBuffer[PONG]), buffSize)
+                        fprintf(stdout, "Pong\n");
+                        exitStatus = AIFF_WriteSamples32Bit(file, (int32_t*) &(inBuffer[PONG]), bufferSamples);
+                        fprintf(stdout, "buffersDone %d\n", buffersDone);                        
                         while (numDone < 1) { // Sink, until ping full
                            numDone = aio_wait(inAIO, -1);
+                           fprintf(stdout, "numDone %d\n", numDone);                           
                            if (numDone < 0) break; // error
                            buffersDone += numDone;
                         }
                     } else {
                         // Read and write from ping
-                        exitStatus = AIFF_WriteSamples32Bit(file, (int32_t*) &(inBuffer[PING]), buffSize)
+                        fprintf(stdout, "Ping\n");              
+                        exitStatus = AIFF_WriteSamples32Bit(file, (int32_t*) &(inBuffer[PING]), bufferSamples);
+                        fprintf(stdout, "buffersDone %d\n", buffersDone);                        
                         while (numDone < 1) { // Sink, until pong full
                            numDone = aio_wait(inAIO, -1);
+                           fprintf(stdout, "numDone %d\n", numDone);                           
                            if (numDone < 0) break; // error
                            buffersDone += numDone;
                         }
                     }
-                    cycles++;
+                    fprintf(stdout, "buffersDone %d\n", buffersDone);
                 }
                 /* exit from while loop signals to write single file */
                 
-                if (exitStatus) {
+                if (!exitStatus) {
                     fprintf(stderr, "ERROR writing .aiff file");
                     goto _exit;
-                }                         
+                }                        
                 if (!AIFF_EndWritingSamples(file)) {
                     fprintf(stderr, "ERROR ending writing .aiff file");
                     goto _exit;
