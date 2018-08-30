@@ -32,13 +32,13 @@
 
 struct aio_struct *inAIO; // Asynchronous I/O  
          
-int autoTrigger; // AUTO_TRIG
-int fileSeconds; // FILE_TIME_S
-int fileSamples; // SAMPLES_PER_FILE
-int chanSamples; // SAMPLES_PER_CHAN
-int fileBuffers; // BUFFERS_PER_FILE
-int bufferSamples; // SAMPLES_PER_BUFFER
-int numChannels; // NUM_CHANNELS
+int autoTrigger = AUTO_TRIG;
+int fileSeconds = FILE_TIME_S;
+int fileSamples = SAMPLES_PER_FILE;
+int chanSamples = SAMPLES_PER_CHAN;
+int fileBuffers = BUFFERS_PER_FILE;
+int bufferSamples = SAMPLES_PER_BUFFER;
+int numChannels = NUM_CHANNELS;
 int durationDays = DURATION_DAYS; // Number of days for sampling/recording
 int nightCycle = NIGHT_CYCLE; // On = 1, sampling only after dusk and before dawn
 double lat = DEFAULT_LATITUDE; // Latitude coordinate
