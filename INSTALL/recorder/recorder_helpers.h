@@ -104,13 +104,7 @@ extern "C" {
 #define DEFAULT_LATITUDE    47.655083 // Latitude (N := +, S := -)
 #define DEFAULT_LONGITUDE   -122.293194 // Longitude (E := +, W := -)
     
-/* 
- * Constraint: SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS <= 65536 samples = 2^(16 bits)
- * Number of buffers initialised (2 for double buffering) = NUM_BUFFS
- */
-#define SAMPLES_PER_FILE    65536 // SAMPLES_PER_CHAN = SAMPLES_PER_FILE / NUM_CHANNELS
-    
-#define BUFFS_PER_FILE     10 // Twice the cycles of double buffering per file written
+#define FILE_TIME_S        60 // Length of AIFF file in seconds
 
 /*
  * ===== Debug Options ====
@@ -136,18 +130,19 @@ extern "C" {
 
 /*
  * ==== Defaults: Change at own risk ====
+ * Constraint: SAMPLES_PER_CHAN * NUM_CHANNELS * 2 = BUFFERS_SAMPLES <= 65536 samples = 2^(16 bits)
  */
 
+#define BUFFERS_SAMPLES     65536 // Do not exceed 65536
+#if (BUFFERS_SAMPLES > 65536)
+    (EXIT_FAILURE)
+#endif
+    
 #define NUM_CHANNELS        (AIN0+AIN1+AIN2+AIN3+AIN4+AIN5+AIN6+AIN7) // max ch: 8 
 #define SAMPLE_RATE         SAMPLE_RATE_HZ
 #define AUTO_TRIG           1
 #define LEN                 512 // Default character array size 
-#define SAMPLES_PER_CHAN    (SAMPLES_PER_FILE / NUM_CHANNELS)
 #define MAX_AIO_EVENTS      64
-
-#if (SAMPLES_PER_CHAN > 65536)
-    (EXIT_FAILURE)
-#endif
 
 #define xstr(s) str(s)
 #define str(s) #s
@@ -160,8 +155,16 @@ extern "C" {
 #define DEFAULT_GAIN        1 // gain 1 => +/- 10 V; must be 1 for DT7816
 #define LIBAIFF_NOCOMPAT    1 // Do not use LibAiff 2 API compatibility
     
-#define PING                0
-#define PONG                1    
+/*
+ * ==== Do not change! Unexpected outcomes will result ====
+ * Uses double buffer (ping pong buffer) thus NUM_BUFFS always 2
+ */    
+#define PING                0 // ID for ping buffer (initial fill buffer)
+#define PONG                1 // ID for pong buffer (initial write buffer)
+#define BUFFERS_PER_FILE    (SAMPLES_PER_FILE / SAMPLES_PER_BUFFER)
+#define SAMPLES_PER_FILE    (SAMPLE_RATE_HZ / FILE_TIME_S)
+#define SAMPLES_PER_BUFFER  (BUFFERS_SAMPLES / 2)
+#define SAMPLES_PER_CHAN    (SAMPLES_PER_BUFFER / NUM_CHANNELS)
 
 /*
  * ==== Command line arguments with help ====
@@ -180,11 +183,8 @@ static const char usage[] = {
 "               positions 0/1/2/3/4/5/6/7 correspond to channels AIN0/1/2/3/4/5/6/7.\n"
 "               For example, 10101001 enables AIN0/2/4/7 and disables AIN1/3/5/6.\n"
 "               By default, on channels AIN0 is enabled (i.e., 10000000).\n"        
-"-s|--samples : number of samples per file, defaults " xstr(SAMPLES_PER_FILE) ".\n"
-"               Note that you are limited to 2^(16-bits) = 65536 samples combined\n"
-"               for all channels >= (samples/channel)(channels/buffer)(buffers)\n"
+"-s|--seconds : number of seconds per file, defaults " xstr(FILE_TIME_S) ".\n"
 "-c|--clk     : sampling rate in Hz, defaults " xstr(SAMPLE_RATE_HZ) ".\n"
-"-b|--buffers : number of buffers per file written, defaults " xstr(NUM_BUFFS) ".\n"
 "-d|--dur     : fixed duration of sampling period in days at night as determined "
 "               by sunset and sunrise times, defaults " xstr(DURATION_DAYS) " days.\n"
 "-t|--trig    : when the voltage on either AIN crosses " xstr(TRIG_LEVEL_V) " V rising (threshold)\n"
