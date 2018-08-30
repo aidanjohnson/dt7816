@@ -80,8 +80,7 @@ int main (int argc, char** argv) {
     
     /* Specifying the expected options */
     static struct option long_options[] = {
-        {"buffers",     required_argument,  0,  'b' },
-        {"samples",     required_argument,  0,  's' },
+        {"seconds",     required_argument,  0,  's' },
         {"clk",         required_argument,  0,  'c' },
         {"trig",        required_argument,  0,  't' },
         {"dur",         required_argument,  0,  'd' },
@@ -92,7 +91,7 @@ int main (int argc, char** argv) {
         {"lambda",      required_argument,  0,  'l' },
         {0,             0,                  0,   0  }
     };
-    while ((opt = getopt_long(argc, argv, "s:c:d:b:t:i:m:n:p:l:", long_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "s:c:d:t:i:m:n:p:l:", long_options, NULL)) != -1) {
         switch (opt) {
             case 's':
                 fileSamples = strtoul(optarg, NULL, 10);
@@ -112,22 +111,7 @@ int main (int argc, char** argv) {
             case 'd' :
                 durationDays = atoi(optarg);
                 break; 
-            case 'b' :
-                fileBuffers = atoi(optarg);
-                if (fileBuffers % 2 == 1) {
-                    fprintf(stderr, "Number of buffers must even; using one fewer\n");
-                    fileBuffers--;
-                }
-                if (fileBuffers <= 0) {
-                    fprintf(stderr, "Number of buffers must be positive and non-zero\n");
-                    exit(EXIT_FAILURE);
-                }
-                if (fileBuffers > MAX_AIO_EVENTS * 2) {
-                    fprintf(stderr, "Max number of buffers is %d\n", MAX_AIO_EVENTS * 2);
-                    exit(EXIT_FAILURE);
-                }
-                break;
-           case 't' :
+            case 't' :
                 autoTrigger = 0;
                 break;
             case 'i' :
