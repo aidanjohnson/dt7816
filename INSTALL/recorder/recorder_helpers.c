@@ -166,15 +166,13 @@ long getPresentTime() {
     return (long) timeEpoch.tv_sec;
 }
 
-int checkFatal() {
+void checkFatal() {
     int grossSamples = fileSamples * 2;
     if(grossSamples > 65536) {
         fprintf(stderr, "Fatal Error: exceeded 16-bits!\n");
         fprintf(stderr, "SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS = %d > 65536\n", 
                 grossSamples);
         return (EXIT_FAILURE);
-    } else {
-        return (EXIT_SUCCESS);
     }
 }
 
@@ -344,35 +342,30 @@ void calcSunUpDown(long *sunsets, long *sunrises) {
     }
 }
 
-int checkID(int argc, char** argv) {
+void checkID(int argc, char** argv) {
     if (optind >= argc) {
         printf(usage, argv[0]);
         return (EXIT_FAILURE);
-    } else {
-        return (EXIT_SUCCESS);
     }
 }
-int checkRate(struct circular_queue buffer, char** argv) { 
+
+void checkRate(struct circular_queue buffer, char** argv) { 
     if (buffer.sample_rate <= 0.0f) {
         printf(usage, argv[0]);
         return (EXIT_FAILURE);
-    } else {
-        return (EXIT_SUCCESS);
     }
 }    
 
-int openStream() {
+void openStream() {
     fprintf(stdout, "Opening stream...\n");
     inStream = open(DEV_STREAM_IN, O_RDONLY);
     if (inStream < 0) {
         fprintf(stderr, "ERROR %d \"%s\" open %s\n", 
                 errno, strerror(errno), DEV_STREAM_IN);
         return (EXIT_FAILURE);
-    } else {
-        return (EXIT_SUCCESS);
     }    
 }
-int openAIN() {
+void openAIN() {
     fprintf(stdout, "Opening analog input...\n");
     aInput = open(DEV_AIN, O_RDONLY);
     if (aInput < 0) {
@@ -380,8 +373,6 @@ int openAIN() {
                 errno, strerror(errno), DEV_AIN);
         close(inStream);
         return (EXIT_FAILURE);
-    } else {
-        return (EXIT_SUCCESS);
     }
 }
 
