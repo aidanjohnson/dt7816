@@ -215,8 +215,9 @@ static const char usage[] = {
  */
 
 extern struct aio_struct *inAIO;
-    
+ 
 extern int autoTrigger; // AUTO_TRIG
+extern int fileSeconds; // FILE_TIME_S
 extern int fileSamples; // SAMPLES_PER_FILE
 extern int chanSamples; // SAMPLES_PER_CHAN
 extern int fileBuffers; // BUFFERS_PER_FILE
