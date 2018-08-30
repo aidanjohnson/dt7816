@@ -163,16 +163,11 @@ extern "C" {
 #define SAMPLES_PER_FILE    (SAMPLE_RATE_HZ / FILE_TIME_S)   
 #define SAMPLES_PER_BUFFER  (BUFFERS_SAMPLES / 2)
 #define SAMPLES_PER_CHAN    (SAMPLES_PER_BUFFER / NUM_CHANNELS)
-#define BUFFERS_PER_FILE    (SAMPLES_PER_FILE / SAMPLES_PER_BUFFER)
-#if (BUFFERS_PER_FILE <= 0) // Number of buffers must be positive and non-zero
-    (EXIT_FAILURE)
-#endif
-#if (BUFFERS_PER_FILE % 2 == 1) // Number of buffers must even; using one fewer
-    (BUFFERS_PER_FILE = BUFFERS_PER_FILE - 1)
-#endif
-#if (BUFFERS_PER_FILE > MAX_AIO_EVENTS) // Exceeds maximum
-    (EXIT_FAILURE)
-#endif 
+/*
+ * Number of buffers must be positive and non-zero. Number of buffers must even;
+ * otherwise use one fewer. Number of buffers cannot exceed MAX_AIO_EVENTS.
+ */
+#define BUFFERS_PER_FILE    (SAMPLES_PER_FILE / SAMPLES_PER_BUFFER) 
  
 /*
  * ==== Command line arguments with help ====
