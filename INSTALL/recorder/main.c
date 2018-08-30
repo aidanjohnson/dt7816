@@ -101,7 +101,7 @@ int main (int argc, char** argv) {
                     printf(usage, argv[0]);
                     exit(EXIT_FAILURE);
                 }
-                fileSamples = clk.clk_freq / fileSeconds;  
+                fileSamples = clk.clk_freq * fileSeconds;  
                 break;
             case 'c':
                 clk.clk_freq = atof(optarg);
@@ -110,7 +110,7 @@ int main (int argc, char** argv) {
                             CLK_MIN_HZ, CLK_MAX_HZ);
                     exit(EXIT_FAILURE);
                 }
-                fileSamples = clk.clk_freq / fileSeconds;  
+                fileSamples = clk.clk_freq * fileSeconds;  
                 fileBuffers = fileSamples / bufferSamples;
                 break;
             case 'd' :
