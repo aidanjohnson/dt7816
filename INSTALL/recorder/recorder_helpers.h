@@ -96,7 +96,7 @@ extern "C" {
 
 #define PATH_TO_STORAGE     "/usr/local/dt7816-nfs/" // Predefined write path
 
-#define SAMPLE_RATE_HZ      400000.0f
+#define SAMPLE_RATE_HZ      (400000.0f)
 #define DURATION_DAYS       21 // Default number of days of sampling
 #define SAFETY_MARGIN       3600 // Pillow in seconds before sunset and after sunrise
 #define NIGHT_CYCLE         0 // Cycles recording on at night and off at day
@@ -104,7 +104,7 @@ extern "C" {
 #define DEFAULT_LATITUDE    47.655083 // Latitude (N := +, S := -)
 #define DEFAULT_LONGITUDE   -122.293194 // Longitude (E := +, W := -)
 
-#define FILE_TIME_S        60 // Length of AIFF file in seconds
+#define FILE_TIME_S        (60) // Length of AIFF file in seconds
 
 /*
  * ===== Debug Options ====
@@ -132,7 +132,7 @@ extern "C" {
  * ==== Defaults: Change at own risk ====
  * Constraint: SAMPLES_PER_CHAN * NUM_CHANNELS * 2 = BUFFERS_SAMPLES <= 65536 samples = 2^(16 bits)
  */ 
-#define BUFFERS_SAMPLES     65536 // Do not exceed 65536
+#define BUFFERS_SAMPLES     (65536) // Do not exceed 65536
 #if (BUFFERS_SAMPLES > 65536)
     (EXIT_FAILURE)
 #endif
