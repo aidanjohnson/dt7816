@@ -166,16 +166,6 @@ long getPresentTime() {
     return (long) timeEpoch.tv_sec;
 }
 
-void checkFatal() {
-    int grossSamples = fileSamples * 2;
-    if(grossSamples > 65536) {
-        fprintf(stderr, "Fatal Error: exceeded 16-bits!\n");
-        fprintf(stderr, "SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS = %d > 65536\n", 
-                grossSamples);
-        return (EXIT_FAILURE);
-    }
-}
-
 void createChanMask(int ain[], int *chOn) {
     int chIndex = 0;
     if (ain[0]) {
