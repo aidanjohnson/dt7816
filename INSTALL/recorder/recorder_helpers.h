@@ -160,7 +160,7 @@ extern "C" {
  */    
 #define PING                0 // ID for ping buffer (initial fill buffer)
 #define PONG                1 // ID for pong buffer (initial write buffer)
-#define SAMPLES_PER_FILE    (SAMPLE_RATE_HZ / FILE_TIME_S)   
+#define SAMPLES_PER_FILE    (SAMPLE_RATE_HZ * FILE_TIME_S)   
 #define SAMPLES_PER_BUFFER  (BUFFERS_SAMPLES / 2)
 #define SAMPLES_PER_CHAN    (SAMPLES_PER_BUFFER / NUM_CHANNELS)
 /*
