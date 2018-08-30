@@ -358,7 +358,7 @@ int main (int argc, char** argv) {
                 int numDone = 0; // Number of buffers completed in timeout/wait period
                 
                 /* Cycle 0: fills ping */
-                while (numDone != 1) {
+                while (numDone < 1) {
                     numDone = aio_wait(inAIO, -1); // Timeout when one buffer completely filled
                     if (numDone < 0) break; // error
                     buffersDone += numDone;
@@ -375,7 +375,7 @@ int main (int argc, char** argv) {
                     if (buffersDone % 2 == 0) {
                         // Read and write from pong
                         writeFileQueue(inBuffer[PONG], fileQueue);
-                        while (numDone != 1) { // Sink, until ping full
+                        while (numDone < 1) { // Sink, until ping full
                            numDone = aio_wait(inAIO, -1);
                            if (numDone < 0) break; // error
                            buffersDone += numDone;
@@ -383,7 +383,7 @@ int main (int argc, char** argv) {
                     } else {
                         // Read and write from ping
                         writeFileQueue(inBuffer[PING], fileQueue);
-                        while (numDone != 1) { // Sink, until pong full
+                        while (numDone < 1) { // Sink, until pong full
                            numDone = aio_wait(inAIO, -1);
                            if (numDone < 0) break; // error
                            buffersDone += numDone;
