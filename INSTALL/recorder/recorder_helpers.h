@@ -366,13 +366,6 @@ void timestamp(char *filePath, char **argv, char *storagePath);
 long getPresentTime();
 
 /*
- * Checks that selected samples not in excess of 65536. grossSamples =
- * SAMPLES_PER_CHAN*NUM_BUFFS*NUM_CHANNELS <= 65536 samples = 2^(16 bits)
- * 
- */
-void checkFatal();
-
-/*
  * Creates channel mask for each active channel determined by AIN. The mask is
  * a 32-bit number where bits 0 to 7 of the channel mask correspond to 
  * analog input channels 0 to 7, bit 8 with the tachometer, bit 10 with the 
