@@ -374,7 +374,7 @@ int main (int argc, char** argv) {
                     numDone = 0;
                     if (buffersDone % 2 == 0) {
                         // Read and write from pong
-                        writeFileQueue(inBuffer[PONG], fileQueue);
+                        exitStatus = AIFF_WriteSamples32Bit(file, (int32_t*) &(inBuffer[PONG]), buffSize)
                         while (numDone < 1) { // Sink, until ping full
                            numDone = aio_wait(inAIO, -1);
                            if (numDone < 0) break; // error
@@ -382,7 +382,7 @@ int main (int argc, char** argv) {
                         }
                     } else {
                         // Read and write from ping
-                        writeFileQueue(inBuffer[PING], fileQueue);
+                        exitStatus = AIFF_WriteSamples32Bit(file, (int32_t*) &(inBuffer[PING]), buffSize)
                         while (numDone < 1) { // Sink, until pong full
                            numDone = aio_wait(inAIO, -1);
                            if (numDone < 0) break; // error
@@ -393,7 +393,7 @@ int main (int argc, char** argv) {
                 }
                 /* exit from while loop signals to write single file */
                 
-                if (!AIFF_WriteSamples32Bit(file, (int32_t*) &(fileQueue.buffer->buf), fileSize)) {
+                if (exitStatus) {
                     fprintf(stderr, "ERROR writing .aiff file");
                     goto _exit;
                 }                         
