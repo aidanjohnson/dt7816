@@ -161,10 +161,10 @@ extern "C" {
  */    
 #define PING                0 // ID for ping buffer (initial fill buffer)
 #define PONG                1 // ID for pong buffer (initial write buffer)
-#define BUFFERS_PER_FILE    (SAMPLES_PER_FILE / SAMPLES_PER_BUFFER)
-#define SAMPLES_PER_FILE    (SAMPLE_RATE_HZ / FILE_TIME_S)
+#define SAMPLES_PER_FILE    (SAMPLE_RATE_HZ / FILE_TIME_S)   
 #define SAMPLES_PER_BUFFER  (BUFFERS_SAMPLES / 2)
 #define SAMPLES_PER_CHAN    (SAMPLES_PER_BUFFER / NUM_CHANNELS)
+#define BUFFERS_PER_FILE    (SAMPLES_PER_FILE / SAMPLES_PER_BUFFER)
 
 /*
  * ==== Command line arguments with help ====
@@ -208,16 +208,17 @@ static const char usage[] = {
 
 extern struct aio_struct *inAIO;
     
-extern int autoTrigger;
-extern int fileSamples;
-extern int chanSamples;
-extern int fileBuffers;
-extern int numChannels;
-extern int durationDays;
-extern int nightCycle;
-extern double lat;
-extern double lon;
-extern long safetyMargin;
+extern int autoTrigger; // AUTO_TRIG
+extern int fileSamples; // SAMPLES_PER_FILE
+extern int chanSamples; // SAMPLES_PER_CHAN
+extern int fileBuffers; // BUFFERS_PER_FILE
+extern int bufferSamples; // SAMPLES_PER_BUFFER
+extern int numChannels; // NUM_CHANNELS
+extern int durationDays; // DURATION_DAYS
+extern int nightCycle; // NIGHT_CYCLE
+extern double lat; // DEFAULT_LATITUDE
+extern double lon; // DEFAULT_LONGITUDE
+extern long safetyMargin; // SAFETY_MARGIN
 
 extern chan_mask_t chanMask;
 
