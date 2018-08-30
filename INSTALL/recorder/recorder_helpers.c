@@ -33,7 +33,7 @@
  */
 
 static int overrunStop = 1;  // Stop on buffer overrun
-static int requeue = 0;      // Requeue buffers after processing      
+static int requeue = 1;      // Requeue buffers after processing      
 static int overruns = 0;       // Number of times buffer overran while acquiring
 static int buffersDone = 0;    // Number of buffers done
 
