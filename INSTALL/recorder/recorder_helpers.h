@@ -86,7 +86,7 @@ extern "C" {
  * Default analog inputs (AINx) enabled/active/on (1) or disabled/inactive/off (0)
  */
 #define AIN0                1
-#define AIN1                1
+#define AIN1                0
 #define AIN2                0
 #define AIN3                0
 #define AIN4                0
@@ -96,7 +96,7 @@ extern "C" {
 
 #define PATH_TO_STORAGE     "/usr/local/dt7816-nfs/" // Predefined write path
 
-#define SAMPLE_RATE_HZ      (400000.0f)
+#define SAMPLE_RATE_HZ      (100000.0f)
 #define DURATION_DAYS       21 // Default number of days of sampling
 #define SAFETY_MARGIN       3600 // Pillow in seconds before sunset and after sunrise
 #define NIGHT_CYCLE         0 // Cycles recording on at night and off at day

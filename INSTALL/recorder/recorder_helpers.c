@@ -335,14 +335,14 @@ void calcSunUpDown(long *sunsets, long *sunrises) {
 void checkID(int argc, char** argv) {
     if (optind >= argc) {
         printf(usage, argv[0]);
-        return (EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
 }
 
 void checkRate(struct circular_queue buffer, char** argv) { 
     if (buffer.sample_rate <= 0.0f) {
         printf(usage, argv[0]);
-        return (EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
 }    
 
@@ -352,7 +352,7 @@ void openStream() {
     if (inStream < 0) {
         fprintf(stderr, "ERROR %d \"%s\" open %s\n", 
                 errno, strerror(errno), DEV_STREAM_IN);
-        return (EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }    
 }
 void openAIN() {
@@ -362,7 +362,7 @@ void openAIN() {
         fprintf(stderr, "ERROR %d \"%s\" open %s\n", 
                 errno, strerror(errno), DEV_AIN);
         close(inStream);
-        return (EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
 }
 
