@@ -51,7 +51,9 @@ int inStream = -1; // Device file handle for input stream
 int aInput = -1; // Device file handle for analog input channels
 int outStream = -1; // Device file handle for output stream
 
-void **inBuffer;
+int fileBuffer = 0; // Cumulative number of buffers completed so far per cycle
+
+void **inBuffer; // Pointer to input asynchronous buffers
 
 /*
  * ==== Signal handler for ctrl-c prevents the abrupt termination of processes ====
@@ -70,17 +72,19 @@ static void forceQuitHandler(int i) {
 
 int main (int argc, char** argv) {
     int opt = 0;
-    int exitStatus = EXIT_SUCCESS;
+    int exitStatus = EXIT_SUCCESS; // Exit flag
         
+    /* Sampling rate clock configuration initialisation */
     dt78xx_clk_config_t clk = {.ext_clk=0, // Internal clock
                                .ext_clk_din=0, 
                                .clk_freq=SAMPLE_RATE
                               };
    
+    /* Enabled analog input channels */
     int ain[8] = {AIN0, AIN1, AIN2, AIN3, AIN4, AIN5, AIN6, AIN7};
     int ch_code; // 8 bit binary; channel on := 1, channel off := 0
     
-    /* Specifying the expected options */
+    /* Specifying the expected command line options */
     static struct option long_options[] = {
         {"seconds",     required_argument,  0,  's' },
         {"clk",         required_argument,  0,  'c' },
@@ -93,6 +97,8 @@ int main (int argc, char** argv) {
         {"lambda",      required_argument,  0,  'l' },
         {0,             0,                  0,   0  }
     };
+    
+    /* Command line options */
     while ((opt = getopt_long(argc, argv, "s:c:d:t:i:m:n:p:l:", long_options, NULL)) != -1) {
         switch (opt) {
             case 's':
@@ -264,8 +270,10 @@ int main (int argc, char** argv) {
         goto _exit;
     }
     
-    /* Calculates sunset (sunsclipse) and sunrise (sunsight) times based on: */
-    /* (1) Date and (2) Latitude and Longitude coordinates */
+    /* 
+     * Calculates sunset (sunsclipse) and sunrise (sunsight) times based on: 
+     * 1) Date and (2) Latitude and Longitude coordinates
+     */
     long *sunsets = malloc(sizeof(long)*durationDays);
     long *sunrises = malloc(sizeof(long)*durationDays);
     calcSunUpDown(sunsets, sunrises);
@@ -273,11 +281,9 @@ int main (int argc, char** argv) {
     int elapsedDays = 0; // Resets day counter
     int fileNum = 0; // Diagnostic/debugging file counter
     char filePath[LEN]; // String for output file path
-    const int fileCycles = fileBuffers / 2; // Number of cycles of double buffering per file
-    const int fileSize = chanSamples * numChannels * fileBuffers; // Size of file write queue
         
-    /* Infinite loop until aborted by ctrl-C or q/Q entered */
-    fprintf(stdout, "Press q or Q or ctrl-C to exit\n"); 
+    /* Infinite loop until aborted by ctrl-C */
+    fprintf(stdout, "Press ctrl-C to exit\n"); 
     while (!forceQuit && durationDays > elapsedDays) {
         long present = getPresentTime();
         long sunset = sunsets[elapsedDays];
@@ -286,142 +292,102 @@ int main (int argc, char** argv) {
 
         /* If after dusk and before dawn (entering night) */
         while (!forceQuit && (present < sunrise && present >= sunset)) {           
-            if (forceQuit) {
+            /* Start of night: only done once it begins */
+            if (!night) {
+                /* Arms the input stream */
+                if ((ioctl(inStream, IOCTL_ARM_SUBSYS, 0))) {
+                    fprintf(stderr, "IOCTL_ARM_SUBSYS ERROR %d \"%s\"\n", 
+                          errno, strerror(errno));
+                    goto _exit;
+                }   
+
+                /* 
+                 * Issues a software start for continuous input operation; this is 
+                 * redundant if trigger source is threshold or externally triggered 
+                 */
+                if ((ioctl(inStream, IOCTL_START_SUBSYS, 0))) {
+                    fprintf(stderr, "IOCTL_START_SUBSYS ERROR %d \"%s\"\n", 
+                            errno, strerror(errno));
+                    goto _exit;
+                }
+            }
+            if (forceQuit) { // Unless force quit activated, night has begun (only once a day)
                 goto _exit;
             } else {
                 night = 1;
             }
             
-            /* If key pressed */
-            if(kbhit()) {
-                char c = fgetc(stdin);        
-                if ((c=='q')||(c=='Q')) // Quits
-                    break;
-                fflush(stdin);
-            }
-
-            /* Arms the input stream */
-            if ((ioctl(inStream, IOCTL_ARM_SUBSYS, 0))) {
-                fprintf(stderr, "IOCTL_ARM_SUBSYS ERROR %d \"%s\"\n", 
-                      errno, strerror(errno));
-                goto _exit;
-            }   
-
-            /* 
-             * Issues a software start for continuous input operation; this is 
-             * redundant if trigger source is threshold or externally triggered 
-             */
-            if ((ioctl(inStream, IOCTL_START_SUBSYS, 0))) {
-                fprintf(stderr, "IOCTL_START_SUBSYS ERROR %d \"%s\"\n", 
-                        errno, strerror(errno));
-                goto _exit;
-            }
-
             /* 
              * Continuous sampling of input stream begins. 
              * Writes acquired data to the specified .aiff output file.
              */
-            while (!forceQuit && (present < sunrise && present >= sunset)) {   
-                
-                /* Gets time of first sample recording for timestamp */
-                timestamp(filePath, argv, PATH_TO_STORAGE);
-                
-                struct circular_queue fileQueue = getFileQueue(ainConfig, clk, fileSize);
-                AIFF_Ref file = malloc(sizeof(AIFF_Ref));
-                setMetadata(file, sunset, sunrise);
-
-                file = AIFF_OpenFile(filePath, F_WRONLY);
-                if (file) {
-                    fileNum += 1;
-                    fprintf(stdout, "Opened the %d th .aiff file...\n", fileNum);
-
-                    if (!AIFF_SetAudioFormat(file, numChannels, 
-                                            (double) clk.clk_freq, 
-                                            sizeof(float))) {
-                        AIFF_CloseFile(file);
-                        fprintf(stderr, "ERROR audio_format_set");
-                        goto _exit;
-                    }
-                } else {
-                    fprintf(stderr, "ERROR audio_file_open");
-                    goto _exit; 
+            timestamp(filePath, argv, PATH_TO_STORAGE); // Timestamp: Time of first sample recording
+            AIFF_Ref file = AIFF_OpenFile(filePath, F_WRONLY); // AIFF file opened
+            if (file) {
+                fileNum += 1;
+                fprintf(stdout, "Opened the %do .aiff file...\n", fileNum);
+                if (!setFile(file, sunset, sunrise, clk.clk_freq)) {
+                    AIFF_CloseFile(file);
+                    fprintf(stderr, "ERROR audio_format_set");
+                    goto _exit;
                 }
-                   
                 if (!AIFF_StartWritingSamples(file)) {
                     fprintf(stderr, "ERROR starting writing .aiff file");
                     goto _exit;
                 }
-                
-                int buffersDone = 0; // Cumulative number of buffers completed so far per cycle
-                int numDone = 0; // Number of buffers completed in timeout/wait period
-                
-                /* Cycle 0: fills ping */
-                fprintf(stdout, "Cycle 0: filling ping\n");
-                while (numDone < 1) {
-                    fprintf(stdout, "buffersDone %d\n", buffersDone);
-                    numDone = aio_wait(inAIO, -1); // Timeout when one buffer completely filled
-                    fprintf(stdout, "numDone %d\n", numDone);
-                    if (numDone < 0) break; // error
-                    buffersDone += numDone;
-                }
-                /* exit from while loop signals ping is full */
-                
-                /* 
-                 * Last half of Cycle 0 (fills pong, reads ping); entirety of
-                 * Cycle 1, 2, ... fileCycles - 1 (alternates fill/read ping/pong).
-                 * The double buffering sink: producer is inBuffer, consumer is fileQueue
-                 */
-                while (buffersDone < fileBuffers) {
-                    numDone = 0;
-                    if (buffersDone % 2 == 0) {
-                        // Read and write from pong
-                        fprintf(stdout, "Pong\n");
-                        exitStatus = AIFF_WriteSamples32Bit(file, (int32_t*) &(inBuffer[PONG]), bufferSamples);
-                        fprintf(stdout, "buffersDone %d\n", buffersDone);                        
-                        while (numDone < 1) { // Sink, until ping full
-                           numDone = aio_wait(inAIO, -1);
-                           fprintf(stdout, "numDone %d\n", numDone);                           
-                           if (numDone < 0) break; // error
-                           buffersDone += numDone;
-                        }
-                    } else {
-                        // Read and write from ping
-                        fprintf(stdout, "Ping\n");              
-                        exitStatus = AIFF_WriteSamples32Bit(file, (int32_t*) &(inBuffer[PING]), bufferSamples);
-                        fprintf(stdout, "buffersDone %d\n", buffersDone);                        
-                        while (numDone < 1) { // Sink, until pong full
-                           numDone = aio_wait(inAIO, -1);
-                           fprintf(stdout, "numDone %d\n", numDone);                           
-                           if (numDone < 0) break; // error
-                           buffersDone += numDone;
-                        }
-                    }
-                    fprintf(stdout, "buffersDone %d\n", buffersDone);
-                }
-                /* exit from while loop signals to write single file */
-                
-                if (!exitStatus) {
-                    fprintf(stderr, "ERROR writing .aiff file");
-                    goto _exit;
-                }                        
-                if (!AIFF_EndWritingSamples(file)) {
-                    fprintf(stderr, "ERROR ending writing .aiff file");
-                    goto _exit;
-                } else {
-                    fprintf(stdout, "%do .aiff file written\n", fileNum);
-                }
-                if (AIFF_CloseFile(file)) {
-                    fprintf(stdout, "Closed file...\n");
-                    fprintf(stdout, "File at %s\n", filePath);
-                } else {
-                    fprintf(stderr, "ERROR audio_file_close");
-                    goto _exit;
-                }
-                
-                present = getPresentTime(); // Updates time for while loop check
+            } else {
+                fprintf(stderr, "ERROR audio_file_open");
+                goto _exit; 
             }
+
+            /* Cycle 0: fills ping */
+            fileBuffer = 0;
+            fprintf(stdout, "Cycle 0: filling ping\n");
+            waitAIO();
+            /* exit from while loop signals ping is full */
+
+            /* 
+             * Last half of Cycle 0 (fills pong, reads ping); entirety of
+             * Cycle 1, 2, ... fileCycles - 1 (alternates fill/read ping/pong).
+             * The double buffering sink: producer is inBuffer, consumer is fileQueue
+             */
+            while (fileBuffer < fileBuffers) {
+                if (fileBuffer % 2 == 0) {
+                    // Read and write from pong
+                    fprintf(stdout, "Pong\n");
+                    exitStatus = AIFF_WriteSamples32Bit(file, (int32_t*) &(inBuffer[PONG]), bufferSamples);
+                    waitAIO();
+                } else {
+                    // Read and write from ping
+                    fprintf(stdout, "Ping\n");              
+                    exitStatus = AIFF_WriteSamples32Bit(file, (int32_t*) &(inBuffer[PING]), bufferSamples);
+                    waitAIO();
+                }
+                fprintf(stdout, "file buffers done %d\n", fileBuffer);
+            }
+            /* exit from while loop signals to write single file */
+
+            if (!exitStatus) {
+                fprintf(stderr, "ERROR writing .aiff file");
+                goto _exit;
+            }                        
+            if (!AIFF_EndWritingSamples(file)) {
+                fprintf(stderr, "ERROR ending writing .aiff file");
+                goto _exit;
+            } else {
+                fprintf(stdout, "%do .aiff file written\n", fileNum);
+            }
+            if (AIFF_CloseFile(file)) {
+                fprintf(stdout, "Closed file...\n");
+                fprintf(stdout, "File at %s\n", filePath);
+            } else {
+                fprintf(stderr, "ERROR audio_file_close");
+                goto _exit;
+            }
+
+            present = getPresentTime(); // Updates time for while loop check
         }
-        if (night) elapsedDays++; // If after dawn (leaving night), 1 day elapsed
+        if (night) elapsedDays++; // If after dawn (leaving the end of night), 1 day elapsed
         
         ioctl(inStream, IOCTL_STOP_SUBSYS, 0); // Stop stream
     }

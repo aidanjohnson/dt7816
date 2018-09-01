@@ -208,7 +208,7 @@ static const char usage[] = {
 /* 
  * ==== Global Variables & Structures ====
  */
-
+    
 extern struct aio_struct *inAIO;
  
 extern int autoTrigger; // AUTO_TRIG
@@ -229,6 +229,8 @@ extern chan_mask_t chanMask;
 extern int inStream;
 extern int aInput;
 extern int outStream;
+
+extern int fileBuffer;
 
 /*
  * ==== Circular (ring) buffer (queue) data type ====
@@ -458,12 +460,14 @@ void openStream();
 void openAIN();
 
 /*
- * Sets AIFF file metadata.
+ * Sets AIFF file metadata and file formatting.
  * 
  * @param   sunset  sunset time (in Unix Epoch time, seconds) set as copyright attribute
  * @param   sunrise sunrise time set as annotation attribute
+ * @param   audio file sampling rate in Hz
+ * @return  success of file format setting (1 for success, 0 for failure)
  */
-void setMetadata(AIFF_Ref file, long sunset, long sunrise);
+int setFile(AIFF_Ref file, long sunset, long sunrise, float rate);
 
 /* 
  * Creates a circular/ring buffer/queue to hold the recorded values in Volts.
@@ -484,7 +488,7 @@ struct circular_queue getFileQueue(dt78xx_ain_config_t *ainConfig, dt78xx_clk_co
  * 16-bit, two’s complement value.
  * 
  * Simultaneously analog input (channel) samples put 
- * inline and sequentially for AIFF recording like so:
+ * in line and sequentially for AIFF recording like so:
  *  ___________ ___________ ___________ ___________
  * |           |           |           |           |
  * | Channel 1 | Channel 2 | Channel 1 | Channel 2 | ...
@@ -498,6 +502,14 @@ struct circular_queue getFileQueue(dt78xx_ain_config_t *ainConfig, dt78xx_clk_co
  * @param   RingBuf type circular queue for file output
  */
 void writeFileQueue(void *raw, struct circular_queue writeQueue);
+
+/*
+ * Waits for at least one asynchronous input buffer to be completely filled
+ * indefinitely. Updates the number of buffers written to file for each file
+ * written.
+ * 
+ */
+void waitAIO();
 
 #ifdef __cplusplus
 }

@@ -25,6 +25,7 @@
 /*
  * ==== External Libraries ====
  */
+
 #include "recorder_helpers.h"
 
 /*
@@ -366,7 +367,7 @@ void openAIN() {
     }
 }
 
-void setMetadata(AIFF_Ref file, long sunset, long sunrise) {
+int setFile(AIFF_Ref file, long sunset, long sunrise, float rate) {
     char metadata[LEN];
     sprintf(metadata, "%f", lon);
     AIFF_SetAttribute(file, AIFF_NAME, metadata);
@@ -376,6 +377,7 @@ void setMetadata(AIFF_Ref file, long sunset, long sunrise) {
     AIFF_SetAttribute(file, AIFF_ANNO, metadata);
     sprintf(metadata, "%ld", sunrise);
     AIFF_SetAttribute(file, AIFF_COPY, metadata);
+    return AIFF_SetAudioFormat(file, numChannels, (double) rate, sizeof(float));
 }
 
 struct circular_queue getFileQueue(dt78xx_ain_config_t ainConfig[8], dt78xx_clk_config_t clk, int size) {
@@ -440,6 +442,17 @@ void writeFileQueue(void *raw, struct circular_queue writeQueue) {
             writeQueue.buffer->add(writeQueue.buffer, &vptr);
             raw += sizeof(int16_t);
         }                    
+    }
+}
+    
+void waitAIO() {
+    int numDone = 0; // Number of buffers completed in timeout/wait period
+    while (numDone < 1) {
+        fprintf(stdout, "file buffers done %d\n", fileBuffer);
+        numDone = aio_wait(inAIO, -1); // Timeout when one buffer completely filled
+        fprintf(stdout, "numDone %d\n", numDone);
+        if (numDone < 0) break; // error
+        fileBuffer += numDone;
     }
 }
     
