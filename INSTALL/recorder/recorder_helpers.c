@@ -146,7 +146,10 @@ void timestamp(char *filePath, char **argv, char *storagePath) {
     ID = argv[optind];
     char fileTime[LEN];
 
-    sprintf(fileTime, "_%04d%02d%02dT%02d%02d%02d%liZ.aiff", timeISO->tm_year+1900, 
+    //sprintf(fileTime, "_%04d%02d%02dT%02d%02d%02d%liZ.aiff", timeISO->tm_year+1900, 
+            //timeISO->tm_mon + 1, timeISO->tm_mday, timeISO->tm_hour, 
+            //timeISO->tm_min, timeISO->tm_sec, (long) timeEpoch.tv_usec);
+    sprintf(fileTime, "_%04d%02d%02dT%02d%02d%02d%liZ.csv", timeISO->tm_year+1900, 
             timeISO->tm_mon + 1, timeISO->tm_mday, timeISO->tm_hour, 
             timeISO->tm_min, timeISO->tm_sec, (long) timeEpoch.tv_usec); 
     char fileName[LEN];
@@ -476,7 +479,7 @@ void waitAIO() {
 //    }
 }
 
-AIFF_Ref createAIFF(char *filePath, int fileNum, dt78xx_clk_config_t clk, char **argv, long sunrise, long sunset) {
+AIFF_Ref createAIFF(char *filePath, dt78xx_clk_config_t clk, char **argv, long sunrise, long sunset) {
     timestamp(filePath, argv, PATH_TO_STORAGE); // Timestamp: Time of first sample recording
     AIFF_Ref file = AIFF_OpenFile(filePath, F_WRONLY); // AIFF file opened
     if (file) {
@@ -498,7 +501,7 @@ AIFF_Ref createAIFF(char *filePath, int fileNum, dt78xx_clk_config_t clk, char *
     return file;
 }
 
-int finishAIFF(int exitStatus, AIFF_Ref file, int fileNum, char *filePath) {
+int finishAIFF(int exitStatus, AIFF_Ref file, char *filePath) {
     int fileSuccess = 1;
     if (!exitStatus) {
         fprintf(stderr, "ERROR writing .aiff file");
@@ -546,4 +549,48 @@ int armStartStream() {
 
 int stopStream() {
     return ioctl(inStream, IOCTL_STOP_SUBSYS, 0); // Stop stream
+}
+
+FILE *createCSV(char *filePath, int *ain, char **argv) {
+    timestamp(filePath, argv, PATH_TO_STORAGE); // Timestamp: Time of first sample recording
+    FILE *file = fopen(filePath, "w");
+    fprintf(file,"Sample"); // CSV file header
+    int ch;
+    for (ch = 0; ch < 8; ch++) {
+        if (ain[ch]) {
+            fprintf(file, ", AIN%d (V)", ch);
+            fprintf(file, ", AIN%d (count)", ch);
+        }
+    }
+    fprintf(file,"\n"); 
+    return file;
+}
+
+int writeCSV(void *raw, FILE *file) {
+    int i;
+    for (i=0; i < bufferSamples; ++i) {
+        float volt = raw2volts(*(int16_t *)raw, 1); 
+        fprintf(file,"%6d, %.5f,%d\n", 
+                i+(fileNum*fileBuffers)+(bufferSamples*(fileBuffer-1)),volt,*(int16_t *)raw);
+        raw += sizeof(int16_t);
+    }
+    return 1;
+}
+
+int finishCSV(int exitStatus, FILE *file, char *filePath) {
+    int fileSuccess = 1;
+    if (!exitStatus) {
+        fprintf(stderr, "ERROR writing .csv file");
+        return !fileSuccess;
+    }                        
+    if (!fclose(file)) {
+        fprintf(stderr, "ERROR ending writing .csv file");
+        return !fileSuccess;
+    } else {
+        fileNum++;
+        fprintf(stdout, "File closed\n");
+        fprintf(stdout, "File at %s\n", filePath);
+        fprintf(stdout, "%d total .csv files written\n", fileNum);
+    }
+    return fileSuccess;
 }
