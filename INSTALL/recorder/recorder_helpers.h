@@ -73,7 +73,6 @@ extern "C" {
 #include "sunriset/sunriset.h"
 #define LIBAIFF_NOCOMPAT 1  /* do not use LibAiff 2 API compatibility */
 #include "libaiff/libaiff.h"
-#include "RingBuf/RingBuf.h"
     
 /*
  * ==== Customisable Macros ====
@@ -96,7 +95,7 @@ extern "C" {
 
 #define PATH_TO_STORAGE     "/usr/local/dt7816-nfs/" // Predefined write path
 
-#define SAMPLE_RATE_HZ      (100000.0f)
+#define SAMPLE_RATE_HZ      (200000.0f)
 #define DURATION_DAYS       21 // Default number of days of sampling
 #define SAFETY_MARGIN       3600 // Pillow in seconds before sunset and after sunrise
 #define NIGHT_CYCLE         0 // Cycles recording on at night and off at day
@@ -231,17 +230,7 @@ extern int aInput;
 extern int outStream;
 
 extern int fileBuffer;
-
-/*
- * ==== Circular (ring) buffer (queue) data type ====
- */
-
-struct circular_queue {
-    float sample_rate;  
-    int32_t num_samples;
-    dt78xx_ain_config_t* chanConfig;
-    RingBuf *buffer;  // Buffer of raw values converted to voltage
-};
+extern void **inBuffer;
 
 /*
  * ==== Helper functions for recorder (DT7816) ====
@@ -418,6 +407,14 @@ void initTrig(dt78xx_trig_config_t ainTrigConfig[]);
 int configTrig(dt78xx_trig_config_t trigConfig);
 
 /*
+ * Setups AIO:
+ * 
+ * @param
+ * @return  1 for success, 0 for failure
+ */
+int setupAIO(dt78xx_clk_config_t clk, int *ain, int argc, char **argv);
+
+/*
  * Calculates the sunset and sunrise time (offset by a safety margin) according
  * to a location on Earth given by longitude and latitude coordinates. 
  * 
@@ -440,47 +437,12 @@ void calcSunUpDown(long *sunsets, long *sunrises);
 void checkID(int argc, char** argv);
 
 /*
- * Checks that sample rate is positive and non-zero.
- * 
- * @param ringBuffer     Sample rate for input buffer
- * @param argv
- */
-void checkRate(struct circular_queue buffer, char** argv);   
-
-/*
  * Opens input stream.
- * 
  */
 void openStream();
 
 /*
  * Opens analog input.
- * 
- */
-void openAIN();
-
-/*
- * Sets AIFF file metadata and file formatting.
- * 
- * @param   sunset  sunset time (in Unix Epoch time, seconds) set as copyright attribute
- * @param   sunrise sunrise time set as annotation attribute
- * @param   audio file sampling rate in Hz
- * @return  success of file format setting (1 for success, 0 for failure)
- */
-int setFile(AIFF_Ref file, long sunset, long sunrise, float rate);
-
-/* 
- * Creates a circular/ring buffer/queue to hold the recorded values in Volts.
- * 
- * @param   input channel configuration
- * @param   sample clock configuration
- * @param   size of request queue
- * @return  RingBuf type circular queue
- */
-struct circular_queue getFileQueue(dt78xx_ain_config_t *ainConfig, dt78xx_clk_config_t clk, int size);
-
-/* 
- * Creates a circular/ring buffer/queue to hold the recorded values in Volts.
  * 
  * The order of the data in the input (AIN) buffer is as follows,
  * assuming that all channels are enabled in the input stream:
@@ -498,10 +460,18 @@ struct circular_queue getFileQueue(dt78xx_ain_config_t *ainConfig, dt78xx_clk_co
  *  <---------------------> <--------------------->  ...
  *      Sample frame 1          Sample frame 2  
  * 
- * @param   pointer to array of raw values
- * @param   RingBuf type circular queue for file output
  */
-void writeFileQueue(void *raw, struct circular_queue writeQueue);
+void openAIN();
+
+/*
+ * Sets AIFF file metadata and file formatting.
+ * 
+ * @param   sunset  sunset time (in Unix Epoch time, seconds) set as copyright attribute
+ * @param   sunrise sunrise time set as annotation attribute
+ * @param   audio file sampling rate in Hz
+ * @return  success of file format setting (1 for success, 0 for failure)
+ */
+int setFile(AIFF_Ref file, long sunset, long sunrise, float rate);
 
 /*
  * Waits for at least one asynchronous input buffer to be completely filled
@@ -510,6 +480,44 @@ void writeFileQueue(void *raw, struct circular_queue writeQueue);
  * 
  */
 void waitAIO();
+
+/*  
+ * Creates new file for acquired data at the specified .aiff path.
+ * @param   directory path to new file
+ * @param   file counter
+ * @param   sample clock configuration
+ * @param   ID argument
+ * @param   sunrise time
+ * @param   sunset time
+ * @return  AIFF_Ref file if successful, NULL is failure
+ * 
+ */
+AIFF_Ref createAIFF(char *filePath, int fileNum, dt78xx_clk_config_t clk, char **argv, long sunrise, long sunset);
+
+/*
+ * @param   file success (1) or failure (0)
+ * @param   AIFF file reference
+ * @param   file counter
+ * @param   directory path to new file
+ * @return  1 for success, 0 for failure
+ */
+int finishAIFF(int exitStatus, AIFF_Ref file, int fileNum, char *filePath);
+
+/*
+ * Arms input stream and then issues a software start for continuous input
+ * operation; this is redundant if trigger source is threshold or externally 
+ * triggered.
+ * 
+ * @return  1 if stream armed and started successfully, 0 if failed
+ */
+int armStartStream();
+
+/*
+ * Stops input stream
+ * 
+ * @return  1 for success, 0 for failure
+ */
+int stopStream();
 
 #ifdef __cplusplus
 }

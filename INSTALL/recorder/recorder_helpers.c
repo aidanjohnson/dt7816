@@ -33,10 +33,10 @@
  * 
  */
 
-static int overrunStop = 1;  // Stop on buffer overrun
-static int requeue = 1;      // Requeue buffers after processing      
+static int overrunStop = 1;  // Enables stop on buffer overrun
+static int requeue = 1;      // Enables requeue buffers after processing      
 static int overruns = 0;       // Number of times buffer overran while acquiring
-static int buffersDone = 0;    // Number of buffers done
+static int buffersDone = 0;    // Number of buffers done; internal counter
 
  /*
  * ==== Helper functions for recorder (DT7816) ====
@@ -50,10 +50,10 @@ void isInStreamEmpty() {
     led.state = (1<<OVERRUN_LED);
     ioctl(inStream, IOCTL_LED_SET, &led);
 #endif    
-    if (overrunStop && (buffersDone==2)) //Stop on queue empty
-    {
-        if (ioctl(inStream, IOCTL_STOP_SUBSYS, 0))
+    if (overrunStop && (buffersDone==2)) { // Stop on queue empty
+        if (ioctl(inStream, IOCTL_STOP_SUBSYS, 0)) {
            perror("IOCTL_STOP_SUBSYS");
+        }
         aio_stop(inAIO);
     }
 }
@@ -63,10 +63,10 @@ int isInAIODone(void *buff, int len) {
     
     //If operation was stopped on queue empty, clean up after all buffers have
     //been dequeued and processed
-    if (overrunStop && overruns && (buffersDone==2)) 
-    {
-        if (ioctl(inStream, IOCTL_STOP_SUBSYS, 0))
+    if (overrunStop && overruns && (buffersDone==2)) {
+        if (ioctl(inStream, IOCTL_STOP_SUBSYS, 0)) {
            perror("IOCTL_STOP_SUBSYS");
+        }
         aio_stop(inAIO);
     }
     
@@ -89,18 +89,17 @@ int isInAIODone(void *buff, int len) {
 
 void ledIndicators(uint8_t status, int streaming) {   
     dt78xx_led_t led;
-    led.mask = 0xff; /* All bits are enabled (8 LEDs capable of being lit) */
+    led.mask = 0xff; // All bits are enabled (8 LEDs capable of being lit)
     led.state = (status & 0xff);
     ioctl(streaming, IOCTL_LED_SET, &led);    
 }
 
 #if (defined STATUS_LED) 
 void updateStatusLed(int fd, int reset) {
-    static uint32_t count = 0; //msb has status led on/off state
+    static uint32_t count = 0; // msb has status led on/off state
     dt78xx_led_t led;
     led.mask = (1<<STATUS_LED);  
-    if (reset)
-    {
+    if (reset) {
         count = 0;
         led.state = 0;
         ioctl(fd, IOCTL_LED_SET, &led);
@@ -108,16 +107,13 @@ void updateStatusLed(int fd, int reset) {
     }
     
     ++count;
-    if ((count & INT32_MAX) < g_led_count)
+    if ((count & INT32_MAX) < g_led_count) {
         return;
-    
-    if (count & ~INT32_MAX)
-    {
+    }
+    if (count & ~INT32_MAX) {
         led.state = 0;
         count = 0;
-    }
-    else
-    {
+    } else {
         led.state = 0xff;
         count = ~INT32_MAX;
     }
@@ -150,9 +146,9 @@ void timestamp(char *filePath, char **argv, char *storagePath) {
     ID = argv[optind];
     char fileTime[LEN];
 
-    sprintf(fileTime, "_%04d%02d%02dT%02d%02d%02d%liZ.aiff", 
-            timeISO->tm_year+1900, timeISO->tm_mon + 1, timeISO->tm_mday, 
-            timeISO->tm_hour, timeISO->tm_min, timeISO->tm_sec, (long) timeEpoch.tv_usec); 
+    sprintf(fileTime, "_%04d%02d%02dT%02d%02d%02d%liZ.aiff", timeISO->tm_year+1900, 
+            timeISO->tm_mon + 1, timeISO->tm_mday, timeISO->tm_hour, 
+            timeISO->tm_min, timeISO->tm_sec, (long) timeEpoch.tv_usec); 
     char fileName[LEN];
     strcpy(fileName, ID);
     strcat(fileName, fileTime);
@@ -282,9 +278,9 @@ void initTrig(dt78xx_trig_config_t ainTrigConfig[]) {
 }
 
 int configTrig(dt78xx_trig_config_t trigConfig) {
-    if (autoTrigger) /* default trigger == auto or software trigger */
+    if (autoTrigger) {// default trigger is the auto or software trigger
         trigConfig.src = trig_src_sw;
-    else { /* threshold trigger */
+    } else { // threshold trigger
         trigConfig.src = trig_src_threshold;
         trigConfig.src_cfg.threshold.edge_rising = 1;
         trigConfig.src_cfg.threshold.level = volts2raw(TRIG_LEVEL_V,DEFAULT_GAIN);
@@ -292,11 +288,105 @@ int configTrig(dt78xx_trig_config_t trigConfig) {
     return ioctl(inStream, IOCTL_START_TRIG_CFG_SET, &trigConfig);
 }
 
+int setupAIO(dt78xx_clk_config_t clk, int *ain, int argc, char **argv) {
+    int setupFailure = 0; // 0 for failure
+    
+    /* Creates mask for enabled channels, which has a bitwise format. */
+    int *chOn = malloc(sizeof(int)*numChannels); // Array of enabled channel indices
+    createChanMask(ain, chOn);
+    
+    /* Channel configuration */
+    dt78xx_ain_config_t ainConfig[8] = {}; // Analog input configuration array
+    configChan(ainConfig);
+    
+    /* First fatal error check: channel identity and sampling rate */
+    checkID(argc, argv);
+    
+    /* Second fatal error check: opening the input stream */
+    openStream();
+    
+    /* Third fatal error check: opening analog input */
+    openAIN();
+    
+    /* 
+     * Passes all fatal error checks; proceeds to setup.
+     * Graduates to graceful exit protocol: _exit. 
+     */
+
+    /* Opens asynchronous I/O (AIO) context */
+    inAIO = aio_create(inStream, 0, isInAIODone, isInStreamEmpty);
+
+    /* Configures sampling rate; actual rate is returned on success */
+    if (ioctl(inStream, IOCTL_SAMPLE_CLK_SET, &clk)) {
+        fprintf(stderr, "IOCTL_SAMPLE_CLK_SET ERROR %d \"%s\"\n", 
+                errno, strerror(errno));
+        return setupFailure;
+    }
+    
+    dt78xx_trig_config_t ainTrigConfig[8] = {}; // Array of analog input configurations
+    initTrig(ainTrigConfig); // Initialises trigger
+    
+    /* Configures for software trigger for all enabled channels */
+    fprintf(stdout, "Configuring trigger...\n");
+    int i;
+    for (i = 0; i < numChannels; i++) {
+        int chan = chOn[i];
+        if (configTrig(ainTrigConfig[chan])) {
+            fprintf(stderr, "IOCTL_START_TRIG_CFG_SET ERROR %d \"%s\"\n", 
+                    errno, strerror(errno));
+            return setupFailure;
+        }
+    }
+    
+    /* Writes channel mask for selected/enabled channels */
+    if (ioctl(inStream, IOCTL_CHAN_MASK_SET, &chanMask)) {
+        fprintf(stderr, "IOCTL_CHAN_MASK_SET ERROR %d \"%s\"\n", 
+                errno, strerror(errno));
+        return setupFailure;
+    }
+    
+    /* Sets channel gain, coupling and current source */
+    for (i = 0; i < numChannels; i++) {
+        int ainIndex = chOn[i];
+        if (ioctl(aInput, IOCTL_AIN_CFG_SET, &ainConfig[ainIndex])) {
+            fprintf(stderr, "IOCTL_AIN%d_CFG_SET ERROR %d \"%s\"\n", 
+                    ainIndex, errno, strerror(errno));
+            return setupFailure;
+        }
+    }
+    
+    /* 
+     * Size/allocate a buffer to hold the specified samples for each channel
+     * where: bufLen = 16*chanSamples*numChannels/8 (in bytes, assuming 
+     * chanSamples multiple of 32)
+     */
+    int actualSamples;
+    int buffSize = aio_buff_size(chanSamples, chanMask, &actualSamples);
+    fprintf(stdout,"Sampling at %f Hz to 2 buffers of %d samples for %d channels...\n", 
+                    clk.clk_freq, actualSamples, numChannels);
+    chanSamples = actualSamples;
+         
+    /* Creates and initialises AIO stream buffers/structures */
+    fprintf(stdout, "Initialising...\n");
+    if ((inBuffer = aio_buff_alloc(inAIO, 2, buffSize)) == NULL) {
+        fprintf(stderr, "alloc_queue_buffers ERROR %d \"%s\"\n", 
+                errno, strerror(errno));
+        return setupFailure;
+    }
+        
+   /* Submits AIO buffers*/ 
+    if ((setupFailure = aio_start(inAIO))) {
+        fprintf(stderr, "AIO start failure error");
+        return setupFailure;
+    }
+    return !setupFailure;
+}
+
 void calcSunUpDown(long *sunsets, long *sunrises) {
-    struct timeval epochPresent;  /* Seconds UTC relative to 1 Jan 1970 (epoch) */
-    struct tm *presentTime = malloc(sizeof(struct tm)); /* Time in accordance to ISO 8601 */
-    gettimeofday(&epochPresent, NULL); /* Gets current system time */
-    presentTime = gmtime(&epochPresent.tv_sec); /* Gets current time in UTC (aka GMT or Zulu) */
+    struct timeval epochPresent;  // Seconds UTC relative to 1 Jan 1970 (epoch)
+    struct tm *presentTime = malloc(sizeof(struct tm)); // Time in accordance to ISO 8601
+    gettimeofday(&epochPresent, NULL); // Gets current system time
+    presentTime = gmtime(&epochPresent.tv_sec); // Gets current time in UTC (aka GMT or Zulu)
 
     int elapsedDays;
     double rise, set;
@@ -309,13 +399,13 @@ void calcSunUpDown(long *sunsets, long *sunrises) {
         long epochSet = epochDay;
         if (nightCycle) {
             sun_rise_set(year, month, day, lon, lat, &rise, &set);
-            epochSet += set*3600;
+            epochSet += set * 3600;
             sunsets[elapsedDays] = epochSet - safetyMargin;
         } else {
             sunsets[elapsedDays] = epochSet;
         }
 
-        time_t daySec = 86400; /* Length of 1 day in seconds */
+        time_t daySec = 86400; // Length of 1 day in seconds
         epochDay += daySec;
         presentTime = gmtime(&epochDay);
         year = 1900 + (int) presentTime->tm_year;
@@ -325,7 +415,7 @@ void calcSunUpDown(long *sunsets, long *sunrises) {
         long epochRise = getTimeEpoch(year, month, day, 0, 0, 0);
         if (nightCycle) {
             sun_rise_set(year, month, day, lon, lat, &rise, &set);
-            epochRise += rise*3600;
+            epochRise += rise * 3600;
             sunrises[elapsedDays] = epochRise + safetyMargin;
         } else {
             sunrises[elapsedDays] = epochRise;
@@ -338,14 +428,7 @@ void checkID(int argc, char** argv) {
         printf(usage, argv[0]);
         exit(EXIT_FAILURE);
     }
-}
-
-void checkRate(struct circular_queue buffer, char** argv) { 
-    if (buffer.sample_rate <= 0.0f) {
-        printf(usage, argv[0]);
-        exit(EXIT_FAILURE);
-    }
-}    
+}  
 
 void openStream() {
     fprintf(stdout, "Opening stream...\n");
@@ -379,80 +462,88 @@ int setFile(AIFF_Ref file, long sunset, long sunrise, float rate) {
     AIFF_SetAttribute(file, AIFF_COPY, metadata);
     return AIFF_SetAudioFormat(file, numChannels, (double) rate, sizeof(float));
 }
-
-struct circular_queue getFileQueue(dt78xx_ain_config_t ainConfig[8], dt78xx_clk_config_t clk, int size) {
-        struct circular_queue fileQueue;
-        fileQueue.buffer = RingBuf_new(sizeof(float), size);
-        fileQueue.chanConfig = ainConfig;
-        fileQueue.num_samples = size;
-        fileQueue.sample_rate = clk.clk_freq;
-        return fileQueue;
-}
-
-void writeFileQueue(void *raw, struct circular_queue writeQueue) {
-    int sample;
-    float volts;
-    void *vptr;
-    for (sample = 0; sample < chanSamples; ++sample) {
-        if (chanMask & chan_mask_ain0) {
-            volts = raw2volts(*(int16_t *)raw, writeQueue.chanConfig[0].gain);
-            vptr = &volts;
-            writeQueue.buffer->add(writeQueue.buffer, &vptr);
-            raw += sizeof(int16_t);
-        }
-        if (chanMask & chan_mask_ain1) {
-            volts = raw2volts(*(int16_t *)raw, writeQueue.chanConfig[1].gain);
-            vptr = &volts;
-            writeQueue.buffer->add(writeQueue.buffer, &vptr);
-            raw += sizeof(int16_t);  
-        }
-        if (chanMask & chan_mask_ain2) {
-            volts = raw2volts(*(int16_t *)raw, writeQueue.chanConfig[2].gain);
-            vptr = &volts;
-            writeQueue.buffer->add(writeQueue.buffer, &vptr);
-            raw += sizeof(int16_t); 
-        }
-        if (chanMask & chan_mask_ain3) {
-            volts = raw2volts(*(int16_t *)raw, writeQueue.chanConfig[3].gain);
-            vptr = &volts;
-            writeQueue.buffer->add(writeQueue.buffer, &vptr);
-            raw += sizeof(int16_t);
-        }
-        if (chanMask & chan_mask_ain4) {
-            volts = raw2volts(*(int16_t *)raw, writeQueue.chanConfig[4].gain);
-            vptr = &volts;
-            writeQueue.buffer->add(writeQueue.buffer, &vptr);
-            raw += sizeof(int16_t); 
-        }
-        if (chanMask & chan_mask_ain5) {
-            volts = raw2volts(*(int16_t *)raw, writeQueue.chanConfig[5].gain);
-            vptr = &volts;
-            writeQueue.buffer->add(writeQueue.buffer, &vptr);
-            raw += sizeof(int16_t); 
-        }
-        if (chanMask & chan_mask_ain6) {
-            volts = raw2volts(*(int16_t *)raw, writeQueue.chanConfig[6].gain);
-            vptr = &volts;
-            writeQueue.buffer->add(writeQueue.buffer, &vptr);
-            raw += sizeof(int16_t);  
-        }                    
-        if (chanMask & chan_mask_ain7) {
-            volts = raw2volts(*(int16_t *)raw, writeQueue.chanConfig[7].gain);
-            vptr = &volts;
-            writeQueue.buffer->add(writeQueue.buffer, &vptr);
-            raw += sizeof(int16_t);
-        }                    
-    }
-}
     
 void waitAIO() {
+    int timeout = -1; // -1 for indefinite, else in ms
     int numDone = 0; // Number of buffers completed in timeout/wait period
-    while (numDone < 1) {
+    /* Exit from while loop signals buffer (ping or pong) is full */
+//    while (numDone < 1) {
         fprintf(stdout, "file buffers done %d\n", fileBuffer);
-        numDone = aio_wait(inAIO, -1); // Timeout when one buffer completely filled
+        numDone = aio_wait(inAIO, timeout); // Timeout when one buffer completely filled
         fprintf(stdout, "numDone %d\n", numDone);
-        if (numDone < 0) break; // error
+//        if (numDone < 0) break; // error
         fileBuffer += numDone;
-    }
+//    }
 }
-    
+
+AIFF_Ref createAIFF(char *filePath, int fileNum, dt78xx_clk_config_t clk, char **argv, long sunrise, long sunset) {
+    timestamp(filePath, argv, PATH_TO_STORAGE); // Timestamp: Time of first sample recording
+    AIFF_Ref file = AIFF_OpenFile(filePath, F_WRONLY); // AIFF file opened
+    if (file) {
+        fileNum += 1;
+        fprintf(stdout, "Opened the %do .aiff file...\n", fileNum);
+        if (!setFile(file, sunset, sunrise, clk.clk_freq)) {
+            AIFF_CloseFile(file);
+            fprintf(stderr, "ERROR audio_format_set");
+            return NULL;
+        }
+        if (!AIFF_StartWritingSamples(file)) {
+            fprintf(stderr, "ERROR starting writing .aiff file");
+            return NULL;
+        }
+    } else {
+        fprintf(stderr, "ERROR audio_file_open");
+        return NULL;
+    }
+    return file;
+}
+
+int finishAIFF(int exitStatus, AIFF_Ref file, int fileNum, char *filePath) {
+    int fileSuccess = 1;
+    if (!exitStatus) {
+        fprintf(stderr, "ERROR writing .aiff file");
+        return !fileSuccess;
+    }                        
+    if (!AIFF_EndWritingSamples(file)) {
+        fprintf(stderr, "ERROR ending writing .aiff file");
+        return !fileSuccess;
+    } else {
+        fprintf(stdout, "%d total .aiff files written\n", fileNum);
+    }
+    if (AIFF_CloseFile(file)) {
+        fprintf(stdout, "Closed file...\n");
+        fprintf(stdout, "File at %s\n", filePath);
+    } else {
+        fprintf(stderr, "ERROR audio_file_close");
+        return !fileSuccess;
+    }
+    return fileSuccess;
+}
+
+int armStartStream() {
+    int armError = 0; // 0 if no error (success), 1 if failure (error)
+
+    /* Arms the input stream */
+    armError = ioctl(inStream, IOCTL_ARM_SUBSYS, 0);
+    if (armError) {
+        fprintf(stderr, "IOCTL_ARM_SUBSYS ERROR %d \"%s\"\n", 
+              errno, strerror(errno));
+        return armError;
+    }   
+
+    /* 
+     * Issues a software start for continuous input operation; this is 
+     * redundant if trigger source is threshold or externally triggered 
+     */
+    armError = ioctl(inStream, IOCTL_START_SUBSYS, 0);
+    if (armError) {
+        fprintf(stderr, "IOCTL_START_SUBSYS ERROR %d \"%s\"\n", 
+                errno, strerror(errno));
+        return armError;
+    }
+    return armError;
+}
+
+int stopStream() {
+    return ioctl(inStream, IOCTL_STOP_SUBSYS, 0); // Stop stream
+}

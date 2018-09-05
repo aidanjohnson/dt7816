@@ -171,92 +171,9 @@ int main (int argc, char** argv) {
     /* Sets up force quit handler to terminate process gracefully */
     sigaction_register(SIGINT, forceQuitHandler);
     
-    /* Creates mask for enabled channels, which has a bitwise format. */
-    int *chOn = malloc(sizeof(int)*numChannels); // Array of enabled channel indices
-    createChanMask(ain, chOn);
-    
-    /* Channel configuration */
-    dt78xx_ain_config_t ainConfig[8] = {}; // Analog input configuration array
-    configChan(ainConfig);
-    
-    /* First fatal error check: channel identity and sampling rate */
-    checkID(argc, argv);
-    
-    /* Second fatal error check: opening the input stream */
-    openStream();
-    
-    /* Third fatal error check: opening analog input */
-    openAIN();
-    
-    /* 
-     * Passes all fatal error checks; proceeds to setup.
-     * Graduates to graceful exit protocol. 
-     */
-
-    /* Opens asynchronous I/O (AIO) context */
-    inAIO = aio_create(inStream, 0, isInAIODone, isInStreamEmpty);
-
-    /* Configures sampling rate; actual rate is returned on success */
-    if (ioctl(inStream, IOCTL_SAMPLE_CLK_SET, &clk)) {
-        fprintf(stderr, "IOCTL_SAMPLE_CLK_SET ERROR %d \"%s\"\n", 
-                errno, strerror(errno));
-        goto _exit;
-    }
-       
-    dt78xx_trig_config_t ainTrigConfig[8] = {}; // Array of analog input configurations
-    initTrig(ainTrigConfig); // Initialises trigger
-    
-    /* Configures for software trigger for all enabled channels */
-    fprintf(stdout, "Configuring trigger...\n");
-    int i;
-    for (i = 0; i < numChannels; i++) {
-        int chan = chOn[i];
-        if (configTrig(ainTrigConfig[chan])) {
-            fprintf(stderr, "IOCTL_START_TRIG_CFG_SET ERROR %d \"%s\"\n", 
-                    errno, strerror(errno));
-            goto _exit;
-        }
-    }
-    
-    /* Writes channel mask for selected/enabled channels */
-    if (ioctl(inStream, IOCTL_CHAN_MASK_SET, &chanMask)) {
-        fprintf(stderr, "IOCTL_CHAN_MASK_SET ERROR %d \"%s\"\n", 
-                errno, strerror(errno));
-        goto _exit;
-    }
-    
-    /* Sets channel gain, coupling and current source */
-    for (i = 0; i < numChannels; i++) {
-        int ainIndex = chOn[i];
-        if (ioctl(aInput, IOCTL_AIN_CFG_SET, &ainConfig[ainIndex])) {
-            fprintf(stderr, "IOCTL_AIN%d_CFG_SET ERROR %d \"%s\"\n", 
-                    ainIndex, errno, strerror(errno));
-            goto _exit;
-        }
-    }
-    
-    /* 
-     * Size/allocate a buffer to hold the specified samples for each channel
-     * where: bufLen = 16*chanSamples*numChannels/8 (in bytes, assuming 
-     * chanSamples multiple of 32)
-     */
-    int actualSamples;
-    int buffSize = aio_buff_size(chanSamples, chanMask, &actualSamples);
-    fprintf(stdout,"Sampling at %f Hz to 2 buffers of %d samples for %d channels...\n", 
-                    clk.clk_freq, actualSamples, numChannels);
-    chanSamples = actualSamples;
-         
-    /* Creates and initialises AIO stream buffers/structures */
-    fprintf(stdout, "Initialising...\n");
-    if ((inBuffer = aio_buff_alloc(inAIO, 2, buffSize)) == NULL) {
-        fprintf(stderr, "alloc_queue_buffers ERROR %d \"%s\"\n", 
-                errno, strerror(errno));
-        goto _exit;
-    }
-    
-   /* Submits AIO buffers*/ 
-    if ((exitStatus = aio_start(inAIO))) {
-        fprintf(stderr, "AIO start failure error");
+    /* Setup input AIO stream */
+    exitStatus = setupAIO(clk, ain, argc, argv);
+    if (!exitStatus) {
         goto _exit;
     }
     
@@ -286,72 +203,62 @@ int main (int argc, char** argv) {
     fprintf(stdout, "Press ctrl-C to exit\n"); 
     while (!forceQuit && durationDays > elapsedDays) {
         long present = getPresentTime();
+        // TODO: sleep for <blank> s so not calculating present time so frequently?
         long sunset = sunsets[elapsedDays];
         long sunrise = sunrises[elapsedDays];
         int night = 0;
 
         /* If after dusk and before dawn (entering night) */
-        while (!forceQuit && (present < sunrise && present >= sunset)) {           
-            /* Start of night: only done once it begins */
-            if (!night) {
-                /* Arms the input stream */
-                if ((ioctl(inStream, IOCTL_ARM_SUBSYS, 0))) {
-                    fprintf(stderr, "IOCTL_ARM_SUBSYS ERROR %d \"%s\"\n", 
-                          errno, strerror(errno));
-                    goto _exit;
-                }   
-
-                /* 
-                 * Issues a software start for continuous input operation; this is 
-                 * redundant if trigger source is threshold or externally triggered 
-                 */
-                if ((ioctl(inStream, IOCTL_START_SUBSYS, 0))) {
-                    fprintf(stderr, "IOCTL_START_SUBSYS ERROR %d \"%s\"\n", 
-                            errno, strerror(errno));
-                    goto _exit;
-                }
-            }
-            if (forceQuit) { // Unless force quit activated, night has begun (only once a day)
+        while (!forceQuit && (present < sunrise && present >= sunset)) {                                            
+            AIFF_Ref file = createAIFF(filePath, fileNum, clk, argv, sunrise, sunset);
+            if(!file) {
                 goto _exit;
-            } else {
-                night = 1;
             }
             
-            /* 
-             * Continuous sampling of input stream begins. 
-             * Writes acquired data to the specified .aiff output file.
-             */
-            timestamp(filePath, argv, PATH_TO_STORAGE); // Timestamp: Time of first sample recording
-            AIFF_Ref file = AIFF_OpenFile(filePath, F_WRONLY); // AIFF file opened
-            if (file) {
-                fileNum += 1;
-                fprintf(stdout, "Opened the %do .aiff file...\n", fileNum);
-                if (!setFile(file, sunset, sunrise, clk.clk_freq)) {
-                    AIFF_CloseFile(file);
-                    fprintf(stderr, "ERROR audio_format_set");
-                    goto _exit;
+            /* Start of night: only done once it begins */
+            if (!night) {
+                night = 1; // night has begun (only once a day)
+                if (armStartStream()) {
+                    goto _exit; // Arm and start input stream
                 }
-                if (!AIFF_StartWritingSamples(file)) {
-                    fprintf(stderr, "ERROR starting writing .aiff file");
-                    goto _exit;
-                }
-            } else {
-                fprintf(stderr, "ERROR audio_file_open");
-                goto _exit; 
             }
-
-            /* Cycle 0: fills ping */
+            /* Continuous sampling of input stream begins. */
+ 
+            /* Cycle 0: fills ping; 1 cycle is 1 ping and 1 pong (2 buffers) */
             fileBuffer = 0;
             fprintf(stdout, "Cycle 0: filling ping\n");
             waitAIO();
-            /* exit from while loop signals ping is full */
 
+//            /*
+//             *  Serial 
+//             */
+//            fprintf(stdout, "Ping\n");              
+//            exitStatus = AIFF_WriteSamples32Bit(file, (int32_t*) &(inBuffer[PING]), bufferSamples);
+//            waitAIO();
+//            fprintf(stdout, "Pong\n");
+//            exitStatus = AIFF_WriteSamples32Bit(file, (int32_t*) &(inBuffer[PONG]), bufferSamples);
+//            waitAIO();
+//            fprintf(stdout, "Ping\n");              
+//            exitStatus = AIFF_WriteSamples32Bit(file, (int32_t*) &(inBuffer[PING]), bufferSamples);
+//            waitAIO();
+//            fprintf(stdout, "Pong\n");
+//            exitStatus = AIFF_WriteSamples32Bit(file, (int32_t*) &(inBuffer[PONG]), bufferSamples);
+//            waitAIO();
+//            fprintf(stdout, "Ping\n");              
+//            exitStatus = AIFF_WriteSamples32Bit(file, (int32_t*) &(inBuffer[PING]), bufferSamples);
+//            waitAIO();
+//            fprintf(stdout, "Pong\n");
+//            exitStatus = AIFF_WriteSamples32Bit(file, (int32_t*) &(inBuffer[PONG]), bufferSamples);
+//            waitAIO();
+            
             /* 
              * Last half of Cycle 0 (fills pong, reads ping); entirety of
-             * Cycle 1, 2, ... fileCycles - 1 (alternates fill/read ping/pong).
-             * The double buffering sink: producer is inBuffer, consumer is fileQueue
+             * Cycle 1, 2, ... fileBuffers - 1 (alternates fill/read ping/pong).
+             * That is, all the file buffers. This serves as the double buffering
+             * sink that is needed to the solve the producer-consumer problem.
+             * (The producer is inBuffer and consumer is fileQueue.)
              */
-            while (fileBuffer < fileBuffers) {
+            while (!forceQuit && fileBuffer < fileBuffers) {
                 if (fileBuffer % 2 == 0) {
                     // Read and write from pong
                     fprintf(stdout, "Pong\n");
@@ -363,33 +270,21 @@ int main (int argc, char** argv) {
                     exitStatus = AIFF_WriteSamples32Bit(file, (int32_t*) &(inBuffer[PING]), bufferSamples);
                     waitAIO();
                 }
-                fprintf(stdout, "file buffers done %d\n", fileBuffer);
+           }
+            
+            /* Exit from while loop signals to finish writing single file */
+            if (!finishAIFF(exitStatus, file, fileNum, filePath)) {
+                goto _exit; 
+            } else { // Proceeds to quit after wrapping up file
+                present = getPresentTime(); // Updates time for while loop check
             }
-            /* exit from while loop signals to write single file */
-
-            if (!exitStatus) {
-                fprintf(stderr, "ERROR writing .aiff file");
-                goto _exit;
-            }                        
-            if (!AIFF_EndWritingSamples(file)) {
-                fprintf(stderr, "ERROR ending writing .aiff file");
-                goto _exit;
-            } else {
-                fprintf(stdout, "%do .aiff file written\n", fileNum);
-            }
-            if (AIFF_CloseFile(file)) {
-                fprintf(stdout, "Closed file...\n");
-                fprintf(stdout, "File at %s\n", filePath);
-            } else {
-                fprintf(stderr, "ERROR audio_file_close");
-                goto _exit;
-            }
-
-            present = getPresentTime(); // Updates time for while loop check
         }
-        if (night) elapsedDays++; // If after dawn (leaving the end of night), 1 day elapsed
-        
-        ioctl(inStream, IOCTL_STOP_SUBSYS, 0); // Stop stream
+        if (night) {
+            elapsedDays++; // If after dawn (leaving the end of night), 1 day elapsed
+        }
+        if (!stopStream()) { 
+            goto _exit;
+        }
     }
 
 /* Exit protocol and procedure */
