@@ -1,5 +1,5 @@
 # Documentation
-The following documentation is essential for using this autonomous recorder program for the MCC DT7816. This program has the specific purpose of serving as an acoustic sampling array for studying the neural computational principles behind biosonar (i.e., navigation and coordination of foraging bats). The Wiki is the most complete and up-to-date guide, while the Doxygen documentation is supplementary. 
+The following documentation is essential for using this autonomous recorder program for the [MCC DT7816](https://www.mccdaq.com/Products/ARM-DAQ/DT7816). This program has the specific purpose of serving as an acoustic sampling array for studying the neural computational principles behind biosonar (i.e., navigation and coordination of foraging bats). The Wiki is the most complete and up-to-date guide, while the Doxygen documentation is supplementary. 
 * [Wiki](https://github.com/aidanjohnson/dt7816/wiki)
 * [Doxygen](https://github.com/aidanjohnson/dt7816/tree/f8a4ccb92a67c16e4d23e182c011c55ef94b3e6c/example-applications/dt78xx-examples/recorder/Documentation/html)
 
