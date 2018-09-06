@@ -38,6 +38,9 @@ static int requeue = 1;      // Enables requeue buffers after processing
 static int overruns = 0;       // Number of times buffer overran while acquiring
 static int buffersDone = 0;    // Number of buffers done; internal counter
 
+FILE *file;
+//AIFF_Ref file;
+
  /*
  * ==== Helper functions for recorder (DT7816) ====
  */
@@ -77,19 +80,21 @@ int isInAIODone(void *buff, int len) {
 #endif    
     
     //Process completed buffers here  
+    if (fileBuffer == 0) {
+         file = createCSV(filePath);
+         //file = createAIFF(filePath, long sunrise, long sunset);
+    }
+    writeCSV(buff, file);
+    if (fileBuffer == fileBuffers) {
+        finishCSV(file, filePath);
+        //finishAIFF(file, filePath);
+    }
         
 #if (defined BUFF_DONE_LED) && (BUFF_DONE_LED > -1) && (BUFF_DONE_LED < 8)
     led.state = 0;
     ioctl(inStream, IOCTL_LED_SET, &led);
 #endif  
     return requeue;
-}
-
-void ledIndicators(uint8_t status, int streaming) {   
-    dt78xx_led_t led;
-    led.mask = 0xff; // All bits are enabled (8 LEDs capable of being lit)
-    led.state = (status & 0xff);
-    ioctl(streaming, IOCTL_LED_SET, &led);    
 }
 
 #if (defined STATUS_LED) 
@@ -135,13 +140,11 @@ long getTimeEpoch(long year, int month, int day, int hour, int minute, int secon
     return (long) timegm(&(*time));
 }
 
-void timestamp(char *filePath, char **argv, char *storagePath) {
+void timestamp(char *filePath, char *storagePath) {
     struct timeval timeEpoch;
     struct tm *timeISO;
     getTime(&timeISO, &timeEpoch);
     const char *outputPath = storagePath;
-    const char *ID;
-    ID = argv[optind];
     char fileTime[LEN];
 
     //sprintf(fileTime, "_%04d%02d%02dT%02d%02d%02d%liZ.aiff", timeISO->tm_year+1900, 
@@ -289,7 +292,7 @@ int configTrig(dt78xx_trig_config_t trigConfig) {
     return ioctl(inStream, IOCTL_START_TRIG_CFG_SET, &trigConfig);
 }
 
-int setupAIO(dt78xx_clk_config_t clk, int *ain, int argc, char **argv) {
+int setupAIO(dt78xx_clk_config_t clk, int argc) {
     int setupFailure = 0; // 0 for failure
     
     /* Creates mask for enabled channels, which has a bitwise format. */
@@ -301,7 +304,7 @@ int setupAIO(dt78xx_clk_config_t clk, int *ain, int argc, char **argv) {
     configChan(ainConfig);
     
     /* First fatal error check: channel identity and sampling rate */
-    checkID(argc, argv);
+    checkID(argc);
     
     /* Second fatal error check: opening the input stream */
     openStream();
@@ -356,8 +359,9 @@ int setupAIO(dt78xx_clk_config_t clk, int *ain, int argc, char **argv) {
         }
     }
     if (submitAIO()) {
+        sampleRate = clk.clk_freq;
         fprintf(stdout,"Sampling at %f Hz to 2 buffers of %d samples for %d channels...\n", 
-                    clk.clk_freq, chanSamples, numChannels);
+                    sampleRate, chanSamples, numChannels);
         return !setupFailure;
     }
     return setupFailure;
@@ -404,9 +408,9 @@ void calcSunUpDown(long *sunsets, long *sunrises) {
     }
 }
 
-void checkID(int argc, char** argv) {
+void checkID(int argc) {
     if (optind >= argc) {
-        printf(usage, argv[0]);
+        printf(usage, ID);
         exit(EXIT_FAILURE);
     }
 }  
@@ -457,66 +461,17 @@ int submitAIO() {
     return 1;
 }
 
-int setFile(AIFF_Ref file, long sunset, long sunrise, float rate) {
+int setFile(AIFF_Ref file) {
     char metadata[LEN];
     sprintf(metadata, "%f", lon);
     AIFF_SetAttribute(file, AIFF_NAME, metadata);
     sprintf(metadata, "%f", lat);
     AIFF_SetAttribute(file, AIFF_AUTH, metadata);
-    sprintf(metadata, "%ld", sunset);
-    AIFF_SetAttribute(file, AIFF_ANNO, metadata);
-    sprintf(metadata, "%ld", sunrise);
-    AIFF_SetAttribute(file, AIFF_COPY, metadata);
-    return AIFF_SetAudioFormat(file, numChannels, (double) rate, sizeof(float));
-}
-    
-void waitAIO() {
-    int timeout = -1; // -1 for indefinite, else in ms
-    /* Exit from while loop signals buffer (ping or pong) is full */
-    fprintf(stdout, "file buffers done %d\n", fileBuffer);
-    /* Number of buffers completed in timeout/wait period */
-    int numDone = aio_wait(inAIO, timeout); // Timeout when one buffer completely filled
-    fprintf(stdout, "numDone %d\n", numDone);
-    fileBuffer += numDone;
-}
-
-AIFF_Ref createAIFF(char *filePath, dt78xx_clk_config_t clk, char **argv, long sunrise, long sunset) {
-    timestamp(filePath, argv, PATH_TO_STORAGE); // Timestamp: Time of first sample recording
-    AIFF_Ref file = AIFF_OpenFile(filePath, F_WRONLY); // AIFF file opened
-    if (file) {
-        fileNum += 1;
-        fprintf(stdout, "Opened the %do .aiff file...\n", fileNum);
-        if (!setFile(file, sunset, sunrise, clk.clk_freq)) {
-            AIFF_CloseFile(file);
-            fprintf(stderr, "ERROR audio_format_set");
-            return NULL;
-        }
-        if (!AIFF_StartWritingSamples(file)) {
-            fprintf(stderr, "ERROR starting writing .aiff file");
-            return NULL;
-        }
-    } else {
-        fprintf(stderr, "ERROR audio_file_open");
-        return NULL;
-    }
-    return file;
-}
-
-int finishAIFF(AIFF_Ref file, char *filePath) {                    
-    if (!AIFF_EndWritingSamples(file)) {
-        fprintf(stderr, "ERROR ending writing .aiff file");
-        return 0;
-    } else {
-        fprintf(stdout, "%d total .aiff files written\n", fileNum);
-    }
-    if (AIFF_CloseFile(file)) {
-        fprintf(stdout, "Closed file...\n");
-        fprintf(stdout, "File at %s\n", filePath);
-    } else {
-        fprintf(stderr, "ERROR audio_file_close");
-        return 0;
-    }
-    return 1;
+    sprintf(metadata, "%ld", sunset); // Sunset time (in Unix Epoch time, seconds)
+    AIFF_SetAttribute(file, AIFF_ANNO, metadata); // Set as copyright attribute
+    sprintf(metadata, "%ld", sunrise); // Sunrise time
+    AIFF_SetAttribute(file, AIFF_COPY, metadata); // Set as annotation attribute
+    return AIFF_SetAudioFormat(file, numChannels, (double) sampleRate, sizeof(float));
 }
 
 int armStartStream() {
@@ -543,8 +498,60 @@ int stopStream() {
     return ioctl(inStream, IOCTL_STOP_SUBSYS, 0); // Stop stream
 }
 
-FILE *createCSV(char *filePath, int *ain, char **argv) {
-    timestamp(filePath, argv, PATH_TO_STORAGE); // Timestamp: Time of first sample recording
+AIFF_Ref createAIFF(char *filePath) {
+    timestamp(filePath, PATH_TO_STORAGE); // Timestamp: Time of first sample recording
+    AIFF_Ref file = AIFF_OpenFile(filePath, F_WRONLY); // AIFF file opened
+    if (file) {
+        fileNum += 1;
+        fprintf(stdout, "Opened the %do .aiff file...\n", fileNum);
+        if (!setFile(file)) {
+            AIFF_CloseFile(file);
+            fprintf(stderr, "ERROR audio_format_set");
+            return NULL;
+        }
+        if (!AIFF_StartWritingSamples(file)) {
+            fprintf(stderr, "ERROR starting writing .aiff file");
+            return NULL;
+        }
+    } else {
+        fprintf(stderr, "ERROR audio_file_open");
+        return NULL;
+    }
+    return file;
+}
+
+void writeAIFF(void *raw, AIFF_Ref file) {
+    int i;
+    for (i=0; i < bufferSamples; ++i) {
+        float volt = raw2volts(*(int16_t *)raw, 1); 
+        AIFF_WriteSamples32Bit(file, (int32_t*) &(volt), 1);
+        raw += sizeof(int16_t);
+    }
+    /* Exit from loop signals finish writing single buffer */
+    fileBuffer++;
+    fprintf(stdout, "written %d file buffers out of %d\n", fileBuffer, fileBuffers);    
+}
+
+int finishAIFF(AIFF_Ref file, char *filePath) {                    
+    if (!AIFF_EndWritingSamples(file)) {
+        fprintf(stderr, "ERROR ending writing .aiff file");
+        return 0;
+    } else {
+        fileBuffer = 0;
+        fprintf(stdout, "%d total .aiff files written\n", ++fileNum);
+    }
+    if (AIFF_CloseFile(file)) {
+        fprintf(stdout, "File closed\n");
+        fprintf(stdout, "File at %s\n", filePath);
+    } else {
+        fprintf(stderr, "ERROR audio_file_close");
+        return 0;
+    }
+    return 1;
+}
+
+FILE *createCSV(char *filePath) {
+    timestamp(filePath, PATH_TO_STORAGE); // Timestamp: Time of first sample recording
     FILE *file = fopen(filePath, "w");
     fprintf(file,"Sample"); // CSV file header
     int ch;
@@ -563,9 +570,11 @@ void writeCSV(void *raw, FILE *file) {
     for (i=0; i < bufferSamples; ++i) {
         float volt = raw2volts(*(int16_t *)raw, 1); 
         fprintf(file,"%6d, %.5f, %hd\n", 
-                i+(fileNum*fileBuffers)+(bufferSamples*(fileBuffer-1)),volt,*(int16_t *)raw);
+                i+(fileNum*fileBuffers)+(bufferSamples*(fileBuffer)),volt,*(int16_t *)raw);
         raw += sizeof(int16_t);
     }
+    /* Exit from loop signals finish writing single buffer */
+    fprintf(stdout, "written %d file buffers out of %d\n", ++fileBuffer, fileBuffers);    
 }
 
 int finishCSV(FILE *file, char *filePath) {                   
@@ -573,6 +582,7 @@ int finishCSV(FILE *file, char *filePath) {
         fprintf(stderr, "ERROR ending writing .csv file");
         return 0;
     } else {
+        fileBuffer = 0;
         fileNum++;
         fprintf(stdout, "File closed\n");
         fprintf(stdout, "File at %s\n", filePath);

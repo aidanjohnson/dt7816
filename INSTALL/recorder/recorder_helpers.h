@@ -103,7 +103,7 @@ extern "C" {
 #define DEFAULT_LATITUDE    47.655083 // Latitude (N := +, S := -)
 #define DEFAULT_LONGITUDE   -122.293194 // Longitude (E := +, W := -)
 
-#define FILE_TIME_S        (60) // Length of AIFF file in seconds
+#define FILE_TIME_S        (10) // Length of AIFF file in seconds
 
 /*
  * ===== Debug Options ====
@@ -209,7 +209,8 @@ static const char usage[] = {
  */
     
 extern struct aio_struct *inAIO;
- 
+
+extern float sampleRate; // SAMPLE_RATE
 extern int autoTrigger; // AUTO_TRIG
 extern int fileSeconds; // FILE_TIME_S
 extern int fileSamples; // SAMPLES_PER_FILE
@@ -224,10 +225,16 @@ extern double lon; // DEFAULT_LONGITUDE
 extern long safetyMargin; // SAFETY_MARGIN
 
 extern chan_mask_t chanMask;
+extern int ain[8];
+extern char filePath[LEN];
+const char *ID;
 
 extern int inStream;
 extern int aInput;
 extern int outStream;
+
+extern long sunset;
+extern long sunrise;
 
 extern int fileBuffer;
 extern int fileNum;
@@ -293,7 +300,13 @@ int isInAIODone(void *buff, int len);
  * @param status        Whether each channel is active
  * @param streaming     1 if presently streaming
  */        
-void ledIndicators(uint8_t status, int streaming);
+
+//void ledIndicators(uint8_t status, int streaming) {   
+//    dt78xx_led_t led;
+//    led.mask = 0xff; // All bits are enabled (8 LEDs capable of being lit)
+//    led.state = (status & 0xff);
+//    ioctl(streaming, IOCTL_LED_SET, &led);    
+//}
 
 /*
  * Blinking status LED approximately once a second
@@ -345,10 +358,9 @@ long getTimeEpoch(long year, int month, int day, int hour, int minute, int secon
  * <path>/<prefix>_<YYYYMMDD>T<HHmmssuuuuuu>Z.aiff
  * 
  * @param filePath         Concatenated resultant string of full file path
- * @param argv              ID argument
  * @param storagePath   A set path to local storage
  */
-void timestamp(char *filePath, char **argv, char *storagePath);
+void timestamp(char *filePath, char *storagePath);
 
 /*
  * Returns the present time in Unix Epoch (UTC) seconds since 1 Jan 1970
@@ -410,10 +422,11 @@ int configTrig(dt78xx_trig_config_t trigConfig);
 /*
  * Setups AIO:
  * 
- * @param
+ * @param   sampling clock configuration
+ * @param   
  * @return  1 for success, 0 for failure
  */
-int setupAIO(dt78xx_clk_config_t clk, int *ain, int argc, char **argv);
+int setupAIO(dt78xx_clk_config_t clk, int argc);
 
 /*
  * Calculates the sunset and sunrise time (offset by a safety margin) according
@@ -433,9 +446,8 @@ void calcSunUpDown(long *sunsets, long *sunrises);
  * Checks for missing AIFF file identifier.
  * 
  * @param argc
- * @param argv
  */
-void checkID(int argc, char** argv);
+void checkID(int argc);
 
 /*
  * Opens input stream.
@@ -473,33 +485,26 @@ int submitAIO();
 
 /*
  * Sets AIFF file metadata and file formatting.
- * 
- * @param   sunset  sunset time (in Unix Epoch time, seconds) set as copyright attribute
- * @param   sunrise sunrise time set as annotation attribute
- * @param   audio file sampling rate in Hz
+ * @param   AIFF file 
  * @return  success of file format setting (1 for success, 0 for failure)
  */
-int setFile(AIFF_Ref file, long sunset, long sunrise, float rate);
-
-/*
- * Waits for at least one asynchronous input buffer to be completely filled
- * indefinitely. Updates the number of buffers written to file for each file
- * written.
- * 
- */
-void waitAIO();
+int setFile(AIFF_Ref file);
 
 /*  
  * Creates new file for acquired data at the specified .aiff path.
  * @param   directory path to new file
- * @param   sample clock configuration
- * @param   ID argument
- * @param   sunrise time
- * @param   sunset time
  * @return  AIFF_Ref file if successful, NULL is failure
  * 
  */
-AIFF_Ref createAIFF(char *filePath, dt78xx_clk_config_t clk, char **argv, long sunrise, long sunset);
+AIFF_Ref createAIFF(char *filePath);
+
+/*
+ * Writes buffer to AIFF file.
+ * 
+ * @param   input buffer
+ * @param   AIFF_Ref file reference
+ */
+void writeAIFF(void *raw, AIFF_Ref file);
 
 /*
  * Cleans up file writing processes 
@@ -530,12 +535,10 @@ int stopStream();
 /*  
  * Creates new file for acquired data at the specified .csv path.
  * @param   directory path to new file
- * @param   enabled analog input channels
- * @param   ID argument
  * @return  FILE if successful, NULL is failure
  * 
  */
-FILE *createCSV(char *filePath, int *ain, char **argv);
+FILE *createCSV(char *filePath);
 
 /*
  * Writes buffer to CSV file.

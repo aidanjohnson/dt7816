@@ -3,11 +3,11 @@ close all;
 % Frame by frame CSV file plotter
 %----------------------------%
 
-file = csvread('~/Desktop/SERIAL_20180906T03522540263Z.csv');
+file = csvread('~/Desktop/LETSFINDOUT_20180906T223821926498Z.csv');
 plot = 1;
 T = 500; % samples per frame
-N0 = 1; % initial frame
-wait = 2; % delay in seconds
+N0 = 64; % initial frame
+wait = 1; % delay in seconds
 
 %----------------------------%
 

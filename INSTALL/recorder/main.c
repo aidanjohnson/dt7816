@@ -31,7 +31,8 @@
 #include "recorder_helpers.h" 
 
 struct aio_struct *inAIO; // Asynchronous I/O  
-         
+
+float sampleRate = SAMPLE_RATE; // Audio file sampling rate in Hz
 int autoTrigger = AUTO_TRIG;
 int fileSeconds = FILE_TIME_S;
 int fileSamples = SAMPLES_PER_FILE;
@@ -46,13 +47,19 @@ double lon = DEFAULT_LONGITUDE; // Longitude coordinate
 long safetyMargin = SAFETY_MARGIN; // Increases sampling duration by 2*safetyMargin (in s)
 
 chan_mask_t chanMask; // Channel mask cached on acquisition start
+int ain[8] = {AIN0, AIN1, AIN2, AIN3, AIN4, AIN5, AIN6, AIN7};
+char filePath[LEN]; // String for output file path
+const char *ID;
 
 int inStream = -1; // Device file handle for input stream
 int aInput = -1; // Device file handle for analog input channels
 int outStream = -1; // Device file handle for output stream
 
-int fileBuffer = 0; // Cumulative number of buffers completed so far per cycle
-int fileNum = 0; // Diagnostic/debugging file counter
+long sunset;
+long sunrise;
+
+int fileBuffer; // Cumulative number of buffers completed so far per cycle
+int fileNum;; // Diagnostic/debugging file counter
 void **inBuffer; // Pointer to input asynchronous buffers
 
 /*
@@ -73,7 +80,9 @@ static void forceQuitHandler(int i) {
 int main (int argc, char** argv) {
     int opt = 0;
     int exitStatus = EXIT_SUCCESS; // Exit flag
-        
+    
+    ID = argv[optind]; // Identifier
+    
     /* Sampling rate clock configuration initialisation */
     dt78xx_clk_config_t clk = {.ext_clk=0, // Internal clock
                                .ext_clk_din=0, 
@@ -81,7 +90,6 @@ int main (int argc, char** argv) {
                               };
    
     /* Enabled analog input channels */
-    int ain[8] = {AIN0, AIN1, AIN2, AIN3, AIN4, AIN5, AIN6, AIN7};
     int tempChan; // 8 bit binary; channel on := 1, channel off := 0
     
     /* Specifying the expected command line options */
@@ -172,7 +180,7 @@ int main (int argc, char** argv) {
     sigaction_register(SIGINT, forceQuitHandler);
     
     /* Setup input AIO stream */
-    exitStatus = setupAIO(clk, ain, argc, argv);
+    exitStatus = setupAIO(clk, argc);
     if (!exitStatus) {
         goto _exit;
     }
@@ -196,91 +204,32 @@ int main (int argc, char** argv) {
     calcSunUpDown(sunsets, sunrises);
     
     int elapsedDays = 0; // Resets day counter
-    char filePath[LEN]; // String for output file path
         
     /* Infinite loop until aborted by ctrl-C */
     fprintf(stdout, "Press ctrl-C to exit\n"); 
     while (!forceQuit && durationDays > elapsedDays) {
         long present = getPresentTime();
         // TODO: sleep for <blank> s so not calculating present time so frequently?
-        long sunset = sunsets[elapsedDays];
-        long sunrise = sunrises[elapsedDays];
+        sunset = sunsets[elapsedDays];
+        sunrise = sunrises[elapsedDays];
         int night = 0;
 
         /* If after dusk and before dawn (entering night) */
         while (!forceQuit && (present < sunrise && present >= sunset)) {                                            
-            fileBuffer = 0;
-            //AIFF_Ref file = createAIFF(filePath, clk, argv, sunrise, sunset);
-            FILE *file = createCSV(filePath, ain, argv);
-            if(!file) {
-                goto _exit;
-            }
             
             /* Start of night: only done once it begins */
             if (!night) {
+                fileNum = 0;
+                fileBuffer = 0;
                 night = 1; // night has begun (only once a day)
                 if (!armStartStream()) {
                     goto _exit; // Arm and start input stream
                 }
             }
             /* Continuous sampling of input stream begins. */
- 
-            /*
-             *  Serial 
-             */
-            waitAIO();
-            fprintf(stdout, "Ping\n");              
-            writeCSV(&(inBuffer[PING]), file);
-            waitAIO();
-            fprintf(stdout, "Pong\n");
-            writeCSV(&(inBuffer[PONG]), file);                    
-            waitAIO();
-            fprintf(stdout, "Ping\n");              
-            writeCSV(&(inBuffer[PING]), file);
-            waitAIO();
-            fprintf(stdout, "Pong\n");
-            writeCSV(&(inBuffer[PONG]), file); 
-            waitAIO();
-            fprintf(stdout, "Ping\n");              
-            writeCSV(&(inBuffer[PING]), file);
-            waitAIO();
-            fprintf(stdout, "Pong\n");
-            writeCSV(&(inBuffer[PONG]), file); 
-            waitAIO();
-            
-            /* 
-             * Last half of Cycle 0 (fills pong, reads ping); entirety of
-             * Cycle 1, 2, ... fileBuffers - 1 (alternates fill/read ping/pong).
-             * That is, all the file buffers. This serves as the double buffering
-             * sink that is needed to the solve the producer-consumer problem.
-             * (The producer is inBuffer and consumer is fileQueue.)
-             */
-            //while (!forceQuit && fileBuffer < fileBuffers) {
-//            while (!forceQuit) {            
-//                fprintf(stdout, "%d file buffer out of %d\n", fileBuffer, fileBuffers);
-//                if (fileBuffer == 0) { // Cycle 0: fill ping; 1 cycle is 1 ping and 1 pong (2 buffers)
-//                    fprintf(stdout, "Filling ping\n"); 
-//                    waitAIO();
-//                } else if (fileBuffer % 2 == 0) { // Fill ping; Read and write from pong
-//                    fprintf(stdout, "Filling ping; Writing pong\n");
-//                    //AIFF_WriteSamples32Bit(file, (int32_t*) &(inBuffer[PONG]), bufferSamples);
-//                    writeCSV(&(inBuffer[PONG]), file);                    
-//                    waitAIO();
-//                } else { // Fill pong; Read and write from ping
-//                    fprintf(stdout, "Filling pong; Writing ping\n");              
-//                    //AIFF_WriteSamples32Bit(file, (int32_t*) &(inBuffer[PING]), bufferSamples);
-//                    writeCSV(&(inBuffer[PING]), file);
-//                    waitAIO();
-//                }
-//            }
-            
-            /* Exit from while loop signals to finish writing single file */
-            //if (!finishAIFF(file, filePath)) {
-            if (!finishCSV(file, filePath)) {
-                goto _exit; 
-            } else { // Proceeds to quit after wrapping up file
-                present = getPresentTime(); // Updates time for while loop check
-            }
+            aio_wait(inAIO, 0);
+
+            present = getPresentTime(); // Updates time for while loop check
         }
         if (night) {
             elapsedDays++; // If after dawn (leaving the end of night), 1 day elapsed
