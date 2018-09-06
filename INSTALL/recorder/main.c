@@ -209,6 +209,7 @@ int main (int argc, char** argv) {
 
         /* If after dusk and before dawn (entering night) */
         while (!forceQuit && (present < sunrise && present >= sunset)) {                                            
+            fileBuffer = 0;
             //AIFF_Ref file = createAIFF(filePath, clk, argv, sunrise, sunset);
             FILE *file = createCSV(filePath, ain, argv);
             if(!file) {
@@ -224,27 +225,28 @@ int main (int argc, char** argv) {
             }
             /* Continuous sampling of input stream begins. */
  
-//            /*
-//             *  Serial 
-//             */
-//            fprintf(stdout, "Ping\n");              
-//            exitStatus = AIFF_WriteSamples32Bit(file, (int32_t*) &(inBuffer[PING]), bufferSamples);
-//            waitAIO();
-//            fprintf(stdout, "Pong\n");
-//            exitStatus = AIFF_WriteSamples32Bit(file, (int32_t*) &(inBuffer[PONG]), bufferSamples);
-//            waitAIO();
-//            fprintf(stdout, "Ping\n");              
-//            exitStatus = AIFF_WriteSamples32Bit(file, (int32_t*) &(inBuffer[PING]), bufferSamples);
-//            waitAIO();
-//            fprintf(stdout, "Pong\n");
-//            exitStatus = AIFF_WriteSamples32Bit(file, (int32_t*) &(inBuffer[PONG]), bufferSamples);
-//            waitAIO();
-//            fprintf(stdout, "Ping\n");              
-//            exitStatus = AIFF_WriteSamples32Bit(file, (int32_t*) &(inBuffer[PING]), bufferSamples);
-//            waitAIO();
-//            fprintf(stdout, "Pong\n");
-//            exitStatus = AIFF_WriteSamples32Bit(file, (int32_t*) &(inBuffer[PONG]), bufferSamples);
-//            waitAIO();
+            /*
+             *  Serial 
+             */
+            waitAIO();
+            fprintf(stdout, "Ping\n");              
+            exitStatus = writeCSV(&(inBuffer[PING]), file);
+            waitAIO();
+            fprintf(stdout, "Pong\n");
+            exitStatus = writeCSV(&(inBuffer[PONG]), file);                    
+            waitAIO();
+            fprintf(stdout, "Ping\n");              
+            exitStatus = writeCSV(&(inBuffer[PING]), file);
+            waitAIO();
+            fprintf(stdout, "Pong\n");
+            exitStatus = writeCSV(&(inBuffer[PONG]), file); 
+            waitAIO();
+            fprintf(stdout, "Ping\n");              
+            exitStatus = writeCSV(&(inBuffer[PING]), file);
+            waitAIO();
+            fprintf(stdout, "Pong\n");
+            exitStatus = writeCSV(&(inBuffer[PONG]), file); 
+            waitAIO();
             
             /* 
              * Last half of Cycle 0 (fills pong, reads ping); entirety of
@@ -253,25 +255,24 @@ int main (int argc, char** argv) {
              * sink that is needed to the solve the producer-consumer problem.
              * (The producer is inBuffer and consumer is fileQueue.)
              */
-            fileBuffer = 0;
             //while (!forceQuit && fileBuffer < fileBuffers) {
-            while (!forceQuit) {            
-                fprintf(stdout, "%d file buffer out of %d\n", fileBuffer, fileBuffers);
-                if (fileBuffer == 0) { // Cycle 0: fill ping; 1 cycle is 1 ping and 1 pong (2 buffers)
-                    fprintf(stdout, "Filling ping\n"); 
-                    waitAIO();
-                } else if (fileBuffer % 2 == 0) { // Fill ping; Read and write from pong
-                    fprintf(stdout, "Filling ping; Writing pong\n");
-                    //exitStatus = AIFF_WriteSamples32Bit(file, (int32_t*) &(inBuffer[PONG]), bufferSamples);
-                    exitStatus = writeCSV(&(inBuffer[PONG]), file);                    
-                    waitAIO();
-                } else { // Fill pong; Read and write from ping
-                    fprintf(stdout, "Filling pong; Writing ping\n");              
-                    //exitStatus = AIFF_WriteSamples32Bit(file, (int32_t*) &(inBuffer[PING]), bufferSamples);
-                    exitStatus = writeCSV(&(inBuffer[PING]), file);
-                    waitAIO();
-                }
-            }
+//            while (!forceQuit) {            
+//                fprintf(stdout, "%d file buffer out of %d\n", fileBuffer, fileBuffers);
+//                if (fileBuffer == 0) { // Cycle 0: fill ping; 1 cycle is 1 ping and 1 pong (2 buffers)
+//                    fprintf(stdout, "Filling ping\n"); 
+//                    waitAIO();
+//                } else if (fileBuffer % 2 == 0) { // Fill ping; Read and write from pong
+//                    fprintf(stdout, "Filling ping; Writing pong\n");
+//                    //exitStatus = AIFF_WriteSamples32Bit(file, (int32_t*) &(inBuffer[PONG]), bufferSamples);
+//                    exitStatus = writeCSV(&(inBuffer[PONG]), file);                    
+//                    waitAIO();
+//                } else { // Fill pong; Read and write from ping
+//                    fprintf(stdout, "Filling pong; Writing ping\n");              
+//                    //exitStatus = AIFF_WriteSamples32Bit(file, (int32_t*) &(inBuffer[PING]), bufferSamples);
+//                    exitStatus = writeCSV(&(inBuffer[PING]), file);
+//                    waitAIO();
+//                }
+//            }
             
             /* Exit from while loop signals to finish writing single file */
             //if (!finishAIFF(exitStatus, file, filePath)) {

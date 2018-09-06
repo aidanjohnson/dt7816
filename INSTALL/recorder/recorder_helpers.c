@@ -468,15 +468,12 @@ int setFile(AIFF_Ref file, long sunset, long sunrise, float rate) {
     
 void waitAIO() {
     int timeout = -1; // -1 for indefinite, else in ms
-    int numDone = 0; // Number of buffers completed in timeout/wait period
     /* Exit from while loop signals buffer (ping or pong) is full */
-//    while (numDone < 1) {
-        fprintf(stdout, "file buffers done %d\n", fileBuffer);
-        numDone = aio_wait(inAIO, timeout); // Timeout when one buffer completely filled
-        fprintf(stdout, "numDone %d\n", numDone);
-//        if (numDone < 0) break; // error
-        fileBuffer += numDone;
-//    }
+    fprintf(stdout, "file buffers done %d\n", fileBuffer);
+    /* Number of buffers completed in timeout/wait period */
+    int numDone = aio_wait(inAIO, timeout); // Timeout when one buffer completely filled
+    fprintf(stdout, "numDone %d\n", numDone);
+    fileBuffer += numDone;
 }
 
 AIFF_Ref createAIFF(char *filePath, dt78xx_clk_config_t clk, char **argv, long sunrise, long sunset) {
@@ -570,7 +567,7 @@ int writeCSV(void *raw, FILE *file) {
     int i;
     for (i=0; i < bufferSamples; ++i) {
         float volt = raw2volts(*(int16_t *)raw, 1); 
-        fprintf(file,"%6d, %.5f,%d\n", 
+        fprintf(file,"%6d, %.5f, %hd\n", 
                 i+(fileNum*fileBuffers)+(bufferSamples*(fileBuffer-1)),volt,*(int16_t *)raw);
         raw += sizeof(int16_t);
     }
