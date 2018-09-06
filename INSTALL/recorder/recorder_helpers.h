@@ -465,6 +465,13 @@ void openStream();
 void openAIN();
 
 /*
+ * Allocates buffers and submits AIO request
+ * 
+ * @return  1 if successful, 0 if failure
+ */
+int submitAIO();
+
+/*
  * Sets AIFF file metadata and file formatting.
  * 
  * @param   sunset  sunset time (in Unix Epoch time, seconds) set as copyright attribute
@@ -497,13 +504,12 @@ AIFF_Ref createAIFF(char *filePath, dt78xx_clk_config_t clk, char **argv, long s
 /*
  * Cleans up file writing processes 
  * 
- * @param   file success (1) or failure (0)
  * @param   AIFF file reference
  * @param   file counter
  * @param   directory path to new file
  * @return  1 for success, 0 for failure
  */
-int finishAIFF(int exitStatus, AIFF_Ref file, char *filePath);
+int finishAIFF(AIFF_Ref file, char *filePath);
 
 /*
  * Arms input stream and then issues a software start for continuous input
@@ -536,19 +542,17 @@ FILE *createCSV(char *filePath, int *ain, char **argv);
  * 
  * @param   input buffer
  * @param   FILE file structure
- * @return  1 for success, 0 for failure
  */
-int writeCSV(void *raw, FILE *file);
+void writeCSV(void *raw, FILE *file);
 
 /*
  * Cleans up file writing processes 
  * 
- * @param   file success (1) or failure (0)
  * @param   CSV file reference
  * @param   directory path to new file
  * @return  1 for success, 0 for failure
  */  
-int finishCSV(int exitStatus, FILE *file, char *filePath);
+int finishCSV(FILE *file, char *filePath);
 
 #ifdef __cplusplus
 }

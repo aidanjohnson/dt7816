@@ -54,13 +54,11 @@ void isInStreamEmpty() {
         if (ioctl(inStream, IOCTL_STOP_SUBSYS, 0)) {
            perror("IOCTL_STOP_SUBSYS");
         }
-        aio_stop(inAIO);
     }
 }
 
 int isInAIODone(void *buff, int len) {
     ++buffersDone;
-    
     //If operation was stopped on queue empty, clean up after all buffers have
     //been dequeued and processed
     if (overrunStop && overruns && (buffersDone==2)) {
@@ -357,32 +355,12 @@ int setupAIO(dt78xx_clk_config_t clk, int *ain, int argc, char **argv) {
             return setupFailure;
         }
     }
-    
-    /* 
-     * Size/allocate a buffer to hold the specified samples for each channel
-     * where: bufLen = 16*chanSamples*numChannels/8 (in bytes, assuming 
-     * chanSamples multiple of 32)
-     */
-    int actualSamples;
-    int buffSize = aio_buff_size(chanSamples, chanMask, &actualSamples);
-    fprintf(stdout,"Sampling at %f Hz to 2 buffers of %d samples for %d channels...\n", 
-                    clk.clk_freq, actualSamples, numChannels);
-    chanSamples = actualSamples;
-         
-    /* Creates and initialises AIO stream buffers/structures */
-    fprintf(stdout, "Initialising...\n");
-    if ((inBuffer = aio_buff_alloc(inAIO, 2, buffSize)) == NULL) {
-        fprintf(stderr, "alloc_queue_buffers ERROR %d \"%s\"\n", 
-                errno, strerror(errno));
-        return setupFailure;
+    if (submitAIO()) {
+        fprintf(stdout,"Sampling at %f Hz to 2 buffers of %d samples for %d channels...\n", 
+                    clk.clk_freq, chanSamples, numChannels);
+        return !setupFailure;
     }
-        
-   /* Submits AIO buffers*/ 
-    if ((setupFailure = aio_start(inAIO))) {
-        fprintf(stderr, "AIO start failure error");
-        return setupFailure;
-    }
-    return !setupFailure;
+    return setupFailure;
 }
 
 void calcSunUpDown(long *sunsets, long *sunrises) {
@@ -453,6 +431,32 @@ void openAIN() {
     }
 }
 
+int submitAIO() {
+    /* 
+     * Size/allocate a buffer to hold the specified samples for each channel
+     * where: bufLen = 16*chanSamples*numChannels/8 (in bytes, assuming 
+     * chanSamples multiple of 32)
+     */
+    int actualSamples;
+    int buffSize = aio_buff_size(chanSamples, chanMask, &actualSamples);
+    chanSamples = actualSamples;
+         
+    /* Creates and initialises AIO stream buffers/structures */
+    fprintf(stdout, "Initialising...\n");
+    if ((inBuffer = aio_buff_alloc(inAIO, 2, buffSize)) == NULL) {
+        fprintf(stderr, "alloc_queue_buffers ERROR %d \"%s\"\n", 
+                errno, strerror(errno));
+        return 0;
+    }
+        
+   /* Submits AIO buffers*/ 
+    if (aio_start(inAIO)) {
+        fprintf(stderr, "AIO start failure error\n");
+        return 0;
+    }
+    return 1;
+}
+
 int setFile(AIFF_Ref file, long sunset, long sunrise, float rate) {
     char metadata[LEN];
     sprintf(metadata, "%f", lon);
@@ -498,15 +502,10 @@ AIFF_Ref createAIFF(char *filePath, dt78xx_clk_config_t clk, char **argv, long s
     return file;
 }
 
-int finishAIFF(int exitStatus, AIFF_Ref file, char *filePath) {
-    int fileSuccess = 1;
-    if (!exitStatus) {
-        fprintf(stderr, "ERROR writing .aiff file");
-        return !fileSuccess;
-    }                        
+int finishAIFF(AIFF_Ref file, char *filePath) {                    
     if (!AIFF_EndWritingSamples(file)) {
         fprintf(stderr, "ERROR ending writing .aiff file");
-        return !fileSuccess;
+        return 0;
     } else {
         fprintf(stdout, "%d total .aiff files written\n", fileNum);
     }
@@ -515,33 +514,29 @@ int finishAIFF(int exitStatus, AIFF_Ref file, char *filePath) {
         fprintf(stdout, "File at %s\n", filePath);
     } else {
         fprintf(stderr, "ERROR audio_file_close");
-        return !fileSuccess;
+        return 0;
     }
-    return fileSuccess;
+    return 1;
 }
 
 int armStartStream() {
-    int armError = 0; // 0 if no error (success), 1 if failure (error)
-
     /* Arms the input stream */
-    armError = ioctl(inStream, IOCTL_ARM_SUBSYS, 0);
-    if (armError) {
+    if (ioctl(inStream, IOCTL_ARM_SUBSYS, 0)) {
         fprintf(stderr, "IOCTL_ARM_SUBSYS ERROR %d \"%s\"\n", 
               errno, strerror(errno));
-        return armError;
+        return 0;
     }   
 
     /* 
      * Issues a software start for continuous input operation; this is 
      * redundant if trigger source is threshold or externally triggered 
      */
-    armError = ioctl(inStream, IOCTL_START_SUBSYS, 0);
-    if (armError) {
+    if (ioctl(inStream, IOCTL_START_SUBSYS, 0)) {
         fprintf(stderr, "IOCTL_START_SUBSYS ERROR %d \"%s\"\n", 
                 errno, strerror(errno));
-        return armError;
+        return 0;
     }
-    return armError;
+    return 1;
 }
 
 int stopStream() {
@@ -563,7 +558,7 @@ FILE *createCSV(char *filePath, int *ain, char **argv) {
     return file;
 }
 
-int writeCSV(void *raw, FILE *file) {
+void writeCSV(void *raw, FILE *file) {
     int i;
     for (i=0; i < bufferSamples; ++i) {
         float volt = raw2volts(*(int16_t *)raw, 1); 
@@ -571,23 +566,17 @@ int writeCSV(void *raw, FILE *file) {
                 i+(fileNum*fileBuffers)+(bufferSamples*(fileBuffer-1)),volt,*(int16_t *)raw);
         raw += sizeof(int16_t);
     }
-    return 1;
 }
 
-int finishCSV(int exitStatus, FILE *file, char *filePath) {
-    int fileSuccess = 1;
-    if (!exitStatus) {
-        fprintf(stderr, "ERROR writing .csv file");
-        return !fileSuccess;
-    }                        
-    if (!fclose(file)) {
+int finishCSV(FILE *file, char *filePath) {                   
+    if (fclose(file)) {
         fprintf(stderr, "ERROR ending writing .csv file");
-        return !fileSuccess;
+        return 0;
     } else {
         fileNum++;
         fprintf(stdout, "File closed\n");
         fprintf(stdout, "File at %s\n", filePath);
         fprintf(stdout, "%d total .csv files written\n", fileNum);
     }
-    return fileSuccess;
+    return 1;
 }

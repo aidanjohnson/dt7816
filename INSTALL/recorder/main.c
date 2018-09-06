@@ -219,7 +219,7 @@ int main (int argc, char** argv) {
             /* Start of night: only done once it begins */
             if (!night) {
                 night = 1; // night has begun (only once a day)
-                if (armStartStream()) {
+                if (!armStartStream()) {
                     goto _exit; // Arm and start input stream
                 }
             }
@@ -230,22 +230,22 @@ int main (int argc, char** argv) {
              */
             waitAIO();
             fprintf(stdout, "Ping\n");              
-            exitStatus = writeCSV(&(inBuffer[PING]), file);
+            writeCSV(&(inBuffer[PING]), file);
             waitAIO();
             fprintf(stdout, "Pong\n");
-            exitStatus = writeCSV(&(inBuffer[PONG]), file);                    
+            writeCSV(&(inBuffer[PONG]), file);                    
             waitAIO();
             fprintf(stdout, "Ping\n");              
-            exitStatus = writeCSV(&(inBuffer[PING]), file);
+            writeCSV(&(inBuffer[PING]), file);
             waitAIO();
             fprintf(stdout, "Pong\n");
-            exitStatus = writeCSV(&(inBuffer[PONG]), file); 
+            writeCSV(&(inBuffer[PONG]), file); 
             waitAIO();
             fprintf(stdout, "Ping\n");              
-            exitStatus = writeCSV(&(inBuffer[PING]), file);
+            writeCSV(&(inBuffer[PING]), file);
             waitAIO();
             fprintf(stdout, "Pong\n");
-            exitStatus = writeCSV(&(inBuffer[PONG]), file); 
+            writeCSV(&(inBuffer[PONG]), file); 
             waitAIO();
             
             /* 
@@ -263,20 +263,20 @@ int main (int argc, char** argv) {
 //                    waitAIO();
 //                } else if (fileBuffer % 2 == 0) { // Fill ping; Read and write from pong
 //                    fprintf(stdout, "Filling ping; Writing pong\n");
-//                    //exitStatus = AIFF_WriteSamples32Bit(file, (int32_t*) &(inBuffer[PONG]), bufferSamples);
-//                    exitStatus = writeCSV(&(inBuffer[PONG]), file);                    
+//                    //AIFF_WriteSamples32Bit(file, (int32_t*) &(inBuffer[PONG]), bufferSamples);
+//                    writeCSV(&(inBuffer[PONG]), file);                    
 //                    waitAIO();
 //                } else { // Fill pong; Read and write from ping
 //                    fprintf(stdout, "Filling pong; Writing ping\n");              
-//                    //exitStatus = AIFF_WriteSamples32Bit(file, (int32_t*) &(inBuffer[PING]), bufferSamples);
-//                    exitStatus = writeCSV(&(inBuffer[PING]), file);
+//                    //AIFF_WriteSamples32Bit(file, (int32_t*) &(inBuffer[PING]), bufferSamples);
+//                    writeCSV(&(inBuffer[PING]), file);
 //                    waitAIO();
 //                }
 //            }
             
             /* Exit from while loop signals to finish writing single file */
-            //if (!finishAIFF(exitStatus, file, filePath)) {
-            if (!finishCSV(exitStatus, file, filePath)) {
+            //if (!finishAIFF(file, filePath)) {
+            if (!finishCSV(file, filePath)) {
                 goto _exit; 
             } else { // Proceeds to quit after wrapping up file
                 present = getPresentTime(); // Updates time for while loop check
