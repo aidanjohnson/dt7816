@@ -32,7 +32,7 @@
 
 struct aio_struct *inAIO; // Asynchronous I/O  
 
-float sampleRate = SAMPLE_RATE; // Audio file sampling rate in Hz
+float sampleRate = SAMPLE_RATE; 
 int autoTrigger = AUTO_TRIG;
 int fileSeconds = FILE_TIME_S;
 int fileSamples = SAMPLES_PER_FILE;
@@ -40,15 +40,14 @@ int chanSamples = SAMPLES_PER_CHAN;
 int fileBuffers = BUFFERS_PER_FILE;
 int bufferSamples = SAMPLES_PER_BUFFER;
 int numChannels = NUM_CHANNELS;
-int durationDays = DURATION_DAYS; // Number of days for sampling/recording
-int nightCycle = NIGHT_CYCLE; // On = 1, sampling only after dusk and before dawn
-double lat = DEFAULT_LATITUDE; // Latitude coordinate
-double lon = DEFAULT_LONGITUDE; // Longitude coordinate
-long safetyMargin = SAFETY_MARGIN; // Increases sampling duration by 2*safetyMargin (in s)
+int durationDays = DURATION_DAYS;
+int nightCycle = NIGHT_CYCLE; 
+double lat = DEFAULT_LATITUDE;
+double lon = DEFAULT_LONGITUDE;
+long safetyMargin = SAFETY_MARGIN;
 
 chan_mask_t chanMask; // Channel mask cached on acquisition start
 int ain[8] = {AIN0, AIN1, AIN2, AIN3, AIN4, AIN5, AIN6, AIN7};
-char filePath[LEN]; // String for output file path
 const char *ID;
 
 int inStream = -1; // Device file handle for input stream
@@ -73,7 +72,7 @@ static void forceQuitHandler(int i) {
 }
 
 /*
- * ==== Simultaneous 8-channel analog input signal AIFF recorder ====
+ * ==== Simultaneous 8-channel analog input signal recorder ====
  */
 
 
@@ -81,7 +80,7 @@ int main (int argc, char** argv) {
     int opt = 0;
     int exitStatus = EXIT_SUCCESS; // Exit flag
     
-    ID = argv[optind]; // Identifier
+    ID = argv[optind]; // Identifier for recording
     
     /* Sampling rate clock configuration initialisation */
     dt78xx_clk_config_t clk = {.ext_clk=0, // Internal clock
@@ -140,7 +139,9 @@ int main (int argc, char** argv) {
                 for (d = 0; d < 8; d++) {
                     int digit = tempChan % 10;
                     ain[7-d] = digit;
-                    if (digit) numChannels++;
+                    if (digit) {
+                        numChannels++;
+                    }
                     tempChan /= 10;
                 }
                 chanSamples = bufferSamples / numChannels;
@@ -243,6 +244,7 @@ int main (int argc, char** argv) {
 _exit :
     fprintf(stdout,"\n");
     aio_destroy(inAIO);
+    closeFile();
     if (aInput > 0)
         close(aInput);
     if (outStream > 0)

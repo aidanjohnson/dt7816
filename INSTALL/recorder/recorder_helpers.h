@@ -69,10 +69,6 @@ extern "C" {
 #define DEV_STREAM_IN   "/dev/"BOARD_STR"-stream-in"
 #define DEV_STREAM_OUT  "/dev/"BOARD_STR"-stream-out"
 #define DEV_AIN         "/dev/"BOARD_STR"-ain"
-
-#include "sunriset/sunriset.h"
-#define LIBAIFF_NOCOMPAT 1  /* do not use LibAiff 2 API compatibility */
-#include "libaiff/libaiff.h"
     
 /*
  * ==== Customisable Macros ====
@@ -93,17 +89,27 @@ extern "C" {
 #define AIN6                0
 #define AIN7                0
 
+#define SAMPLE_RATE_HZ      (200000.0f) // Audio file sampling rate in Hz    
+#define AIFF                0 // 1 for writing to AIFF, 0 for CSV fallback
 #define PATH_TO_STORAGE     "/usr/local/dt7816-nfs/" // Predefined write path
-
-#define SAMPLE_RATE_HZ      (200000.0f)
+#define FILE_TIME_S         (10) // Length of write file in seconds
 #define DURATION_DAYS       21 // Default number of days of sampling
-#define SAFETY_MARGIN       3600 // Pillow in seconds before sunset and after sunrise
-#define NIGHT_CYCLE         0 // Cycles recording on at night and off at day
+    
+/* 
+ * Pillow, or margin of safety, in seconds before sunset and after sunrise. 
+ * Increases sampling duration by 2*SAFETY_MARGIN (in s)
+ */    
+#define SAFETY_MARGIN       3600 
+    
+/*
+ * On = 1, sampling only after dusk and before dawn.
+ * Cycles recording on at night and off at day.
+ */    
+#define NIGHT_CYCLE         0
 
+/* Location geographic coordinates of recorder */    
 #define DEFAULT_LATITUDE    47.655083 // Latitude (N := +, S := -)
 #define DEFAULT_LONGITUDE   -122.293194 // Longitude (E := +, W := -)
-
-#define FILE_TIME_S        (10) // Length of AIFF file in seconds
 
 /*
  * ===== Debug Options ====
@@ -121,9 +127,8 @@ extern "C" {
 #if (defined BUFF_DONE_LED) && ((BUFF_DONE_LED < 0) || (BUFF_DONE_LED > 7))
     #error BUFF_DONE_LED
 #endif
-
 #if (defined STATUS_LED) 
-    // turn on/off indicator led after this count based on sampling rate & buffer
+    // Turns on/off indicator led after this count based on sampling rate & buffer
     uint32_t g_led_count;
 #endif
 
@@ -131,43 +136,46 @@ extern "C" {
  * ==== Defaults: Change at own risk ====
  * Constraint: SAMPLES_PER_CHAN * NUM_CHANNELS * 2 = BUFFERS_SAMPLES <= 65536 samples = 2^(16 bits)
  */ 
-#define BUFFERS_SAMPLES     (65536) // Do not exceed 65536
+#define BUFFERS_SAMPLES     (65536) // Do not exceed 65536 (total samples for sum of buffers)
+    
+#define AUTO_TRIG           1
+#define TRIG_LEVEL_V        0.0
+#define LEN                 512 // Default character array size 
+#define MAX_AIO_EVENTS      64
+    
+/*
+ * ==== Do not change! Unexpected outcomes will result ====
+ */
+#define NUM_BUFFS           2 // Uses double buffer (ping-pong buffer), thus always 2
+    
+#define DEFAULT_GAIN        1 // Gain 1 => +/- 10 V; must be 1 for DT7816
+
 #if (BUFFERS_SAMPLES > 65536)
     (EXIT_FAILURE)
 #endif
     
 #define NUM_CHANNELS        (AIN0+AIN1+AIN2+AIN3+AIN4+AIN5+AIN6+AIN7) // max ch: 8 
 #define SAMPLE_RATE         SAMPLE_RATE_HZ
-#define AUTO_TRIG           1
-#define LEN                 512 // Default character array size 
-#define MAX_AIO_EVENTS      64
-
-#define xstr(s) str(s)
-#define str(s) #s
-
-#ifndef ARRAY_SIZE
-    #define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))
-#endif
-
-#define TRIG_LEVEL_V        0.0
-#define DEFAULT_GAIN        1 // gain 1 => +/- 10 V; must be 1 for DT7816
-#define LIBAIFF_NOCOMPAT    1 // Do not use LibAiff 2 API compatibility
     
-/*
- * ==== Do not change! Unexpected outcomes will result ====
- * Uses double buffer (ping pong buffer) thus NUM_BUFFS always 2
- */    
-#define PING                0 // ID for ping buffer (initial fill buffer)
-#define PONG                1 // ID for pong buffer (initial write buffer)
 #define SAMPLES_PER_FILE    (SAMPLE_RATE_HZ * FILE_TIME_S)   
-#define SAMPLES_PER_BUFFER  (BUFFERS_SAMPLES / 2)
+#define SAMPLES_PER_BUFFER  (BUFFERS_SAMPLES / NUM_BUFFS)
 #define SAMPLES_PER_CHAN    (SAMPLES_PER_BUFFER / NUM_CHANNELS)
+    
 /*
  * Number of buffers must be positive and non-zero. Number of buffers must even;
  * otherwise use one fewer. Number of buffers cannot exceed MAX_AIO_EVENTS.
  */
 #define BUFFERS_PER_FILE    (SAMPLES_PER_FILE / SAMPLES_PER_BUFFER) 
- 
+
+#include "sunriset/sunriset.h"
+#if AIFF
+#define LIBAIFF_NOCOMPAT    1 // Do not use LibAiff 2 API compatibility
+#include "libaiff/libaiff.h"
+#endif
+    
+#define xstr(s) str(s)
+#define str(s) #s
+    
 /*
  * ==== Command line arguments with help ====
  */
@@ -177,6 +185,7 @@ static const char usage[] = {
 "Samples channels AINx (at most 8 simultaneous channels) and writes data to\n"
 "a timestamped file in AIFF format, saving it following a predefined path to\n"
 "storage. The files are saved to <prefix>_<YYYYMMDD>T<HHmmssuuuuuu>Z.aiff\n"
+"As a fallback recordings can be saved in CSV format (.aiff becomes .csv\n"
 "Usage        : %s <identifier prefix> [options] \n"
 "Required     : a file or location identifier prefix, such as NORTH or 1.\n" 
 "Options\n"
@@ -242,6 +251,7 @@ extern void **inBuffer;
 
 /*
  * ==== Helper functions for recorder (DT7816) ====
+ * Static functions are intended to be private.
  */
 
 /*
@@ -273,7 +283,7 @@ int isInAIODone(void *buff, int len);
  * | PIN1 | PIN2 | PIN3 | PIN4 | PIN5 | PIN6 | PIN7 | PIN8 | PIN9 | PIN10 |\n
  * ***** LED7 ** LED6 ** LED5 ** LED4 ** LED3 ** LED2 ** LED1 ** LED0 *****\n
  * 
- * LED0 := AIN0recorder, LED1 := AIN1, LED2 := AIN2, LED3 := AIN3,
+ * LED0 := AIN0, LED1 := AIN1, LED2 := AIN2, LED3 := AIN3,
  * LED4 := AIN4, LED5 := AIN5, LED6 := AIN6, LED7 := AIN7
  * 
  * where the analog input channels have the following coding returned by
@@ -309,21 +319,13 @@ int isInAIODone(void *buff, int len);
 //}
 
 /*
- * Blinking status LED approximately once a second
- * 
- * @param fd     File directory
- * @param reset  
- */
-void updateStatusLed(int fd, int reset);
-
-/*
  * Retrieves present time as Unix Epoch and UTC; readily formatted in ISO 8601.
  * UTC = Universal Coordinated Time (aka GMT = Greenwich Mean Time): Zulu
  * 
  * @param presentUTC     Present UTC time
  * @param clockTime    Present Unix Epoch time
  */
-void getTime(struct tm **presentUTC, struct timeval *clockTime);
+static void getTime(struct tm **presentUTC, struct timeval *clockTime);
 
 /*
  * Converts given date and time (assuming in UTC) to Unix Epoch time.
@@ -336,7 +338,7 @@ void getTime(struct tm **presentUTC, struct timeval *clockTime);
  * @param  second
  * @return present time (GMT) in s since Unix Epoch
  */
-long getTimeEpoch(long year, int month, int day, int hour, int minute, int second);
+static long getTimeEpoch(long year, int month, int day, int hour, int minute, int second);
 
 /*
  * Creates string of file path a using given directory path to storage with the
@@ -357,10 +359,8 @@ long getTimeEpoch(long year, int month, int day, int hour, int minute, int secon
  * 
  * <path>/<prefix>_<YYYYMMDD>T<HHmmssuuuuuu>Z.aiff
  * 
- * @param filePath         Concatenated resultant string of full file path
- * @param storagePath   A set path to local storage
  */
-void timestamp(char *filePath, char *storagePath);
+static void timestamp();
 
 /*
  * Returns the present time in Unix Epoch (UTC) seconds since 1 Jan 1970
@@ -393,7 +393,7 @@ long getPresentTime();
  *                  channels 1, 2, 3, 4, 5, 6, 7
  * @param chOn      Array of the active/enabled/on channels given by their index
  */
-void createChanMask(int ain[], int *chOn);
+static void createChanMask(int ain[], int *chOn);
 
 /*
  * Configures all channels even if not enabled and used. Configuration in
@@ -402,14 +402,14 @@ void createChanMask(int ain[], int *chOn);
  * 
  * @param ainConfig   Array of the configurations for all eight channels
  */
-void configChan(dt78xx_ain_config_t ainConfig[]);
+static void configChan(dt78xx_ain_config_t ainConfig[]);
 
 /*
  * Initialises the software trigger for all enabled channels individually.
  * 
  * @param ainTrigConfig   Array of trigger configurations for all channels
  */
-void initTrig(dt78xx_trig_config_t ainTrigConfig[]);
+static void initTrig(dt78xx_trig_config_t ainTrigConfig[]);
 
 /*
  * Configures the passed channel individually (of the ones enabled).
@@ -417,7 +417,7 @@ void initTrig(dt78xx_trig_config_t ainTrigConfig[]);
  * @param trigConfig    Trigger configuration
  * @return              1 if successful, 0 if failure
  */
-int configTrig(dt78xx_trig_config_t trigConfig);
+static int configTrig(dt78xx_trig_config_t trigConfig);
 
 /*
  * Setups AIO:
@@ -447,12 +447,12 @@ void calcSunUpDown(long *sunsets, long *sunrises);
  * 
  * @param argc
  */
-void checkID(int argc);
+static void checkID(int argc);
 
 /*
  * Opens input stream.
  */
-void openStream();
+static void openStream();
 
 /*
  * Opens analog input.
@@ -474,47 +474,14 @@ void openStream();
  *      Sample frame 1          Sample frame 2  
  * 
  */
-void openAIN();
+static void openAIN();
 
 /*
  * Allocates buffers and submits AIO request
  * 
  * @return  1 if successful, 0 if failure
  */
-int submitAIO();
-
-/*
- * Sets AIFF file metadata and file formatting.
- * @param   AIFF file 
- * @return  success of file format setting (1 for success, 0 for failure)
- */
-int setFile(AIFF_Ref file);
-
-/*  
- * Creates new file for acquired data at the specified .aiff path.
- * @param   directory path to new file
- * @return  AIFF_Ref file if successful, NULL is failure
- * 
- */
-AIFF_Ref createAIFF(char *filePath);
-
-/*
- * Writes buffer to AIFF file.
- * 
- * @param   input buffer
- * @param   AIFF_Ref file reference
- */
-void writeAIFF(void *raw, AIFF_Ref file);
-
-/*
- * Cleans up file writing processes 
- * 
- * @param   AIFF file reference
- * @param   file counter
- * @param   directory path to new file
- * @return  1 for success, 0 for failure
- */
-int finishAIFF(AIFF_Ref file, char *filePath);
+static int submitAIO();
 
 /*
  * Arms input stream and then issues a software start for continuous input
@@ -532,13 +499,46 @@ int armStartStream();
  */
 int stopStream();
 
+#if AIFF
+/*
+ * Sets AIFF file metadata and file formatting.
+ * @param   AIFF file 
+ * @return  success of file format setting (1 for success, 0 for failure)
+ */
+static int setFile(AIFF_Ref file);
+
+/*  
+ * Creates new file for acquired data at the specified .aiff path.
+ * 
+ * @return  AIFF_Ref file if successful, NULL is failure
+ * 
+ */
+static AIFF_Ref createAIFF();
+
+/*
+ * Writes buffer to AIFF file.
+ * 
+ * @param   input buffer
+ * @param   AIFF_Ref file reference
+ */
+static void writeAIFF(void *raw, AIFF_Ref file);
+
+/*
+ * Cleans up file writing processes 
+ * 
+ * @param   AIFF file reference
+ * @return  1 for success, 0 for failure
+ */
+static int finishAIFF(AIFF_Ref file);
+
+#else
 /*  
  * Creates new file for acquired data at the specified .csv path.
- * @param   directory path to new file
+ * 
  * @return  FILE if successful, NULL is failure
  * 
  */
-FILE *createCSV(char *filePath);
+static FILE *createCSV();
 
 /*
  * Writes buffer to CSV file.
@@ -546,16 +546,22 @@ FILE *createCSV(char *filePath);
  * @param   input buffer
  * @param   FILE file structure
  */
-void writeCSV(void *raw, FILE *file);
+static void writeCSV(void *raw, FILE *file);
 
 /*
  * Cleans up file writing processes 
  * 
  * @param   CSV file reference
- * @param   directory path to new file
  * @return  1 for success, 0 for failure
  */  
-int finishCSV(FILE *file, char *filePath);
+static int finishCSV(FILE *file);
+
+#endif
+
+/*
+ * Closes currently opened file, if open, for graceful exit.
+ */
+void closeFile();
 
 #ifdef __cplusplus
 }
