@@ -2,12 +2,10 @@
  * @file main.c
  * @brief This is a custom application for DT7816 autonomous asynchronous I/O sampling
  * that configures the board's analog inputs. The sampled data is read 
- * asynchronously from the input stream and written to a AIFF file. See:
- * https://msdn.microsoft.com/en-us/library/windows/desktop/aa365683(v=vs.85).aspx
- * for additional details on (a)synchronous I/O.
+ * asynchronously from the input stream and written to a AIFF (or CSV) file.
  * 
  * (c) Aidan Johnson (johnsj96@uw.edu)
- * 12 July 2018
+ * 08 September 2018
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,9 +44,14 @@ double lat = DEFAULT_LATITUDE;
 double lon = DEFAULT_LONGITUDE;
 long safetyMargin = SAFETY_MARGIN;
 
+dt78xx_clk_config_t clk = {.ext_clk=0, // Sampling rate internal clock
+                           .ext_clk_din=0, 
+                           .clk_freq=SAMPLE_RATE
+                          };
 chan_mask_t chanMask; // Channel mask cached on acquisition start
+/* Enabled analog input channels */
 int ain[8] = {AIN0, AIN1, AIN2, AIN3, AIN4, AIN5, AIN6, AIN7};
-const char *ID;
+const char *ID; // Write file(s) identifier
 
 int inStream = -1; // Device file handle for input stream
 int aInput = -1; // Device file handle for analog input channels
@@ -81,14 +84,7 @@ int main (int argc, char** argv) {
     int exitStatus = EXIT_SUCCESS; // Exit flag
     
     ID = argv[optind]; // Identifier for recording
-    
-    /* Sampling rate clock configuration initialisation */
-    dt78xx_clk_config_t clk = {.ext_clk=0, // Internal clock
-                               .ext_clk_din=0, 
-                               .clk_freq=SAMPLE_RATE
-                              };
    
-    /* Enabled analog input channels */
     int tempChan; // 8 bit binary; channel on := 1, channel off := 0
     
     /* Specifying the expected command line options */
@@ -180,8 +176,8 @@ int main (int argc, char** argv) {
     /* Sets up force quit handler to terminate process gracefully */
     sigaction_register(SIGINT, forceQuitHandler);
     
-    /* Setup input AIO stream */
-    exitStatus = setupAIO(clk, argc);
+    /* Setup input AIO stream. Most importantly the ping-pong buffers are queued. */
+    exitStatus = setupAIO(argc);
     if (!exitStatus) {
         goto _exit;
     }
@@ -206,18 +202,22 @@ int main (int argc, char** argv) {
     
     int elapsedDays = 0; // Resets day counter
         
-    /* Infinite loop until aborted by ctrl-C */
+    /* Infinite loop until aborted by ctrl-C or recording duration is concluded */
     fprintf(stdout, "Press ctrl-C to exit\n"); 
     while (!forceQuit && durationDays > elapsedDays) {
         long present = getPresentTime();
-        // TODO: sleep for <blank> s so not calculating present time so frequently?
+        /* TODO: sleep for <blank> s so not calculating present time so frequently? */
         sunset = sunsets[elapsedDays];
         sunrise = sunrises[elapsedDays];
         int night = 0;
 
-        /* If after dusk and before dawn (entering night) */
+        /* 
+         * Quasi infinite loop that uses asynchronous I/O (AIO) for recording analog 
+         * input samples. Only enters and remains if after dusk and before dawn
+         * (entering night). For additional details on AIO, refer to:
+         * https://msdn.microsoft.com/en-us/library/windows/desktop/aa365683(v=vs.85).aspx
+         */
         while (!forceQuit && (present < sunrise && present >= sunset)) {                                            
-            
             /* Start of night: only done once it begins */
             if (!night) {
                 fileNum = 0;
@@ -227,7 +227,13 @@ int main (int argc, char** argv) {
                     goto _exit; // Arm and start input stream
                 }
             }
-            /* Continuous sampling of input stream begins. */
+            
+            /* 
+             * Continuous sampling of input stream begins; aio_wait() is called
+             * repeatedly such that the queue of buffers is not empty. When a
+             * buffer completes, it is requeued. This achieves the desired
+             * asynchronous and continuous analog input recording.
+             */
             aio_wait(inAIO, 0);
 
             present = getPresentTime(); // Updates time for while loop check
@@ -235,7 +241,7 @@ int main (int argc, char** argv) {
         if (night) {
             elapsedDays++; // If after dawn (leaving the end of night), 1 day elapsed
         }
-        if (!stopStream()) { 
+        if (!stopStream()) { // Stops input stream
             goto _exit;
         }
     }

@@ -6,7 +6,7 @@
  * written to a AIFF file.
  * 
  * (c) Aidan Johnson (johnsj96@uw.edu)
- * 12 July 2018
+ * 08 September 2018
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -309,7 +309,7 @@ static int configTrig(dt78xx_trig_config_t trigConfig) {
     return ioctl(inStream, IOCTL_START_TRIG_CFG_SET, &trigConfig);
 }
 
-int setupAIO(dt78xx_clk_config_t clk, int argc) {
+int setupAIO(int argc) {
     int setupFailure = 0; // 0 for failure
     
     /* Creates mask for enabled channels, which has a bitwise format. */
