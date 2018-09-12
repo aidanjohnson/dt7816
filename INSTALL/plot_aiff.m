@@ -1,10 +1,9 @@
 clear all;
 close all;
-% Frame by frame CSV file plotter, and FFT plotter
+% Frame by frame AIFF file plotter, and FFT plotter
 %----------------------------%
 
-fileName = '/home/djelgroucho/Desktop/demo/csv/400/sweep/150-100kHz400_20180909T034857889261Z.csv';
-fs = 400000; % Sampling frequency
+fileName = '/home/djelgroucho/Desktop/demo/aiff/100/sine/48kHz100_20180909T041755474707Z.aiff';
 
 plot = 'freq'; %'time', 'freq', 'dropoff'
 
@@ -13,7 +12,7 @@ N0 = 1; % initial frame
 wait = 1; % delay in seconds
 
 %----------------------------%
-file = csvread(fileName);
+[file, fs] = audioread(fileName);
 h = 2; % header skip
 start = h + 1;
 stop = length(file);
