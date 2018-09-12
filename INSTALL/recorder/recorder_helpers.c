@@ -33,7 +33,7 @@
  * 
  */
 
-static int overrunStop = 1;     // Enables stop on buffer overrun
+static int overrunStop = 0;     // Enables stop on buffer overrun
 static int requeue = 1;         // Enables requeue buffers after processing      
 static int overruns = 0;        // Number of times buffer overran while acquiring
 static int buffersDone = 0;     // Number of buffers done; internal counter
@@ -42,7 +42,8 @@ char filePath[LEN];             // String for output file path
 
 /* Current file handle open */
 #if AIFF
-AIFF_Ref file;
+SNDFILE *file;
+SF_INFO fileInfo;
 #else
 FILE *file;
 #endif
@@ -103,10 +104,10 @@ int isInAIODone(void *buff, int len) {
     }
     
 #if AIFF // Writes buffer to file
-    writeAIFF(buff, file);
+    writeAIFF(buff, file, len);
     
 #else
-    writeCSV(buff, file);
+    writeCSV(buff, file, len);
     
 #endif 
     
@@ -506,32 +507,31 @@ int stopStream() {
 }
 
 #if AIFF
-static int setFile(AIFF_Ref file) {
+static int setFile(SNDFILE *file) {
+    int failure = 1;
     char metadata[LEN];
     sprintf(metadata, "%f", lon);
-    AIFF_SetAttribute(file, AIFF_NAME, metadata);
+    failure = sf_set_string(file, SF_STR_TITLE, metadata);
     sprintf(metadata, "%f", lat);
-    AIFF_SetAttribute(file, AIFF_AUTH, metadata);
+    failure = sf_set_string(file, SF_STR_ARTIST, metadata);
     sprintf(metadata, "%ld", sunset); // Sunset time (in Unix Epoch time, seconds)
-    AIFF_SetAttribute(file, AIFF_ANNO, metadata); // Set as copyright attribute
+    failure = sf_set_string(file, SF_STR_COMMENT, metadata); // Set as copyright attribute
     sprintf(metadata, "%ld", sunrise); // Sunrise time
-    AIFF_SetAttribute(file, AIFF_COPY, metadata); // Set as annotation attribute
-    return AIFF_SetAudioFormat(file, numChannels, (double) sampleRate, sizeof(float));
+    failure = sf_set_string(file, SF_STR_COPYRIGHT, metadata); // Set as annotation attribute
+    return !failure;
 }
 
-static AIFF_Ref createAIFF() {
+static SNDFILE* createAIFF() {
     timestamp(); // Timestamp: Time of first sample recording
-    AIFF_Ref file = AIFF_OpenFile(filePath, F_WRONLY); // AIFF file opened
+    fileInfo.channels = numChannels;
+    fileInfo.format = (SF_FORMAT_AIFF | SF_FORMAT_PCM_16);
+    fileInfo.samplerate = sampleRate;
+    fileInfo.frames = fileBuffers;
+    SNDFILE* file = sf_open(filePath, SFM_WRITE, &fileInfo); // AIFF file opened
     if (file) {
-        fileNum += 1;
-        fprintf(stdout, "Opened the %do .aiff file...\n", fileNum);
         if (!setFile(file)) {
-            AIFF_CloseFile(file);
+            sf_close(file);
             fprintf(stderr, "ERROR audio_format_set");
-            return NULL;
-        }
-        if (!AIFF_StartWritingSamples(file)) {
-            fprintf(stderr, "ERROR starting writing .aiff file");
             return NULL;
         }
     } else {
@@ -541,27 +541,22 @@ static AIFF_Ref createAIFF() {
     return file;
 }
 
-static void writeAIFF(void *raw, AIFF_Ref file) {
+static void writeAIFF(void *raw, SNDFILE *file, int len) {
     int i;
-    for (i=0; i < bufferSamples; ++i) {
-        float volt = raw2volts(*(int16_t *)raw, 1); 
-        AIFF_WriteSamples32Bit(file, (int32_t*) &(volt), 1);
+    for (i=0; i < len; ++i) {
+        sf_write_int(file, (int *)raw, 1);
         raw += sizeof(int16_t);
     }
-    /* Exit from loop signals finish writing single buffer */
-    fileBuffer++;
+//    sf_write_int(file, raw, len);
+    ++fileBuffer;
     fprintf(stdout, "written %d file buffers out of %d\n", fileBuffer, fileBuffers);    
 }
 
-static int finishAIFF(AIFF_Ref file) {                    
-    if (!AIFF_EndWritingSamples(file)) {
-        fprintf(stderr, "ERROR ending writing .aiff file");
-        return 0;
-    } else {
+static int finishAIFF(SNDFILE *file) {                    
+    if (!sf_close(file)) {
         fileBuffer = 0;
-        fprintf(stdout, "%d total .aiff files written\n", ++fileNum);
-    }
-    if (AIFF_CloseFile(file)) {
+        ++fileNum;
+        fprintf(stdout, "%d total .aiff files written\n", fileNum);
         fprintf(stdout, "File closed\n");
         fprintf(stdout, "File at %s\n", filePath);
     } else {
@@ -587,16 +582,17 @@ static FILE *createCSV() {
     return file;
 }
 
-static void writeCSV(void *raw, FILE *file) {
+static void writeCSV(void *raw, FILE *file, int len) {
     int i;
-    for (i=0; i < bufferSamples; ++i) {
+    for (i=0; i < len; ++i) {
         float volt = raw2volts(*(int16_t *)raw, 1); 
         fprintf(file,"%6d, %.5f, %hd\n", 
-                i+(fileNum*fileBuffers)+(bufferSamples*(fileBuffer)),volt,*(int16_t *)raw);
+                i+(fileNum*fileBuffers)+(len*(fileBuffer)),volt,*(int16_t *)raw);
         raw += sizeof(int16_t);
     }
+    ++fileBuffer;
     /* Exit from loop signals finish writing single buffer */
-    fprintf(stdout, "written %d file buffers out of %d\n", ++fileBuffer, fileBuffers);    
+    fprintf(stdout, "written %d file buffers out of %d\n", fileBuffer, fileBuffers);    
 }
 
 static int finishCSV(FILE *file) {                   
@@ -605,7 +601,7 @@ static int finishCSV(FILE *file) {
         return 0;
     } else {
         fileBuffer = 0;
-        fileNum++;
+        ++fileNum;
         fprintf(stdout, "File closed\n");
         fprintf(stdout, "File at %s\n", filePath);
         fprintf(stdout, "%d total .csv files written\n", fileNum);

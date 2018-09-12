@@ -56,7 +56,7 @@ extern "C" {
 #include "aio_syscall.h"
 #include "dt78xx_ioctl.h"
 #include "dt78xx_misc.h"
-    
+        
 #ifdef DT7816
     #define BOARD_STR       "dt7816"
     #define CLK_MAX_HZ      (400000.0f)
@@ -90,8 +90,8 @@ extern "C" {
 #define AIN7                0
 
 #define SAMPLE_RATE_HZ      (200000.0f) // Audio file sampling rate in Hz: max 400000.0f, min 100.0f
-#define AIFF                0 // 1 for writing to AIFF, 0 for CSV fallback
-#define PATH_TO_STORAGE     "/usr/local/dt7816-nfs/" // Predefined write path
+#define AIFF                1 // 1 for writing to AIFF, 0 for CSV fallback
+#define PATH_TO_STORAGE     "/nfs/dt7816/INSTALL/demo/" // Predefined write path
 #define FILE_TIME_S         (60) // Length of write file in seconds
 #define DURATION_DAYS       21 // Default number of days of sampling
     
@@ -136,7 +136,7 @@ extern "C" {
  * ==== Defaults: Change at own risk ====
  * Constraint: SAMPLES_PER_CHAN * NUM_CHANNELS * 2 = BUFFERS_SAMPLES <= 65536 samples = 2^(16 bits)
  */ 
-#define BUFFERS_SAMPLES     (65536) // Do not exceed 65536 (total samples for sum of buffers)
+#define BUFFERS_SAMPLES     (65536) // Do not exceed 65536 (total samples for sum of buffers), 66368
     
 #define AUTO_TRIG           1
 #define TRIG_LEVEL_V        0.0
@@ -149,14 +149,14 @@ extern "C" {
         
 #define xstr(s) str(s)
 #define str(s) #s
-    
-#define NUM_BUFFS           8 // Uses double buffer (ping-pong buffer), thus always 2
+
+/* 
+ * Number of buffers queued for the AIO. increase this as sample rate is
+ * increased. For true double buffer (ping-pong buffer), set to 2.
+ */    
+#define NUM_BUFFS           16 // min 2, max 128
     
 #define DEFAULT_GAIN        1 // Gain 1 => +/- 10 V; must be 1 for DT7816
-
-#if (BUFFERS_SAMPLES > 65536)
-    (EXIT_FAILURE)
-#endif
     
 #define NUM_CHANNELS        (AIN0+AIN1+AIN2+AIN3+AIN4+AIN5+AIN6+AIN7) // max ch: 8 
 #define SAMPLE_RATE         SAMPLE_RATE_HZ
@@ -176,8 +176,7 @@ extern "C" {
  */    
 #include "sunriset/sunriset.h"
 #if AIFF
-#define LIBAIFF_NOCOMPAT    1 // Do not use LibAiff 2 API compatibility
-#include "libaiff/libaiff.h"
+#include <sndfile.h>
 #endif
     
 /*
@@ -510,34 +509,35 @@ int stopStream();
 /*
  * Sets AIFF file metadata and file formatting.
  * 
- * @param file  AIFF file 
+ * @param file  AIFF file pointer
  * @return      success of file format setting (1 for success, 0 for failure)
  */
-static int setFile(AIFF_Ref file);
+static int setFile(SNDFILE *file);
 
 /*  
  * Creates new file for acquired data at the specified .aiff path.
  * 
- * @return  AIFF_Ref file if successful, NULL is failure
+ * @return  SNDFILE file if successful, NULL is failure
  * 
  */
-static AIFF_Ref createAIFF();
+static SNDFILE* createAIFF();
 
 /*
  * Writes buffer to AIFF file.
  * 
  * @param raw    input buffer
- * @param file   AIFF_Ref file reference
+ * @param file   SNDFILE file reference pointer
+ * @param len    number of samples to be written
  */
-static void writeAIFF(void *raw, AIFF_Ref file);
+static void writeAIFF(void *raw, SNDFILE *file, int len);
 
 /*
  * Cleans up file writing processes.
  * 
- * @param file  AIFF file reference
+ * @param file  AIFF file reference pointer
  * @return      1 for success, 0 for failure
  */
-static int finishAIFF(AIFF_Ref file);
+static int finishAIFF(SNDFILE *file);
 
 #else
 /*  
@@ -553,8 +553,9 @@ static FILE *createCSV();
  * 
  * @param raw   input buffer
  * @param file  FILE file structure
+ * @param len    number of samples to be written
  */
-static void writeCSV(void *raw, FILE *file);
+static void writeCSV(void *raw, FILE *file, int len);
 
 /*
  * Cleans up file writing processes.

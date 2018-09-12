@@ -4,7 +4,7 @@
 #  http://cesanta.com/docs.shtml
 #
 #  Usage : make [debug=1] [RULES_DIR=path1] [DT78xx_DIR=path2] 
-#	    [COMN_DIR=path3] [FFTW_DIR=path4] [BOARD_TYPE=DT78xx]  {all|clean}
+#	    [COMN_DIR=path3] [SND_DIR=path4] [BOARD_TYPE=DT78xx]  {all|clean}
 #
 #  If make is invoked with debug set to 1, the debug version of this application
 #  is built/cleaned/installed. By default, the release version is built 
@@ -26,24 +26,22 @@
 RULES_DIR = ../..
 # Path to directory with DT78xx header file. Edit if this Makefile is 
 # moved elsewhere or assign the path in the command line
-DT78xx_DIR = ../../board-support/extra-drivers/dt78xx/
+DT78xx_DIR = board-support/extra-drivers/dt78xx/
 # Path to common files
-COMN_DIR = ../../example-applications/dt78xx-examples/common/
+COMN_DIR = example-applications/dt78xx-examples/common/
 # Board type
 BOARD_TYPE = DT7816
-# Path to LibAiff files
-AIFF_DIR = libaiff/
 # Path to sunrise and set calculator
 SUN_DIR = sunriset/
-# Path to ring buffer library
-BUFF_DIR = RingBuf/
 # Path to tests
 TESTS_DIR = tests/
+# Path to LibSndFile
+SND_DIR = example-applications/libsndfile-1.0.28/src
 
 #----------------------------------------------------------------------------
 include $(RULES_DIR)/Rules.make
 VPATH = $(COMN_DIR)
-CFLAGS ?=
+CFLAGS ?= 
 CROSS_COMPILE ?=
 
 #   ----------------------------------------------------------------------------
@@ -57,11 +55,9 @@ CC := $(CROSS_COMPILE)gcc
 NAME := recorder
 TESTS := #$(TESTS_DIR)testRecorder.c
 COMN := dt78xx_aio.c dt78xx_misc.c
-AIFF := $(AIFF_DIR)libaiff.c $(AIFF_DIR)aifx.c $(AIFF_DIR)extended.c $(AIFF_DIR)float32.c $(AIFF_DIR)g711.c $(AIFF_DIR)iff.c $(AIFF_DIR)lpcm.c $(AIFF_DIR)pascal.c
-BUFF := $(BUFF_DIR)RingBuf.c 
 SUN := 	$(SUN_DIR)sunriset.c
 MAIN := main.c recorder_helpers.c
-SRCS := $(MAIN) $(COMN) $(AIFF) $(BUFF) $(SUN) $(TESTS)
+SRCS := $(MAIN) $(COMN) $(SUN) $(TESTS)
 HDRS := 
 OBJS :=
 DEBUG :=
@@ -89,13 +85,13 @@ OBJDIR := release
 EXTRA_FLAGS := -O4 -Wall 
 endif
 BINDIR := $(OBJDIR)
-LIBS := $(LIBS) -lpthread -lm
+LIBS := $(LIBS) -lpthread -lsndfile -lm
 OBJS := $(SRCS:%.c=$(OBJDIR)/%.o)
 
 #   ----------------------------------------------------------------------------
 #   Compiler include directories 
 #   ----------------------------------------------------------------------------
-INCLUDES := -I$(COMN_DIR) -I$(DT78xx_DIR)
+INCLUDES := -I$(COMN_DIR) -I$(DT78xx_DIR) -I$(SND_DIR)
 
 #   ----------------------------------------------------------------------------
 #   Compiler symbol definitions 
@@ -105,11 +101,12 @@ DEFS := -std=gnu99  $(FPU_FLAGS) -D$(BOARD_TYPE)
 #   ----------------------------------------------------------------------------
 #   All compiler options to be passed to the command line
 #   ----------------------------------------------------------------------------
-ALL_CFLAGS := -c $(INCLUDES) $(CFLAGS) $(EXTRA_FLAGS) $(DEFS)
+ALL_CFLAGS := -c -static $(INCLUDES) $(CFLAGS) $(EXTRA_FLAGS) $(DEFS)
 
 LDFLAGS :=    -Wl,--hash-style=gnu         \
-              -Wl,-O1                      
-
+              -Wl,-O1		\
+-static                      \
+	    -L$(SND_DIR)/.libs
 #   ----------------------------------------------------------------------------
 #   Compiler and Linker procedure
 #   From this point and on changes are very unlikely.
@@ -132,9 +129,6 @@ $(BINDIR)/$(BIN): banner $(OBJS) Makefile
 
 $(OBJDIR)/%.o : %.c $(HDRS)
 	@mkdir -p $(OBJDIR)	
-	#@mkdir -p $(OBJDIR)/$(TESTS_DIR)
-	@mkdir -p $(OBJDIR)/$(BUFF_DIR)
-	@mkdir -p $(OBJDIR)/$(AIFF_DIR)	
 	@mkdir -p $(OBJDIR)/$(SUN_DIR)	
 	$(CC) $(DEFS) $(ALL_CFLAGS) -o $@ $<
 
