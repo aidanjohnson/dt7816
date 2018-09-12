@@ -18,6 +18,14 @@ cd fftw-3.3.8/
 sudo ./configure --with-slow-timer --host=arm-linux-gnueabi --enable-single --enable-neon CFLAGS="-march=armv7-a -marm -mthumb-interwork -mfloat-abi=hard -mfpu=neon -mtune=cortex-a8 -O4 -Wall" CC="/opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-gcc"
 sudo make 
 
+sudo mv libsndfile-1.0.28.tar.gz /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications
+cd /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications
+tar -xzvf libsndfile-1.0.28.tar.gz
+cd libsndfile-1.0.28/
+sudo ./configure --with-slow-timer --host=arm-linux-gnueabi --enable-single --enable-neon CFLAGS="-march=armv7-a -marm -mthumb-interwork -mfloat-abi=hard -mfpu=neon -mtune=cortex-a8 -O4 -Wall" CC="/opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-gcc"
+sudo make 
+sudo make install
+
 sudo ln -sf /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/extra-drivers/dt78xx/dt78xx_ioctl.h /opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/common
 sudo ln -sf /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/include/asm-generic /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/include/asm
 sudo ln -sf /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/include/acpi/processor.h /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/include/asm
