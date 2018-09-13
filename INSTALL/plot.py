@@ -171,18 +171,18 @@ if fileType is "csv":
     fileCSV = pd.read_csv(fileName)
 
     allData = fileCSV.values
-    voltData = allData[:, 1] # analagous to fileCSV.loc[:].iat[1]
+    voltData = allData[:, 1]
     countData = allData[:, 2]
 
     ymin = -10
-    ymax = 10
+    ymax = 10 # 1 tick = 1 V
 elif fileType is "aiff":
     fileName = aiffDict.get(waveform)
     fileAIFF, fs = sf.read(fileName)
     voltData = fileAIFF
 
     ymin = -1
-    ymax = 1
+    ymax = 1 # 1 tick = 10 V
 else:
     print("invalid file type\n")
 
