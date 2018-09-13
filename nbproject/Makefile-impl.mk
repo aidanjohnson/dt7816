@@ -24,7 +24,7 @@ CLEAN_SUBPROJECTS=${CLEAN_SUBPROJECTS_${SUBPROJECTS}}
 
 
 # Project Name
-PROJECTNAME=recorder
+PROJECTNAME=ti-sdk-am335x-evm-07.00.00.00
 
 # Active Configuration
 DEFAULTCONF=Debug

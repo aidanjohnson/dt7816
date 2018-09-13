@@ -1,29 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configurationDescriptor version="100">
   <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
-    <logicalFolder name="HeaderFiles"
-                   displayName="Header Files"
-                   projectFiles="true">
-      <itemPath>mongoose.h</itemPath>
-      <itemPath>webdefs.h</itemPath>
-    </logicalFolder>
-    <logicalFolder name="ResourceFiles"
-                   displayName="Resource Files"
-                   projectFiles="true">
-    </logicalFolder>
-    <logicalFolder name="SourceFiles"
-                   displayName="Source Files"
-                   projectFiles="true">
-      <itemPath>ctrtmr.c</itemPath>
-      <itemPath>digio.c</itemPath>
-      <itemPath>in-stream.c</itemPath>
-      <itemPath>main.c</itemPath>
-      <itemPath>mongoose.c</itemPath>
-    </logicalFolder>
     <logicalFolder name="TestFiles"
                    displayName="Test Files"
                    projectFiles="false"
                    kind="TEST_LOGICAL_FOLDER">
+      <logicalFolder name="f1"
+                     displayName="New Test 1"
+                     projectFiles="true"
+                     kind="TEST">
+        <itemPath>tests/testRecorder.c</itemPath>
+      </logicalFolder>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -31,9 +18,17 @@
                    kind="IMPORTANT_FILES_FOLDER">
       <itemPath>Makefile</itemPath>
     </logicalFolder>
+    <itemPath>README.txt</itemPath>
+    <itemPath>RingBuf</itemPath>
+    <itemPath>libaiff</itemPath>
+    <itemPath>main.c</itemPath>
+    <itemPath>recorder_helpers.c</itemPath>
+    <itemPath>recorder_helpers.h</itemPath>
+    <itemPath>sunriset</itemPath>
   </logicalFolder>
   <sourceFolderFilter>^(nbproject)$</sourceFolderFilter>
   <sourceRootList>
+    <Elem>/opt/ti-sdk-am335x-evm-07.00.00.00/example-applications/dt78xx-examples/recorder</Elem>
     <Elem>.</Elem>
   </sourceRootList>
   <projectmakefile>Makefile</projectmakefile>
@@ -61,19 +56,36 @@
           <standard>8</standard>
         </ccTool>
       </compileType>
-      <item path="ctrtmr.c" ex="false" tool="0" flavor2="0">
+      <item path="README.txt" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="digio.c" ex="false" tool="0" flavor2="0">
+      <item path="RingBuf" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="in-stream.c" ex="false" tool="0" flavor2="0">
+      <folder path="TestFiles/f1">
+        <cTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </cTool>
+        <ccTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </ccTool>
+        <linkerTool>
+          <output>${TESTDIR}/TestFiles/f1</output>
+        </linkerTool>
+      </folder>
+      <item path="libaiff" ex="false" tool="3" flavor2="0">
       </item>
       <item path="main.c" ex="false" tool="0" flavor2="0">
       </item>
-      <item path="mongoose.c" ex="false" tool="0" flavor2="0">
+      <item path="recorder_helpers.c" ex="false" tool="0" flavor2="0">
       </item>
-      <item path="mongoose.h" ex="false" tool="3" flavor2="0">
+      <item path="recorder_helpers.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="webdefs.h" ex="false" tool="3" flavor2="0">
+      <item path="sunriset" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="tests/testRecorder.c" ex="false" tool="0" flavor2="0">
       </item>
     </conf>
     <conf name="Release" type="1">
@@ -96,19 +108,36 @@
           <developmentMode>5</developmentMode>
         </asmTool>
       </compileType>
-      <item path="ctrtmr.c" ex="false" tool="0" flavor2="0">
+      <item path="README.txt" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="digio.c" ex="false" tool="0" flavor2="0">
+      <item path="RingBuf" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="in-stream.c" ex="false" tool="0" flavor2="0">
+      <folder path="TestFiles/f1">
+        <cTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </cTool>
+        <ccTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </ccTool>
+        <linkerTool>
+          <output>${TESTDIR}/TestFiles/f1</output>
+        </linkerTool>
+      </folder>
+      <item path="libaiff" ex="false" tool="3" flavor2="0">
       </item>
       <item path="main.c" ex="false" tool="0" flavor2="0">
       </item>
-      <item path="mongoose.c" ex="false" tool="0" flavor2="0">
+      <item path="recorder_helpers.c" ex="false" tool="0" flavor2="0">
       </item>
-      <item path="mongoose.h" ex="false" tool="3" flavor2="0">
+      <item path="recorder_helpers.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="webdefs.h" ex="false" tool="3" flavor2="0">
+      <item path="sunriset" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="tests/testRecorder.c" ex="false" tool="0" flavor2="0">
       </item>
     </conf>
   </confs>

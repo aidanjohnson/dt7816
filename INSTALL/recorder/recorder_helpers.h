@@ -103,7 +103,7 @@ extern "C" {
     
 /* 
  * Pillow, or margin of safety, in seconds before sunset and after sunrise for 
- * NIGHT_CYCLE. Increases sampling duration by 2*SAFETY_MARGIN (in s).
+ * NIGHT_CYCLE. Increases sampling duration by 2*SAFETY_MARGIN (in s) per day.
  */    
 #define SAFETY_MARGIN       3600 
 

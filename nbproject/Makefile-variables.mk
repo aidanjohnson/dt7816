@@ -9,19 +9,19 @@ CND_DISTDIR=dist
 # Debug configuration
 CND_PLATFORM_Debug=GNU-Linux
 CND_ARTIFACT_DIR_Debug=dist/Debug/GNU-Linux
-CND_ARTIFACT_NAME_Debug=recorder
-CND_ARTIFACT_PATH_Debug=dist/Debug/GNU-Linux/recorder
+CND_ARTIFACT_NAME_Debug=ti-sdk-am335x-evm-07.00.00.00
+CND_ARTIFACT_PATH_Debug=dist/Debug/GNU-Linux/ti-sdk-am335x-evm-07.00.00.00
 CND_PACKAGE_DIR_Debug=dist/Debug/GNU-Linux/package
-CND_PACKAGE_NAME_Debug=recorder.tar
-CND_PACKAGE_PATH_Debug=dist/Debug/GNU-Linux/package/recorder.tar
+CND_PACKAGE_NAME_Debug=ti-sdk-am335x-evm-07.00.00.00.tar
+CND_PACKAGE_PATH_Debug=dist/Debug/GNU-Linux/package/ti-sdk-am335x-evm-07.00.00.00.tar
 # Release configuration
 CND_PLATFORM_Release=GNU-Linux
 CND_ARTIFACT_DIR_Release=dist/Release/GNU-Linux
-CND_ARTIFACT_NAME_Release=recorder
-CND_ARTIFACT_PATH_Release=dist/Release/GNU-Linux/recorder
+CND_ARTIFACT_NAME_Release=ti-sdk-am335x-evm-07.00.00.00
+CND_ARTIFACT_PATH_Release=dist/Release/GNU-Linux/ti-sdk-am335x-evm-07.00.00.00
 CND_PACKAGE_DIR_Release=dist/Release/GNU-Linux/package
-CND_PACKAGE_NAME_Release=recorder.tar
-CND_PACKAGE_PATH_Release=dist/Release/GNU-Linux/package/recorder.tar
+CND_PACKAGE_NAME_Release=ti-sdk-am335x-evm-07.00.00.00.tar
+CND_PACKAGE_PATH_Release=dist/Release/GNU-Linux/package/ti-sdk-am335x-evm-07.00.00.00.tar
 #
 # include compiler specific variables
 #

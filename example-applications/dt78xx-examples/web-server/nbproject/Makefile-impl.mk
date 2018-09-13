@@ -24,7 +24,7 @@ CLEAN_SUBPROJECTS=${CLEAN_SUBPROJECTS_${SUBPROJECTS}}
 
 
 # Project Name
-PROJECTNAME=web-server
+PROJECTNAME=recorder
 
 # Active Configuration
 DEFAULTCONF=Debug
