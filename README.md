@@ -7,7 +7,6 @@ The following documentation is essential for using this autonomous recorder prog
 Thank you to the [Applied Physics Laboratory](http://www.apl.washington.edu/) at the University of Washington and the [UW Institute for Neuroengineering](http://uwin.washington.edu/) for funding and support, and to the [Union Bay Natural Area](https://botanicgardens.uw.edu/center-for-urban-horticulture/visit/union-bay-natural-area/) for support. This project was funded by the UW Institute for Neuroengineering and the Washington Research Foundation Funds for Innovation in Neuroengineering and the Air Force Center of Excellence on Nature-Inspired Flight Technologies and Ideas ([NIFTI](http://nifti.washington.edu/)). Contact: [Wu-Jung Lee](https://leewujung.github.io/) at wjlee@apl.washington.edu and [Aidan Johnson](https://aidanjohnson.github.io/) at johnsj96@uw.edu.
 
 This project uses the open source libraries:
-* [LibAiff](http://aifftools.sourceforge.net/libaiff/) by Marco Trillo ([MIT License](https://opensource.org/licenses/mit-license.php))
-* [ArduinoRingBuffer](https://github.com/wizard97/ArduinoRingBuffer) by Aaron Wisner ([MIT License](https://opensource.org/licenses/MIT))
+* [libsndfile](http://www.mega-nerd.com/libsndfile/) by [Erik de Castro Lopo](https://github.com/erikd/libsndfile) ([LGPLv2.1](https://opensource.org/licenses/LGPL-2.1))
 * [DT78xx software](https://www.mccdaq.com/Products/ARM-DAQ/DT7816) by Data Translation Inc ([GPLv2](https://opensource.org/licenses/gpl-2.0.php))
 * [Free C source for computing sunrise/set times](http://stjarnhimlen.se/english.html) by Paul Schlyter ([Public Domain](http://stjarnhimlen.se/snippets/snippets.(c)))
