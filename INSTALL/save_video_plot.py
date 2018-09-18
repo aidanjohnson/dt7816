@@ -157,33 +157,42 @@ aiffDict = {
 }
 
 #####
+def readFile(waveform, fileType):
+    if fileType is "csv":
+        fs = cvsFreqDict.get(waveform)
+        fileName = csvDict.get(waveform)
+        fileCSV = pd.read_csv(fileName)
+
+        allData = fileCSV.values
+
+        ymin = -10
+        ymax = 10
+
+        return allData[:, 1], fs, ymin, ymax
+
+    elif fileType is "aiff":
+        fileName = aiffDict.get(waveform)
+        fileAIFF, fs = sf.read(fileName)
+
+        ymin = -1
+        ymax = 1
+
+        return fileAIFF, fs, ymin, ymax
+
+    else:
+        print("invalid file type\n")
+        return 0, 0, 0, 0
+
+
+#####
 
 waveform = "48 kHz sine"
 fileType = "aiff"
 
-if fileType is "csv":
-    fs = cvsFreqDict.get(waveform)
-    fileName = csvDict.get(waveform)
-    fileCSV = pd.read_csv(fileName)
-
-    allData = fileCSV.values
-    voltData = allData[:, 1] # analagous to fileCSV.loc[:].iat[1]
-    countData = allData[:, 2]
-
-    ymin = -10
-    ymax = 10
-elif fileType is "aiff":
-    fileName = aiffDict.get(waveform)
-    fileAIFF, fs = sf.read(fileName)
-    voltData = fileAIFF
-
-    ymin = -1
-    ymax = 1
-else:
-    print("invalid file type\n")
+voltData, fs, ymin, ymax = readFile(waveform, fileType)
 
 n_max = 100 # samples per frame
 frameRate = 30
 frames = 3000
 analog_plot = AnalogPlot(voltData, n_max, ymin, ymax, fileType, waveform, fs, frames)
-analog_plot.anim.save(waveform + '_' + fileType + '.mp4', fps=frameRate, extra_args=['-vcodec', 'libx264'])        
+analog_plot.anim.save(waveform + ' ' + fileType + '.mp4', fps=frameRate, extra_args=['-vcodec', 'libx264'])        
