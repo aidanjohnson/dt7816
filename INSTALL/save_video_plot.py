@@ -10,7 +10,7 @@ from matplotlib.widgets import Button, Slider
 
 class AnalogPlot:
 
-    def __init__(self, data, display_len, ymin, ymax, fileType, waveform, Fs):
+    def __init__(self, data, display_len, ymin, ymax, fileType, waveform, Fs, frames):
         self.buff = deque(np.zeros(display_len))
         self.display_len = display_len
         self.data = data
@@ -26,7 +26,7 @@ class AnalogPlot:
         # setup the animation
         self.cur_frame = 0
         self.anim = animation.FuncAnimation(self.fig, self._update,
-                                            interval=10) # interval delay in ms
+                                            frames=frames, interval=10) # interval delay in ms
 
         # setup the animation control
         self.anim_running = True
@@ -44,10 +44,6 @@ class AnalogPlot:
         self.lines[0].set_data(range(self.display_len), self.buff)
 
         self.ax.set_xticklabels((str(frame), str(frame+self.display_len)))
-
-        self.time_slider.eventson = False
-        self.time_slider.set_val(frame)
-        self.time_slider.eventson = True
 
         self.cur_frame += 1
 
@@ -187,5 +183,7 @@ else:
     print("invalid file type\n")
 
 n_max = 100 # samples per frame
-analog_plot = AnalogPlot(voltData, n_max, ymin, ymax, fileType, waveform, fs)
-analog_plot.animate()
+frameRate = 30
+frames = 3000
+analog_plot = AnalogPlot(voltData, n_max, ymin, ymax, fileType, waveform, fs, frames)
+analog_plot.anim.save(waveform + '_' + fileType + '.mp4', fps=frameRate, extra_args=['-vcodec', 'libx264'])        
