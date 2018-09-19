@@ -1,1 +1,0 @@
-cmd_drivers/gpu/drm/drm_kms_helper.o := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/gpu/drm/drm_kms_helper.o drivers/gpu/drm/drm_fb_helper.o drivers/gpu/drm/drm_crtc_helper.o drivers/gpu/drm/drm_dp_helper.o drivers/gpu/drm/drm_fb_cma_helper.o 

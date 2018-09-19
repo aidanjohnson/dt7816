@@ -1,1 +1,0 @@
-cmd_drivers/misc/ti-st/st_drv.o := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/misc/ti-st/st_drv.o drivers/misc/ti-st/st_core.o drivers/misc/ti-st/st_kim.o drivers/misc/ti-st/st_ll.o 

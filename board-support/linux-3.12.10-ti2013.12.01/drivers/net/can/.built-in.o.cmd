@@ -1,1 +1,0 @@
-cmd_drivers/net/can/built-in.o :=  /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/net/can/built-in.o drivers/net/can/usb/built-in.o drivers/net/can/softing/built-in.o 

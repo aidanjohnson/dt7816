@@ -1,1 +1,0 @@
-cmd_drivers/phy/built-in.o :=  /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/phy/built-in.o drivers/phy/phy-core.o drivers/phy/phy-omap-control.o drivers/phy/phy-omap-usb2.o 

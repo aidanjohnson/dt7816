@@ -1,1 +1,0 @@
-cmd_arch/arm/vfp/vfp.o := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL  --no-warn-mismatch   -r -o arch/arm/vfp/vfp.o arch/arm/vfp/vfpmodule.o arch/arm/vfp/entry.o arch/arm/vfp/vfphw.o arch/arm/vfp/vfpsingle.o arch/arm/vfp/vfpdouble.o 

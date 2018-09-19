@@ -1,3 +1,0 @@
-kernel/drivers/misc/eeprom/eeprom.ko
-kernel/drivers/misc/eeprom/max6875.ko
-kernel/drivers/misc/eeprom/eeprom_93xx46.ko

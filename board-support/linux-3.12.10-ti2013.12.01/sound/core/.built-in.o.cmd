@@ -1,1 +1,0 @@
-cmd_sound/core/built-in.o :=  /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o sound/core/built-in.o sound/core/snd.o sound/core/snd-timer.o sound/core/snd-pcm.o sound/core/snd-page-alloc.o sound/core/oss/built-in.o sound/core/snd-compress.o 

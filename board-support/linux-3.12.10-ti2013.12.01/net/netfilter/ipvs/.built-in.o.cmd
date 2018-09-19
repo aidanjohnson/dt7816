@@ -1,1 +1,0 @@
-cmd_net/netfilter/ipvs/built-in.o :=  rm -f net/netfilter/ipvs/built-in.o; /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ar rcsD net/netfilter/ipvs/built-in.o

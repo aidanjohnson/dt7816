@@ -1,1 +1,0 @@
-cmd_net/ieee802154/ieee802154.o := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o net/ieee802154/ieee802154.o net/ieee802154/netlink.o net/ieee802154/nl-mac.o net/ieee802154/nl-phy.o net/ieee802154/nl_policy.o net/ieee802154/wpan-class.o 

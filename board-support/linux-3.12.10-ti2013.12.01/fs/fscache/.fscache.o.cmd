@@ -1,1 +1,0 @@
-cmd_fs/fscache/fscache.o := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o fs/fscache/fscache.o fs/fscache/cache.o fs/fscache/cookie.o fs/fscache/fsdef.o fs/fscache/main.o fs/fscache/netfs.o fs/fscache/object.o fs/fscache/operation.o fs/fscache/page.o fs/fscache/proc.o 

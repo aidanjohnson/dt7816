@@ -5,7 +5,7 @@
  * asynchronously from the input stream and written to a AIFF (or CSV) file.
  * 
  * (c) Aidan Johnson (johnsj96@uw.edu)
- * 08 September 2018
+ * 18 September 2018
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -59,6 +59,7 @@ int outStream = -1; // Device file handle for output stream
 
 long sunset;
 long sunrise;
+long present;
 
 int fileBuffer; // Cumulative number of buffers completed so far per cycle
 int fileNum;; // Diagnostic/debugging file counter
@@ -143,7 +144,7 @@ int main (int argc, char** argv) {
                 chanSamples = bufferSamples / numChannels;
                 fileBuffers = fileSamples / bufferSamples;
                 if (fileBuffers % 2 == 1) {
-                    fprintf(stderr, "Number of buffers must even; using one fewer\n");
+                    fprintf(stderr, "Number of buffers must be even; using one fewer\n");
                     fileBuffers--;
                 }
                 if (fileBuffers <= 0) {
@@ -205,7 +206,7 @@ int main (int argc, char** argv) {
     /* Infinite loop until aborted by ctrl-C or recording duration is concluded */
     fprintf(stdout, "Press ctrl-C to exit\n"); 
     while (!forceQuit && durationDays > elapsedDays) {
-        long present = getPresentTime();
+        present = getPresentTime();
         /* TODO: sleep for <blank> s so not calculating present time so frequently? */
         sunset = sunsets[elapsedDays];
         sunrise = sunrises[elapsedDays];
@@ -233,10 +234,14 @@ int main (int argc, char** argv) {
              * repeatedly such that the queue of buffers is not empty. When a
              * buffer completes, it is requeued. This achieves the desired
              * asynchronous and continuous analog input recording.
-             */
-            aio_wait(inAIO, 0);
-
-            present = getPresentTime(); // Updates time for while loop check
+             */                           
+            aio_wait(inAIO, -1);
+            int b;
+            for (b = 0; b < NUM_BUFFS; b++) {
+                writeFile(inBuffer[b], bufferSamples);
+                aio_wait(inAIO, -1);
+            }
+           
         }
         if (night) {
             elapsedDays++; // If after dawn (leaving the end of night), 1 day elapsed
@@ -248,6 +253,9 @@ int main (int argc, char** argv) {
 
 /* Exit protocol and procedure */
 _exit :
+#if LED_ENABLED
+    ledIndicators(0x00);
+#endif 
     fprintf(stdout,"\n");
     aio_destroy(inAIO);
     closeFile();

@@ -1,1 +1,0 @@
-cmd_drivers/iio/industrialio.o := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/iio/industrialio.o drivers/iio/industrialio-core.o drivers/iio/industrialio-event.o drivers/iio/inkern.o drivers/iio/industrialio-buffer.o drivers/iio/industrialio-trigger.o drivers/iio/buffer_cb.o 

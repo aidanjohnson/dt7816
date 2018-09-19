@@ -1,1 +1,0 @@
-cmd_drivers/media/usb/hdpvr/hdpvr.o := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/media/usb/hdpvr/hdpvr.o drivers/media/usb/hdpvr/hdpvr-control.o drivers/media/usb/hdpvr/hdpvr-core.o drivers/media/usb/hdpvr/hdpvr-video.o drivers/media/usb/hdpvr/hdpvr-i2c.o 

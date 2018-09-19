@@ -1,1 +1,0 @@
-cmd_drivers/block/aoe/aoe.o := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/block/aoe/aoe.o drivers/block/aoe/aoeblk.o drivers/block/aoe/aoechr.o drivers/block/aoe/aoecmd.o drivers/block/aoe/aoedev.o drivers/block/aoe/aoemain.o drivers/block/aoe/aoenet.o 

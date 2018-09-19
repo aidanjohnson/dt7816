@@ -1,1 +1,0 @@
-cmd_net/irda/ircomm/ircomm-tty.o := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o net/irda/ircomm/ircomm-tty.o net/irda/ircomm/ircomm_tty.o net/irda/ircomm/ircomm_tty_attach.o net/irda/ircomm/ircomm_tty_ioctl.o net/irda/ircomm/ircomm_param.o 

@@ -1,1 +1,0 @@
-cmd_drivers/staging/iio/accel/lis3l02dq.o := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/staging/iio/accel/lis3l02dq.o drivers/staging/iio/accel/lis3l02dq_core.o drivers/staging/iio/accel/lis3l02dq_ring.o 

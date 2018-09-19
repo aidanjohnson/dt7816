@@ -1,1 +1,0 @@
-cmd_net/irda/irnet/irnet.o := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o net/irda/irnet/irnet.o net/irda/irnet/irnet_ppp.o net/irda/irnet/irnet_irda.o 

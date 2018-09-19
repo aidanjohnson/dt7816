@@ -1,1 +1,0 @@
-cmd_drivers/mmc/host/built-in.o :=  /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/mmc/host/built-in.o drivers/mmc/host/sdhci.o drivers/mmc/host/omap.o drivers/mmc/host/omap_hsmmc.o drivers/mmc/host/sdhci-pltfm.o 

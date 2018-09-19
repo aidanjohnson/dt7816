@@ -1,1 +1,0 @@
-cmd_drivers/ipack/built-in.o :=  /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/ipack/built-in.o drivers/ipack/ipack.o drivers/ipack/devices/built-in.o drivers/ipack/carriers/built-in.o 

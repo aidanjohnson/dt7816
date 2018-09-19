@@ -1,1 +1,0 @@
-cmd_drivers/iio/common/st_sensors/st_sensors.o := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/iio/common/st_sensors/st_sensors.o drivers/iio/common/st_sensors/st_sensors_core.o drivers/iio/common/st_sensors/st_sensors_buffer.o drivers/iio/common/st_sensors/st_sensors_trigger.o 

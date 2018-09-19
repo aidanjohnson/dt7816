@@ -1,1 +1,0 @@
-cmd_drivers/net/wimax/i2400m/i2400m-usb.o := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/net/wimax/i2400m/i2400m-usb.o drivers/net/wimax/i2400m/usb-fw.o drivers/net/wimax/i2400m/usb-notif.o drivers/net/wimax/i2400m/usb-tx.o drivers/net/wimax/i2400m/usb-rx.o drivers/net/wimax/i2400m/usb.o 

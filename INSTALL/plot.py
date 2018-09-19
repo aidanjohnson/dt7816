@@ -124,8 +124,11 @@ csvDict = {
     "50 kHz sine recorded with aio-in": 
     "tests/50kHz200aio.csv",
     
-    "96 kHz sinerecorded with aio-in": 
-    "tests/96kHz200aio.csv"
+    "96 kHz sine recorded with aio-in": 
+    "tests/96kHz200aio.csv",
+    
+    "test":
+    "tests/50k200s128_20180919T012328185980Z.csv"
 }
 
 cvsFreqDict = {
@@ -137,7 +140,8 @@ cvsFreqDict = {
     "150-100 kHz 1 ms sweep": 400000,
     "50 kHz sine": 200000,
     "50 kHz sine recorded with aio-in": 200000,
-    "96 kHz sinerecorded with aio-in": 200000
+    "96 kHz sine recorded with aio-in": 200000,
+    "test": 200000
 }
 
 aiffDict = {
@@ -158,11 +162,14 @@ aiffDict = {
     
     "150-100 kHz 1 ms sweep": 
     "aiff/400/sweep/150-100kHz400_20180911T0653024680Z.aiff",
+    
+    "test":
+    "tests/50kHz2002min_20180919T0323Z.aiff"
 }
 
 #####
 
-waveform = "48 kHz sine"
+waveform = "test"
 fileType = "aiff"
 
 if fileType is "csv":

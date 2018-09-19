@@ -6,7 +6,7 @@
  * written to a AIFF file.
  * 
  * (c) Aidan Johnson (johnsj96@uw.edu)
- * 08 September 2018
+ * 18 September 2018
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,14 +53,11 @@ FILE *file;
  */
 
 void isInStreamEmpty() {
-    ++overruns;
-#if (defined OVERRUN_LED) && (OVERRUN_LED > -1) && (OVERRUN_LED < 8)
-    dt78xx_led_t led;
-    led.mask = (1<<OVERRUN_LED);    
-    led.state = (1<<OVERRUN_LED);
-    ioctl(inStream, IOCTL_LED_SET, &led);
-#endif    
+    ++overruns; 
     if (overrunStop && (buffersDone==NUM_BUFFS)) { // Stop on queue empty
+#if LED_ENABLED
+        ledIndicators(0xff);
+#endif   
         if (ioctl(inStream, IOCTL_STOP_SUBSYS, 0)) {
            perror("IOCTL_STOP_SUBSYS");
         }
@@ -78,54 +75,8 @@ int isInAIODone(void *buff, int len) {
            perror("IOCTL_STOP_SUBSYS");
         }
         aio_stop(inAIO);
-    }
-    
-    /* Buffer processing occurs here */
-#if (defined BUFF_DONE_LED) && (BUFF_DONE_LED > -1) && (BUFF_DONE_LED < 8)
-    dt78xx_led_t led;
-    led.mask = (1<<BUFF_DONE_LED);    
-    led.state = (1<<BUFF_DONE_LED);
-    ioctl(inStream, IOCTL_LED_SET, &led);
-#endif    
-    
-    /* 
-     * Write ping (then pong, then ping, and so on) buffer to file
-     * The ping buffer is the initial fill buffer, and the pong buffer 
-     * is the initial write buffer.
-     */
-    if (fileBuffer == 0) { // New file created
-#if AIFF
-        file = createAIFF();
-        
-#else
-        file = createCSV();
-        
-#endif    
-    }
-    
-#if AIFF // Writes buffer to file
-    writeAIFF(buff, file, len);
-    
-#else
-    writeCSV(buff, file, len);
-    
-#endif 
-    
-    if (fileBuffer == fileBuffers) { // File closed
-#if AIFF
-        finishAIFF(file);
-        
-#else      
-        finishCSV(file);
-        
-#endif         
-    }
-        
-#if (defined BUFF_DONE_LED) && (BUFF_DONE_LED > -1) && (BUFF_DONE_LED < 8)
-    led.state = 0;
-    ioctl(inStream, IOCTL_LED_SET, &led);
-#endif  
-    return requeue;
+    }       
+    return requeue; // 1 if buffers are to be requeued, 0 if otherwise
 }
 
 static void getTime(struct tm **presentUTC, struct timeval *clockTime) {
@@ -148,6 +99,7 @@ static void timestamp() {
     struct timeval timeEpoch;
     struct tm *timeISO;
     getTime(&timeISO, &timeEpoch);
+    present = timeEpoch.tv_sec; // Updates time for while loop check
     const char *outputPath = PATH_TO_STORAGE; // A set path to local storage 
     char fileTime[LEN];
 
@@ -549,7 +501,7 @@ static void writeAIFF(void *raw, SNDFILE *file, int len) {
     }
 //    sf_write_int(file, raw, len);
     ++fileBuffer;
-    fprintf(stdout, "written %d file buffers out of %d\n", fileBuffer, fileBuffers);    
+//    fprintf(stdout, "written %d file buffers out of %d\n", fileBuffer, fileBuffers);    
 }
 
 static int finishAIFF(SNDFILE *file) {                    
@@ -592,7 +544,7 @@ static void writeCSV(void *raw, FILE *file, int len) {
     }
     ++fileBuffer;
     /* Exit from loop signals finish writing single buffer */
-    fprintf(stdout, "written %d file buffers out of %d\n", fileBuffer, fileBuffers);    
+//    fprintf(stdout, "written %d file buffers out of %d\n", fileBuffer, fileBuffers);    
 }
 
 static int finishCSV(FILE *file) {                   
@@ -611,6 +563,47 @@ static int finishCSV(FILE *file) {
 
 #endif
 
+void writeFile(void *buff, int len) {  
+    /* 
+     * Write ping (then pong, then ping, and so on) buffer to file
+     * The ping buffer is the initial fill buffer, and the pong buffer 
+     * is the initial write buffer.
+     */
+    if (fileBuffer == 0) { // New file created
+#if AIFF
+        file = createAIFF();
+        
+#else
+        file = createCSV();
+        
+#endif        
+#if LED_ENABLED
+    ledIndicators(chanMask);
+#endif  
+    }
+    
+#if AIFF // Writes buffer to file
+    writeAIFF(buff, file, len);
+    
+#else
+    writeCSV(buff, file, len);
+    
+#endif 
+    
+    if (fileBuffer == fileBuffers) { // File closed
+#if AIFF
+        finishAIFF(file);
+        
+#else      
+        finishCSV(file);
+        
+#endif      
+#if LED_ENABLED
+    ledIndicators(0x00);
+#endif         
+    }
+}
+
 void closeFile() {
     if (file != NULL) {
 #if AIFF
@@ -621,4 +614,11 @@ void closeFile() {
         
 #endif
     }
+}
+
+void ledIndicators(uint8_t status) {
+    dt78xx_led_t led;
+    led.mask = 0xff; // All bits are enabled (8 LEDs capable of being lit)
+    led.state = (status & 0xff);
+    ioctl(inStream, IOCTL_LED_SET, &led); 
 }

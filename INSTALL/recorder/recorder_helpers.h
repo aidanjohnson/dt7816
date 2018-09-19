@@ -6,7 +6,7 @@
  * written to a AIFF file.
  * 
  * (c) Aidan Johnson (johnsj96@uw.edu)
- * 08 September 2018
+ * 18 September 2018
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -114,29 +114,13 @@ extern "C" {
 /*
  * ===== Debug Options ====
  */
-#define STATUS_LED          7 // Debug led blinks to indicate collecion status
-#define OVERRUN_LED         1 // Debug led flashed on overrun
-#define BUFF_DONE_LED       1 // Debug led flashed on overrun
-
-#if (defined STATUS_LED) && ((STATUS_LED < 0) || (STATUS_LED > 7))
-    #error STATUS_LED
-#endif
-#if (defined OVERRUN_LED) && ((OVERRUN_LED < 0) || (OVERRUN_LED > 7))
-    #error OVERRUN_LED
-#endif
-#if (defined BUFF_DONE_LED) && ((BUFF_DONE_LED < 0) || (BUFF_DONE_LED > 7))
-    #error BUFF_DONE_LED
-#endif
-#if (defined STATUS_LED) 
-    // Turns on/off indicator led after this count based on sampling rate & buffer
-    uint32_t g_led_count;
-#endif
+#define LED_ENABLED         1 // Debug led flashed on overrun
 
 /*
  * ==== Defaults: Change at own risk ====
  * Constraint: SAMPLES_PER_CHAN * NUM_CHANNELS * 2 = BUFFERS_SAMPLES <= 65536 samples = 2^(16 bits)
  */ 
-#define BUFFERS_SAMPLES     (65536) // Do not exceed 65536 (total samples for sum of buffers), 66368
+#define BUFFERS_SAMPLES     (65536) // Do not exceed 65536 (total samples for sum of buffers), 66368 empirical max
     
 #define AUTO_TRIG           1
 #define TRIG_LEVEL_V        0.0
@@ -154,7 +138,7 @@ extern "C" {
  * Number of buffers queued for the AIO. increase this as sample rate is
  * increased. For true double buffer (ping-pong buffer), set to 2.
  */    
-#define NUM_BUFFS           16 // min 2, max 128
+#define NUM_BUFFS           32 // min 2, max 128
     
 #define DEFAULT_GAIN        1 // Gain 1 => +/- 10 V; must be 1 for DT7816
     
@@ -248,6 +232,7 @@ extern int outStream;
 
 extern long sunset;
 extern long sunrise;
+extern long present;
 
 extern int fileBuffer;
 extern int fileNum;
@@ -564,13 +549,56 @@ static void writeCSV(void *raw, FILE *file, int len);
  * @return      1 for success, 0 for failure
  */  
 static int finishCSV(FILE *file);
-
 #endif
 
 /*
  * Closes currently opened file, if open, for graceful exit.
  */
 void closeFile();
+
+/*
+ * Writes buffer to file (CSV or AIFF)
+ * @param *buff pointer to buffer of length len
+ * @param len   length of buffer to be written &buff
+ */
+void writeFile(void *buff, int len);
+
+/*
+ * Updates debug LEDs (8 in total), LED ON (1) := CHANNEL is READING/WRITING. 
+ * Viewing the DT7816 such that the debug pin row is above the user LEDs:
+ *  ______ ______ ______ ______ ______ ______ ______ ______ ______ _______\n
+ * | PIN1 | PIN2 | PIN3 | PIN4 | PIN5 | PIN6 | PIN7 | PIN8 | PIN9 | PIN10 |\n
+ * ***** LED7 ** LED6 ** LED5 ** LED4 ** LED3 ** LED2 ** LED1 ** LED0 *****\n
+ * 
+ * LED0 := AIN0recorder, LED1 := AIN1, LED2 := AIN2, LED3 := AIN3,
+ * LED4 := AIN4, LED5 := AIN5, LED6 := AIN6, LED7 := AIN7
+ * 
+ * where the analog input channels have the following coding returned by
+ * IOCTL_CHAN_MASK_GET:
+ * 
+ * AIN0 = 0x01, AIN1 = 0x02, AIN2 = 0x04, AIN3 = 0x08
+ * AIN4 = 0x10, AIN5 = 0x20, AIN6 = 0x40, AIN7 = 0x80
+ * 
+ * and for input header pins (J16):
+ *  ___________________________________________________\n
+ * ||  2 |  4 |  6 |  8 | 10 | 12 | 14 | 16 | 18 | 20 ||\n
+ * ||  1 |  3 |  5 |  7 |  9 | 11 | 13 | 15 | 17 | 19 ||\n
+ * 
+ * Analog Inputs (AINs):
+ * 
+ * PIN5 := AIN0, PIN7 := AIN1, PIN9 := AIN2, PIN11 := AIN3 
+ * PIN13 := AIN4, PIN15 := AIN5, PIN17 := AIN6, PIN19 := AIN7
+ * 
+ * Analog Grounds (AGRDs):
+ * 
+ * PIN6 := AGRD0, PIN8 := AGRD1, PIN10 := AGRD2, PIN12 := AGRD3
+ * PIN14 := AGRD4, PIN16 := AGRD5, PIN18 := AGRD6, PIN20 := AGRD7
+ * 
+ * All 7 flash on and then shut off if a buffer overrun occurs.
+ * 
+ * @param status        Whether each channel is active
+ */        
+void ledIndicators(uint8_t status);
 
 #ifdef __cplusplus
 }

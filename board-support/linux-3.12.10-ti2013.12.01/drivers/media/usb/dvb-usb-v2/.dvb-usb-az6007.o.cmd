@@ -1,1 +1,0 @@
-cmd_drivers/media/usb/dvb-usb-v2/dvb-usb-az6007.o := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/media/usb/dvb-usb-v2/dvb-usb-az6007.o drivers/media/usb/dvb-usb-v2/az6007.o 

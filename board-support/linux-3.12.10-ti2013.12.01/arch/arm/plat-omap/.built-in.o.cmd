@@ -1,1 +1,0 @@
-cmd_arch/arm/plat-omap/built-in.o :=  /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o arch/arm/plat-omap/built-in.o arch/arm/plat-omap/sram.o arch/arm/plat-omap/dma.o arch/arm/plat-omap/counter_32k.o arch/arm/plat-omap/dmtimer.o arch/arm/plat-omap/i2c.o 

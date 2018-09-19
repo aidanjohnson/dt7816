@@ -1,1 +1,0 @@
-cmd_drivers/media/i2c/cs53l32a.ko := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL -r  -T /opt/ti-sdk-am335x-evm-07.00.00.00/board-support/linux-3.12.10-ti2013.12.01/scripts/module-common.lds --build-id  -o drivers/media/i2c/cs53l32a.ko drivers/media/i2c/cs53l32a.o drivers/media/i2c/cs53l32a.mod.o

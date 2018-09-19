@@ -1,1 +1,0 @@
-cmd_drivers/edac/edac_core.o := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/edac/edac_core.o drivers/edac/edac_mc.o drivers/edac/edac_device.o drivers/edac/edac_mc_sysfs.o drivers/edac/edac_pci_sysfs.o drivers/edac/edac_module.o drivers/edac/edac_device_sysfs.o drivers/edac/edac_pci.o 

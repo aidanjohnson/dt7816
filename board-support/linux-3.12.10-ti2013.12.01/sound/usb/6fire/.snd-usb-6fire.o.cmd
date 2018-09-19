@@ -1,1 +1,0 @@
-cmd_sound/usb/6fire/snd-usb-6fire.o := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o sound/usb/6fire/snd-usb-6fire.o sound/usb/6fire/chip.o sound/usb/6fire/comm.o sound/usb/6fire/midi.o sound/usb/6fire/control.o sound/usb/6fire/firmware.o sound/usb/6fire/pcm.o 

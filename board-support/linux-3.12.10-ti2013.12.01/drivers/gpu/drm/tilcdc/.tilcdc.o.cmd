@@ -1,1 +1,0 @@
-cmd_drivers/gpu/drm/tilcdc/tilcdc.o := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/gpu/drm/tilcdc/tilcdc.o drivers/gpu/drm/tilcdc/tilcdc_crtc.o drivers/gpu/drm/tilcdc/tilcdc_tfp410.o drivers/gpu/drm/tilcdc/tilcdc_slave.o drivers/gpu/drm/tilcdc/tilcdc_panel.o drivers/gpu/drm/tilcdc/tilcdc_drv.o 

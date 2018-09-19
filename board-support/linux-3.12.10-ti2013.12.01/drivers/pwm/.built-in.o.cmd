@@ -1,1 +1,0 @@
-cmd_drivers/pwm/built-in.o :=  /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/pwm/built-in.o drivers/pwm/core.o drivers/pwm/sysfs.o drivers/pwm/pwm-pca9685.o drivers/pwm/pwm-tiecap.o drivers/pwm/pwm-tiehrpwm.o drivers/pwm/pwm-tipwmss.o drivers/pwm/pwm-twl.o drivers/pwm/pwm-twl-led.o 

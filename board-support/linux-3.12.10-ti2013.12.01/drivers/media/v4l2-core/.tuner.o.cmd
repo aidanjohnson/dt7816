@@ -1,1 +1,0 @@
-cmd_drivers/media/v4l2-core/tuner.o := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/media/v4l2-core/tuner.o drivers/media/v4l2-core/tuner-core.o 

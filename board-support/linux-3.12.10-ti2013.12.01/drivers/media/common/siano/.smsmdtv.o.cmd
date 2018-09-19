@@ -1,1 +1,0 @@
-cmd_drivers/media/common/siano/smsmdtv.o := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/media/common/siano/smsmdtv.o drivers/media/common/siano/smscoreapi.o drivers/media/common/siano/sms-cards.o drivers/media/common/siano/smsendian.o drivers/media/common/siano/smsir.o 

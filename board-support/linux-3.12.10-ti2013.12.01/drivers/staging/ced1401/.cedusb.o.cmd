@@ -1,1 +1,0 @@
-cmd_drivers/staging/ced1401/cedusb.o := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/staging/ced1401/cedusb.o drivers/staging/ced1401/usb1401.o drivers/staging/ced1401/ced_ioc.o 

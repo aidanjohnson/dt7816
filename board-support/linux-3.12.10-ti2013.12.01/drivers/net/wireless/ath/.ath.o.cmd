@@ -1,1 +1,0 @@
-cmd_drivers/net/wireless/ath/ath.o := /opt/ti-sdk-am335x-evm-07.00.00.00/linux-devkit/sysroots/i686-arago-linux/usr/bin/arm-linux-gnueabihf-ld -EL    -r -o drivers/net/wireless/ath/ath.o drivers/net/wireless/ath/main.o drivers/net/wireless/ath/regd.o drivers/net/wireless/ath/hw.o drivers/net/wireless/ath/key.o 
