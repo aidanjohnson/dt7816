@@ -54,7 +54,7 @@ FILE *file;
 
 void isInStreamEmpty() {
     ++overruns; 
-    if (overrunStop && (buffersDone==NUM_BUFFS)) { // Stop on queue empty
+    if (overrunStop && (buffersDone==BUFFERS_PER_QUEUE)) { // Stop on queue empty
 #if LED_ENABLED
         ledIndicators(0xff);
 #endif   
@@ -70,12 +70,13 @@ int isInAIODone(void *buff, int len) {
      * If operation was stopped on queue empty, clean up after all buffers have
      * been dequeued and processed
      */
-    if (overrunStop && overruns && (buffersDone==NUM_BUFFS)) {
+    if (overrunStop && overruns && (buffersDone==BUFFERS_PER_QUEUE)) {
         if (ioctl(inStream, IOCTL_STOP_SUBSYS, 0)) {
            perror("IOCTL_STOP_SUBSYS");
         }
         aio_stop(inAIO);
     }       
+//    writeFile(buff, len);
     return requeue; // 1 if buffers are to be requeued, 0 if otherwise
 }
 
@@ -107,12 +108,10 @@ static void timestamp() {
     sprintf(fileTime, "_%04d%02d%02dT%02d%02d%02d%liZ.aiff", timeISO->tm_year+1900, 
             timeISO->tm_mon + 1, timeISO->tm_mday, timeISO->tm_hour, 
             timeISO->tm_min, timeISO->tm_sec, (long) timeEpoch.tv_usec);
-
 #else
     sprintf(fileTime, "_%04d%02d%02dT%02d%02d%02d%liZ.csv", timeISO->tm_year+1900, 
             timeISO->tm_mon + 1, timeISO->tm_mday, timeISO->tm_hour, 
             timeISO->tm_min, timeISO->tm_sec, (long) timeEpoch.tv_usec); 
-
 #endif
     
     char fileName[LEN];
@@ -332,8 +331,8 @@ int setupAIO(int argc) {
     /* Submits AIO control buffers */
     if (submitAIO()) {
         sampleRate = clk.clk_freq;
-        fprintf(stdout,"Sampling at %f Hz to %d buffers of %d samples for %d channels...\n", 
-                    sampleRate, NUM_BUFFS, chanSamples, numChannels);
+        fprintf(stdout,"Sampling at %f Hz to %d queues of %d buffers of %d samples per channel to %d channel %f s files\n", 
+                    sampleRate, TOTAL_QUEUES, BUFFERS_PER_QUEUE, chanSamples, numChannels, fileSeconds);
         return !setupFailure;
     }
     return setupFailure;
@@ -411,16 +410,17 @@ static void openAIN() {
 static int submitAIO() {
     /* 
      * Size/allocate a buffer to hold the specified samples for each channel
-     * where: bufLen = 16*chanSamples*numChannels/8 (in bytes, assuming 
+     * where: buffSize = 16*chanSamples*numChannels/8 (in bytes, assuming 
      * chanSamples multiple of 32)
      */
     int actualSamples;
     int buffSize = aio_buff_size(chanSamples, chanMask, &actualSamples);
     chanSamples = actualSamples;
+    bufferSamples = chanSamples*numChannels;
          
     /* Creates and initialises AIO stream buffers/structures */
     fprintf(stdout, "Initialising...\n");
-    if ((inBuffer = aio_buff_alloc(inAIO, NUM_BUFFS, buffSize)) == NULL) {
+    if ((inBuffer = aio_buff_alloc(inAIO, BUFFERS_PER_QUEUE, buffSize)) == NULL) {
         fprintf(stderr, "alloc_queue_buffers ERROR %d \"%s\"\n", 
                 errno, strerror(errno));
         return 0;
@@ -495,13 +495,11 @@ static SNDFILE* createAIFF() {
 
 static void writeAIFF(void *raw, SNDFILE *file, int len) {
     int i;
-    for (i=0; i < len; ++i) {
+    for (i=0; i < len; i++) {
         sf_write_int(file, (int *)raw, 1);
         raw += sizeof(int16_t);
     }
-//    sf_write_int(file, raw, len);
     ++fileBuffer;
-//    fprintf(stdout, "written %d file buffers out of %d\n", fileBuffer, fileBuffers);    
 }
 
 static int finishAIFF(SNDFILE *file) {                    
@@ -536,15 +534,13 @@ static FILE *createCSV() {
 
 static void writeCSV(void *raw, FILE *file, int len) {
     int i;
-    for (i=0; i < len; ++i) {
+    for (i=0; i < len; i++) {
         float volt = raw2volts(*(int16_t *)raw, 1); 
         fprintf(file,"%6d, %.5f, %hd\n", 
                 i+(fileNum*fileBuffers)+(len*(fileBuffer)),volt,*(int16_t *)raw);
         raw += sizeof(int16_t);
     }
     ++fileBuffer;
-    /* Exit from loop signals finish writing single buffer */
-//    fprintf(stdout, "written %d file buffers out of %d\n", fileBuffer, fileBuffers);    
 }
 
 static int finishCSV(FILE *file) {                   
@@ -560,7 +556,6 @@ static int finishCSV(FILE *file) {
     }
     return 1;
 }
-
 #endif
 
 void writeFile(void *buff, int len) {  
@@ -572,11 +567,10 @@ void writeFile(void *buff, int len) {
     if (fileBuffer == 0) { // New file created
 #if AIFF
         file = createAIFF();
-        
 #else
-        file = createCSV();
+        file = createCSV();     
+#endif   
         
-#endif        
 #if LED_ENABLED
     ledIndicators(chanMask);
 #endif  
@@ -584,20 +578,17 @@ void writeFile(void *buff, int len) {
     
 #if AIFF // Writes buffer to file
     writeAIFF(buff, file, len);
-    
 #else
-    writeCSV(buff, file, len);
-    
+    writeCSV(buff, file, len);  
 #endif 
     
     if (fileBuffer == fileBuffers) { // File closed
 #if AIFF
-        finishAIFF(file);
-        
+        finishAIFF(file);   
 #else      
-        finishCSV(file);
+        finishCSV(file);    
+#endif  
         
-#endif      
 #if LED_ENABLED
     ledIndicators(0x00);
 #endif         
@@ -607,11 +598,9 @@ void writeFile(void *buff, int len) {
 void closeFile() {
     if (file != NULL) {
 #if AIFF
-        finishAIFF(file);
-        
+        finishAIFF(file);     
 #else        
-        finishCSV(file);
-        
+        finishCSV(file); 
 #endif
     }
 }

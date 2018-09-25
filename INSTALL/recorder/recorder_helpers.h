@@ -78,7 +78,9 @@ extern "C" {
  * @brief The sample rate, active channels, number of buffers, and samples per channel
  * can be set with command line flags in a terminal shell used to run this program.
  * 
- * Default analog inputs (AINx) enabled/active/on (1) or disabled/inactive/off (0)
+ * Default analog inputs (AINx) enabled/active/on (1) or disabled/inactive/off (0).
+ * 
+ * Active channels can only total to 1, 2, 4, and 8.
  */
 #define AIN0                1
 #define AIN1                0
@@ -89,10 +91,9 @@ extern "C" {
 #define AIN6                0
 #define AIN7                0
 
-#define SAMPLE_RATE_HZ      (200000.0f) // Audio file sampling rate in Hz: max 400000.0f, min 100.0f
+#define SAMPLE_RATE_HZ      (400000.0f) // Audio file sampling rate in Hz: max 400000.0f, min 100.0f
 #define AIFF                1 // 1 for writing to AIFF, 0 for CSV fallback
 #define PATH_TO_STORAGE     "/nfs/dt7816/INSTALL/demo/" // Predefined write path
-#define FILE_TIME_S         (60) // Length of write file in seconds
 #define DURATION_DAYS       21 // Default number of days of sampling
     
 /*
@@ -118,14 +119,18 @@ extern "C" {
 
 /*
  * ==== Defaults: Change at own risk ====
- * Constraint: SAMPLES_PER_CHAN * NUM_CHANNELS * 2 = BUFFERS_SAMPLES <= 65536 samples = 2^(16 bits)
  */ 
-#define BUFFERS_SAMPLES     (65536) // Do not exceed 65536 (total samples for sum of buffers), 66368 empirical max
     
+/*
+ * Samples per buffer must be divisible by 8 with no remainder, and must be
+ * at most 32768 and must be at least 512. Buffers per file must be even.
+ */
+#define SAMPLES_PER_BUFFER  (32768)
+#define TOTAL_QUEUES        (100)
+
 #define AUTO_TRIG           1
 #define TRIG_LEVEL_V        0.0
 #define LEN                 512 // Default character array size 
-#define MAX_AIO_EVENTS      64
     
 /*
  * ==== Do not change! Unexpected outcomes will result ====
@@ -133,27 +138,45 @@ extern "C" {
         
 #define xstr(s) str(s)
 #define str(s) #s
-
+    
+/* 
+ * Samples constraint: 
+ * 2^(16 bits) = 65536 = BUFFERS_SAMPLES >= SAMPLES_PER_BUFFER * NUM_BUFFS. Do
+ * not exceed 65536 (empirical: 66368) for the sum of the buffer samples. 
+ */
+#define BUFFERS_SAMPLES     (65536)
+    
+#define DEFAULT_GAIN        1 // Gain 1 => +/- 10 V; must be 1 for DT7816  
+#define NUM_CHANNELS        (AIN0+AIN1+AIN2+AIN3+AIN4+AIN5+AIN6+AIN7) // max ch: 8 
+    
 /* 
  * Number of buffers queued for the AIO. increase this as sample rate is
  * increased. For true double buffer (ping-pong buffer), set to 2.
+ * Number of buffers must even; the maximum is 128 and the minimum is 2.
  */    
-#define NUM_BUFFS           32 // min 2, max 128
+#define BUFFERS_PER_QUEUE   (BUFFERS_SAMPLES / SAMPLES_PER_BUFFER)
+#define MAX_QUEUE_BUFFS     (128)
+#define MIN_QUEUE_BUFFS     (2)
     
-#define DEFAULT_GAIN        1 // Gain 1 => +/- 10 V; must be 1 for DT7816
+#if (BUFFERS_PER_QUEUE > MAX_QUEUE_BUFFS)
+    #undef BUFFERS_PER_QUEUE
+    #define BUFFERS_PER_QUEUE   MAX_QUEUE_BUFFS
+    #undef SAMPLES_PER_BUFFER   
+    #define SAMPLES_PER_BUFFER  (BUFFERS_SAMPLES / BUFFERS_PER_QUEUE)
+#endif
+
+#if (BUFFERS_PER_QUEUE < MIN_QUEUE_BUFFS)
+    #undef BUFFERS_PER_QUEUE
+    #define BUFFERS_PER_QUEUE   MIN_QUEUE_BUFFS
+    #undef SAMPLES_PER_BUFFER   
+    #define SAMPLES_PER_BUFFER  (BUFFERS_SAMPLES / BUFFERS_PER_QUEUE)
+#endif  
     
-#define NUM_CHANNELS        (AIN0+AIN1+AIN2+AIN3+AIN4+AIN5+AIN6+AIN7) // max ch: 8 
 #define SAMPLE_RATE         SAMPLE_RATE_HZ
-    
-#define SAMPLES_PER_FILE    (SAMPLE_RATE_HZ * FILE_TIME_S)   
-#define SAMPLES_PER_BUFFER  (BUFFERS_SAMPLES / NUM_BUFFS)
+#define BUFFERS_PER_FILE    (BUFFERS_PER_QUEUE * TOTAL_QUEUES)
+#define SAMPLES_PER_FILE    (SAMPLES_PER_BUFFER * BUFFERS_PER_FILE) // Integer length of write file in seconds
+#define FILE_TIME_S         (SAMPLES_PER_FILE / SAMPLE_RATE_HZ)   
 #define SAMPLES_PER_CHAN    (SAMPLES_PER_BUFFER / NUM_CHANNELS)
-    
-/*
- * Number of buffers must be positive and non-zero. Number of buffers must even;
- * otherwise use one fewer. Number of buffers cannot exceed MAX_AIO_EVENTS.
- */
-#define BUFFERS_PER_FILE    (SAMPLES_PER_FILE / SAMPLES_PER_BUFFER) 
 
 /*
  * ==== External, non-standard C libraries ====
@@ -181,7 +204,6 @@ static const char usage[] = {
 "               positions 0/1/2/3/4/5/6/7 correspond to channels AIN0/1/2/3/4/5/6/7.\n"
 "               For example, 10101001 enables AIN0/2/4/7 and disables AIN1/3/5/6.\n"
 "               By default, on channels AIN0 is enabled (i.e., 10000000).\n"        
-"-s|--seconds : number of seconds per file, defaults " xstr(FILE_TIME_S) ".\n"
 "-c|--clk     : sampling rate in Hz, defaults " xstr(SAMPLE_RATE_HZ) ".\n"
 "-d|--dur     : fixed duration of sampling period in days at night as determined "
 "               by sunset and sunrise times, defaults " xstr(DURATION_DAYS) " days.\n"
@@ -208,7 +230,7 @@ extern struct aio_struct *inAIO;
 
 extern float sampleRate; // SAMPLE_RATE
 extern int autoTrigger; // AUTO_TRIG
-extern int fileSeconds; // FILE_TIME_S
+extern float fileSeconds; // FILE_TIME_S
 extern int fileSamples; // SAMPLES_PER_FILE
 extern int chanSamples; // SAMPLES_PER_CHAN
 extern int fileBuffers; // BUFFERS_PER_FILE

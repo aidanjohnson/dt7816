@@ -32,7 +32,7 @@ struct aio_struct *inAIO; // Asynchronous I/O
 
 float sampleRate = SAMPLE_RATE; 
 int autoTrigger = AUTO_TRIG;
-int fileSeconds = FILE_TIME_S;
+float fileSeconds = FILE_TIME_S;
 int fileSamples = SAMPLES_PER_FILE;
 int chanSamples = SAMPLES_PER_CHAN;
 int fileBuffers = BUFFERS_PER_FILE;
@@ -90,7 +90,6 @@ int main (int argc, char** argv) {
     
     /* Specifying the expected command line options */
     static struct option long_options[] = {
-        {"seconds",     required_argument,  0,  's' },
         {"clk",         required_argument,  0,  'c' },
         {"trig",        required_argument,  0,  't' },
         {"dur",         required_argument,  0,  'd' },
@@ -103,16 +102,8 @@ int main (int argc, char** argv) {
     };
     
     /* Command line options */
-    while ((opt = getopt_long(argc, argv, "s:c:d:t:i:m:n:p:l:", long_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "c:d:t:i:m:n:p:l:", long_options, NULL)) != -1) {
         switch (opt) {
-            case 's':
-                fileSeconds = strtoul(optarg, NULL, 10);
-                if (fileSeconds <= 0) {
-                    printf(usage, argv[0]);
-                    exit(EXIT_FAILURE);
-                }
-                fileSamples = clk.clk_freq * fileSeconds;  
-                break;
             case 'c':
                 clk.clk_freq = atof(optarg);
                 if ((clk.clk_freq < CLK_MIN_HZ) || (clk.clk_freq > CLK_MAX_HZ)) {
@@ -120,8 +111,10 @@ int main (int argc, char** argv) {
                             CLK_MIN_HZ, CLK_MAX_HZ);
                     exit(EXIT_FAILURE);
                 }
-                fileSamples = clk.clk_freq * fileSeconds;  
-                fileBuffers = fileSamples / bufferSamples;
+                bufferSamples -= bufferSamples % numChannels;
+                fileSamples = fileBuffers * bufferSamples;  
+                fileSeconds = fileSamples / clk.clk_freq;
+                sampleRate = clk.clk_freq;
                 break;
             case 'd' :
                 durationDays = atoi(optarg);
@@ -141,18 +134,20 @@ int main (int argc, char** argv) {
                     }
                     tempChan /= 10;
                 }
-                chanSamples = bufferSamples / numChannels;
-                fileBuffers = fileSamples / bufferSamples;
-                if (fileBuffers % 2 == 1) {
-                    fprintf(stderr, "Number of buffers must be even; using one fewer\n");
-                    fileBuffers--;
-                }
-                if (fileBuffers <= 0) {
-                    fprintf(stderr, "Number of buffers must be positive and non-zero\n");
+                if (numChannels < 1) {
+                    fprintf(stderr, "Number of channels must be at least 1\n");
                     exit(EXIT_FAILURE);
                 }
-                if (fileBuffers > MAX_AIO_EVENTS) {
-                    fprintf(stderr, "Max number of buffers is %d\n", MAX_AIO_EVENTS);
+                bufferSamples -= bufferSamples % numChannels;
+                fileSamples = fileBuffers * bufferSamples;  
+                chanSamples = bufferSamples / numChannels;
+                bufferSamples = chanSamples * numChannels;
+                if (fileBuffers % 2 == 1) {
+                    fprintf(stderr, "Number of buffers per file must be even; using one fewer\n");
+                    fileBuffers--;
+                }
+                if (fileBuffers < MIN_QUEUE_BUFFS) {
+                    fprintf(stderr, "Number of buffers must be at least 2\n");
                     exit(EXIT_FAILURE);
                 }
                 break;
@@ -207,7 +202,6 @@ int main (int argc, char** argv) {
     fprintf(stdout, "Press ctrl-C to exit\n"); 
     while (!forceQuit && durationDays > elapsedDays) {
         present = getPresentTime();
-        /* TODO: sleep for <blank> s so not calculating present time so frequently? */
         sunset = sunsets[elapsedDays];
         sunrise = sunrises[elapsedDays];
         int night = 0;
@@ -218,7 +212,7 @@ int main (int argc, char** argv) {
          * (entering night). For additional details on AIO, refer to:
          * https://msdn.microsoft.com/en-us/library/windows/desktop/aa365683(v=vs.85).aspx
          */
-        while (!forceQuit && (present < sunrise && present >= sunset)) {                                            
+        if (present < sunrise && present >= sunset) {                                            
             /* Start of night: only done once it begins */
             if (!night) {
                 fileNum = 0;
@@ -228,21 +222,23 @@ int main (int argc, char** argv) {
                     goto _exit; // Arm and start input stream
                 }
             }
-            
             /* 
-             * Continuous sampling of input stream begins; aio_wait() is called
-             * repeatedly such that the queue of buffers is not empty. When a
+             * Continuous sampling of input stream begins. When a
              * buffer completes, it is requeued. This achieves the desired
              * asynchronous and continuous analog input recording.
              */                           
-            aio_wait(inAIO, -1);
-            int b;
-            for (b = 0; b < NUM_BUFFS; b++) {
-                writeFile(inBuffer[b], bufferSamples);
-                aio_wait(inAIO, -1);
+            aio_wait(inAIO, -1); // aio_wait(inAIO, 1000 * bufferSamples / sampleRate);
+        }   
+
+        int buffIndex = 0;
+        while (!forceQuit && (present < sunrise && present >= sunset) && fileBuffer < fileBuffers) {
+            writeFile(inBuffer[buffIndex], bufferSamples);
+            ++buffIndex;
+            if (buffIndex == BUFFERS_PER_QUEUE) {
+                buffIndex = 0;
             }
-           
         }
+           
         if (night) {
             elapsedDays++; // If after dawn (leaving the end of night), 1 day elapsed
         }
