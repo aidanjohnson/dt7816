@@ -331,8 +331,8 @@ int setupAIO(int argc) {
     /* Submits AIO control buffers */
     if (submitAIO()) {
         sampleRate = clk.clk_freq;
-        fprintf(stdout,"Sampling at %f Hz to %d queues of %d buffers of %d samples per channel to %d channel %f s files\n", 
-                    sampleRate, TOTAL_QUEUES, BUFFERS_PER_QUEUE, chanSamples, numChannels, fileSeconds);
+        fprintf(stdout,"Sampling at %f Hz to %d queues of %d buffers of %d samples for %d channel %f s files\n", 
+                    sampleRate, TOTAL_QUEUES, BUFFERS_PER_QUEUE, bufferSamples, numChannels, fileSeconds);
         return !setupFailure;
     }
     return setupFailure;
@@ -478,7 +478,7 @@ static SNDFILE* createAIFF() {
     fileInfo.channels = numChannels;
     fileInfo.format = (SF_FORMAT_AIFF | SF_FORMAT_PCM_16);
     fileInfo.samplerate = sampleRate;
-    fileInfo.frames = fileBuffers;
+    fileInfo.frames = fileSamples / numChannels;
     SNDFILE* file = sf_open(filePath, SFM_WRITE, &fileInfo); // AIFF file opened
     if (file) {
         if (!setFile(file)) {
@@ -493,11 +493,13 @@ static SNDFILE* createAIFF() {
     return file;
 }
 
-static void writeAIFF(void *raw, SNDFILE *file, int len) {
-    int i;
-    for (i=0; i < len; i++) {
-        sf_write_int(file, (int *)raw, 1);
-        raw += sizeof(int16_t);
+static void writeAIFF(void *raw, SNDFILE *file) {
+    int i, j;
+    for (i=0; i < chanSamples; i++) {
+        for (j = 0; j < numChannels; j++) {
+            sf_write_int(file, (int *)raw, 1);
+            raw += sizeof(int16_t);
+        }
     }
     ++fileBuffer;
 }
@@ -532,13 +534,17 @@ static FILE *createCSV() {
     return file;
 }
 
-static void writeCSV(void *raw, FILE *file, int len) {
-    int i;
-    for (i=0; i < len; i++) {
-        float volt = raw2volts(*(int16_t *)raw, 1); 
-        fprintf(file,"%6d, %.5f, %hd\n", 
-                i+(fileNum*fileBuffers)+(len*(fileBuffer)),volt,*(int16_t *)raw);
-        raw += sizeof(int16_t);
+static void writeCSV(void *raw, FILE *file) {
+    int i, j;
+    for (i=0; i < chanSamples; i++) {
+        fprintf(file,"%6d", i+(fileNum*fileBuffers)+(chanSamples*(fileBuffer)));
+        for (j = 0; j < numChannels; j++) {
+            float volt = raw2volts(*(int16_t *)raw, 1); 
+            fprintf(file, ", %.5f", volt);
+            fprintf(file, ", %hd", *(int16_t *)raw);
+            raw += sizeof(int16_t);
+        }
+        fprintf(file,"\n");     
     }
     ++fileBuffer;
 }
@@ -558,7 +564,7 @@ static int finishCSV(FILE *file) {
 }
 #endif
 
-void writeFile(void *buff, int len) {  
+void writeFile(void *buff) {  
     /* 
      * Write ping (then pong, then ping, and so on) buffer to file
      * The ping buffer is the initial fill buffer, and the pong buffer 
@@ -577,9 +583,9 @@ void writeFile(void *buff, int len) {
     }
     
 #if AIFF // Writes buffer to file
-    writeAIFF(buff, file, len);
+    writeAIFF(buff, file);
 #else
-    writeCSV(buff, file, len);  
+    writeCSV(buff, file);  
 #endif 
     
     if (fileBuffer == fileBuffers) { // File closed

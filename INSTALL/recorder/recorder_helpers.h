@@ -83,7 +83,7 @@ extern "C" {
  * Active channels can only total to 1, 2, 4, and 8.
  */
 #define AIN0                1
-#define AIN1                0
+#define AIN1                1
 #define AIN2                0
 #define AIN3                0
 #define AIN4                0
@@ -92,7 +92,7 @@ extern "C" {
 #define AIN7                0
 
 #define SAMPLE_RATE_HZ      (400000.0f) // Audio file sampling rate in Hz: max 400000.0f, min 100.0f
-#define AIFF                1 // 1 for writing to AIFF, 0 for CSV fallback
+#define AIFF                0 // 1 for writing to AIFF, 0 for CSV fallback
 #define PATH_TO_STORAGE     "/nfs/dt7816/INSTALL/demo/" // Predefined write path
 #define DURATION_DAYS       21 // Default number of days of sampling
     
@@ -125,8 +125,8 @@ extern "C" {
  * Samples per buffer must be divisible by 8 with no remainder, and must be
  * at most 32768 and must be at least 512. Buffers per file must be even.
  */
-#define SAMPLES_PER_BUFFER  (32768)
-#define TOTAL_QUEUES        (100)
+#define SAMPLES_PER_BUFFER  (16384)
+#define TOTAL_QUEUES        (10)
 
 #define AUTO_TRIG           1
 #define TRIG_LEVEL_V        0.0
@@ -534,9 +534,8 @@ static SNDFILE* createAIFF();
  * 
  * @param raw    input buffer
  * @param file   SNDFILE file reference pointer
- * @param len    number of samples to be written
  */
-static void writeAIFF(void *raw, SNDFILE *file, int len);
+static void writeAIFF(void *raw, SNDFILE *file);
 
 /*
  * Cleans up file writing processes.
@@ -560,9 +559,8 @@ static FILE *createCSV();
  * 
  * @param raw   input buffer
  * @param file  FILE file structure
- * @param len    number of samples to be written
  */
-static void writeCSV(void *raw, FILE *file, int len);
+static void writeCSV(void *raw, FILE *file);
 
 /*
  * Cleans up file writing processes.
@@ -581,9 +579,8 @@ void closeFile();
 /*
  * Writes buffer to file (CSV or AIFF)
  * @param *buff pointer to buffer of length len
- * @param len   length of buffer to be written &buff
  */
-void writeFile(void *buff, int len);
+void writeFile(void *buff);
 
 /*
  * Updates debug LEDs (8 in total), LED ON (1) := CHANNEL is READING/WRITING. 

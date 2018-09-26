@@ -227,18 +227,19 @@ int main (int argc, char** argv) {
              * buffer completes, it is requeued. This achieves the desired
              * asynchronous and continuous analog input recording.
              */                           
-            aio_wait(inAIO, -1); // aio_wait(inAIO, 1000 * bufferSamples / sampleRate);
+            aio_wait(inAIO, -1);
         }   
 
         int buffIndex = 0;
         while (!forceQuit && (present < sunrise && present >= sunset) && fileBuffer < fileBuffers) {
-            writeFile(inBuffer[buffIndex], bufferSamples);
+            writeFile(inBuffer[buffIndex]);
             ++buffIndex;
             if (buffIndex == BUFFERS_PER_QUEUE) {
                 buffIndex = 0;
             }
+            aio_wait(inAIO, -1);
         }
-           
+        
         if (night) {
             elapsedDays++; // If after dawn (leaving the end of night), 1 day elapsed
         }
