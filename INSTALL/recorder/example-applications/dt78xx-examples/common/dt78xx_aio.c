@@ -88,6 +88,42 @@ struct aio_struct
     int started;                //1 after aio_start() called, 0 while idle
 };
 
+int aioWriteQueue(struct aio_struct *aio, int ms) {
+    int events;
+    struct iocb *fullControlBlocks[1];
+    /* Check buffer completion */
+    if (ms >= 0) { // 0 ms results in asynchronous non-blocking
+        struct timespec nsTime; // Timeout in ns asynchronous blocking
+        nsTime.tv_sec = ms / 1000;
+        nsTime.tv_nsec = (ms - nsTime.tv_sec * 1000) * 1000;
+        events = io_getevents(aio->ctx, 1, 1, aio->events, &nsTime);
+    } else { // Indefinite timeout
+        events = io_getevents(aio->ctx, 1, 1, aio->events, NULL);
+    }
+    /* If requeue call back is enabled and wait not interrupted by signal handler */
+    if (aio->cb && events > 0) { 
+        int event;
+        for (event = 0; event < events; event++) {
+            struct iocb *controlBlock = (struct iocb *)aio->events[event].obj; 
+            controlBlock->aio_data &= ~AIO_MASK; // Event data from complete iocb
+            controlBlock->aio_data |= AIO_DONE;
+            void *buffer = (void *)((__u32)controlBlock->aio_buf);
+            /* Write completed buffer to file in the completed buffer call back */
+            aio->cb(buffer, aio->buflen);
+            controlBlock->aio_data = (AIO_SUBMIT | (aio->count & ~AIO_MASK)); 
+            ++aio->count;
+            fullControlBlocks[0] = controlBlock;
+            /* Resubmit (requeue) completed buffer */
+            if (io_submit(aio->ctx, 1, fullControlBlocks) < 1) { 
+                fprintf(stderr, "ERROR io_submit\n");
+                events = -EIO;
+                break;
+            }
+        }
+    }
+    return events;
+}
+
 int aio_wait(struct aio_struct *aio, int millisec)
 {
     int ret, i;

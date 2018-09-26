@@ -125,8 +125,8 @@ extern "C" {
  * Samples per buffer must be divisible by 8 with no remainder, and must be
  * at most 32768 and must be at least 512. Buffers per file must be even.
  */
-#define SAMPLES_PER_BUFFER  (16384)
-#define TOTAL_QUEUES        (10)
+#define SAMPLES_PER_BUFFER  (32768)
+#define TOTAL_QUEUES        (3)
 
 #define AUTO_TRIG           1
 #define TRIG_LEVEL_V        0.0
@@ -534,8 +534,9 @@ static SNDFILE* createAIFF();
  * 
  * @param raw    input buffer
  * @param file   SNDFILE file reference pointer
+ * @return       samples written to file
  */
-static void writeAIFF(void *raw, SNDFILE *file);
+static int writeAIFF(void *raw, SNDFILE *file);
 
 /*
  * Cleans up file writing processes.
@@ -579,8 +580,9 @@ void closeFile();
 /*
  * Writes buffer to file (CSV or AIFF)
  * @param *buff pointer to buffer of length len
+ * @param len   length of buffer in samples
  */
-void writeFile(void *buff);
+void writeFile(void *buff, int len);
 
 /*
  * Updates debug LEDs (8 in total), LED ON (1) := CHANNEL is READING/WRITING. 

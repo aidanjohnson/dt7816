@@ -33,11 +33,8 @@
  * 
  */
 
-static int overrunStop = 0;     // Enables stop on buffer overrun
-static int requeue = 1;         // Enables requeue buffers after processing      
 static int overruns = 0;        // Number of times buffer overran while acquiring
 static int buffersDone = 0;     // Number of buffers done; internal counter
-  
 char filePath[LEN];             // String for output file path
 
 /* Current file handle open */
@@ -54,6 +51,7 @@ FILE *file;
 
 void isInStreamEmpty() {
     ++overruns; 
+    static int overrunStop = 0; // Disabled (0) stop on buffer overrun
     if (overrunStop && (buffersDone==BUFFERS_PER_QUEUE)) { // Stop on queue empty
 #if LED_ENABLED
         ledIndicators(0xff);
@@ -61,22 +59,14 @@ void isInStreamEmpty() {
         if (ioctl(inStream, IOCTL_STOP_SUBSYS, 0)) {
            perror("IOCTL_STOP_SUBSYS");
         }
+        aio_stop(inAIO); // Clean up after all buffers have been dequeued 
     }
 }
 
 int isInAIODone(void *buff, int len) {
     ++buffersDone;
-    /*
-     * If operation was stopped on queue empty, clean up after all buffers have
-     * been dequeued and processed
-     */
-    if (overrunStop && overruns && (buffersDone==BUFFERS_PER_QUEUE)) {
-        if (ioctl(inStream, IOCTL_STOP_SUBSYS, 0)) {
-           perror("IOCTL_STOP_SUBSYS");
-        }
-        aio_stop(inAIO);
-    }       
-//    writeFile(buff, len);
+    static int requeue = 1; // Enabled (1) requeue of buffers after writing
+    writeFile(buff, len);
     return requeue; // 1 if buffers are to be requeued, 0 if otherwise
 }
 
@@ -493,15 +483,17 @@ static SNDFILE* createAIFF() {
     return file;
 }
 
-static void writeAIFF(void *raw, SNDFILE *file) {
+static int writeAIFF(void *raw, SNDFILE *file) {
+    int written = 0;
     int i, j;
     for (i=0; i < chanSamples; i++) {
         for (j = 0; j < numChannels; j++) {
-            sf_write_int(file, (int *)raw, 1);
+            written += sf_write_int(file, (int *)raw, 1);
             raw += sizeof(int16_t);
         }
     }
     ++fileBuffer;
+    return written;
 }
 
 static int finishAIFF(SNDFILE *file) {                    
@@ -536,8 +528,9 @@ static FILE *createCSV() {
 
 static void writeCSV(void *raw, FILE *file) {
     int i, j;
-    for (i=0; i < chanSamples; i++) {
-        fprintf(file,"%6d", i+(fileNum*fileBuffers)+(chanSamples*(fileBuffer)));
+    for (i = 0; i < chanSamples; i++) {
+        int sample = i + chanSamples * (fileNum * fileBuffers + fileBuffer);
+        fprintf(file, "%6d", sample);
         for (j = 0; j < numChannels; j++) {
             float volt = raw2volts(*(int16_t *)raw, 1); 
             fprintf(file, ", %.5f", volt);
@@ -564,7 +557,7 @@ static int finishCSV(FILE *file) {
 }
 #endif
 
-void writeFile(void *buff) {  
+void writeFile(void *buff, int len) {  
     /* 
      * Write ping (then pong, then ping, and so on) buffer to file
      * The ping buffer is the initial fill buffer, and the pong buffer 
@@ -590,7 +583,11 @@ void writeFile(void *buff) {
     
     if (fileBuffer == fileBuffers) { // File closed
 #if AIFF
-        finishAIFF(file);   
+        int written = finishAIFF(file);
+        int dropped = len - written;
+        if (dropped != 0) {
+            fprintf(stdout, "Dropped %d samples during writing\n", dropped);
+        }
 #else      
         finishCSV(file);    
 #endif  

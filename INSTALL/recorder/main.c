@@ -221,23 +221,16 @@ int main (int argc, char** argv) {
                 if (!armStartStream()) {
                     goto _exit; // Arm and start input stream
                 }
-            }
-            /* 
-             * Continuous sampling of input stream begins. When a
-             * buffer completes, it is requeued. This achieves the desired
-             * asynchronous and continuous analog input recording.
-             */                           
-            aio_wait(inAIO, -1);
+            }                           
         }   
-
-        int buffIndex = 0;
+        
+        /* 
+         * Continuous sampling of input stream begins. When a
+         * buffer completes, it is requeued. This achieves the desired
+         * asynchronous and continuous analog input recording.
+         */
         while (!forceQuit && (present < sunrise && present >= sunset) && fileBuffer < fileBuffers) {
-            writeFile(inBuffer[buffIndex]);
-            ++buffIndex;
-            if (buffIndex == BUFFERS_PER_QUEUE) {
-                buffIndex = 0;
-            }
-            aio_wait(inAIO, -1);
+            aioWriteQueue(inAIO, -1);
         }
         
         if (night) {

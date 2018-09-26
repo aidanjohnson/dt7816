@@ -156,5 +156,7 @@ int aio_wait(struct aio_struct *aio, int millisec);
  */
 int aio_buff_size(int samples_chan, chan_mask_t mask, int *actual);
 
+int aioWriteQueue(struct aio_struct *aio, int ms);
+
 #endif	/* _AIO_H_ */
 
